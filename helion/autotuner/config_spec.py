@@ -27,6 +27,7 @@ from .config_fragment import PermutationFragment
 from .config_fragment import PowerOfTwoFragment
 from .config_fragment import assert_integer_power_of_two
 import helion
+from helion._utils import autotune_for_distributed_kernel
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -823,6 +824,9 @@ class ReductionLoopSpec(_PowerOfTwoBlockIdItem):
     def _flat_config(
         self, base: ConfigSpec, fn: Callable[[ConfigSpecFragment], object]
     ) -> int | None:
+        if autotune_for_distributed_kernel():
+            # workaround https://github.com/pytorch/helion/issues/1642
+            return None
         low = 8  # TODO(jansel): is smaller needed?
         high = next_power_of_2(max(low, self.size_hint))
         default = min(high, 4096)
