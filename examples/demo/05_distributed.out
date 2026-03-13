@@ -1,0 +1,1726 @@
+Relaunching with torchrun --nproc-per-node 4
+
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+[W313 00:31:40.379804174 Utils.hpp:137] Warning: Environment variable NCCL_ASYNC_ERROR_HANDLING is deprecated; use TORCH_NCCL_ASYNC_ERROR_HANDLING instead (function operator())
+[W313 00:31:40.668555661 Utils.hpp:137] Warning: Environment variable NCCL_ASYNC_ERROR_HANDLING is deprecated; use TORCH_NCCL_ASYNC_ERROR_HANDLING instead (function operator())
+[W313 00:31:40.770105866 Utils.hpp:137] Warning: Environment variable NCCL_ASYNC_ERROR_HANDLING is deprecated; use TORCH_NCCL_ASYNC_ERROR_HANDLING instead (function operator())
+[W313 00:31:40.783252795 Utils.hpp:137] Warning: Environment variable NCCL_ASYNC_ERROR_HANDLING is deprecated; use TORCH_NCCL_ASYNC_ERROR_HANDLING instead (function operator())
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Bootstrap: Using lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO cudaDriverVersion 13010
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL version 2.27.5+cuda12.9
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Plugin name set by env to libnccl-net.so
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v10)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v10 symbol.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v9 symbol.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v8 symbol.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v7 symbol.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v6 symbol.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Successfully loaded external plugin libnccl-net.so
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Initializing aws-ofi-nccl 1.18.0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Using Libfabric version 2.4
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Using CUDA driver version 13010 with runtime 13000
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Plugin selected platform: AWS
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Configuring AWS-specific options
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Internode latency set at 75.0 us
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI No eligible providers were found
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604819:604819 [0] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):227 NCCL WARN NET/OFI Failed to initialize rdma protocol
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604819:604819 [0] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):366 NCCL WARN NET/OFI aws-ofi-nccl initialization failed
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604819:604819 [0] ncclResult_t nccl_net_ofi_init_v6(ncclDebugLogger_t):114 NCCL WARN NET/OFI Initializing plugin failed
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_IB_HCA set to ^mlx
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/IB : No device found.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_IB_PCI_RELAXED_ORDERING set by environment to 1.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/IB : Using [RO]; OOB lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/Socket : Using [0]lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Initialized NET plugin Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x4861e0d0 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x39c83bb3fd71a7b0 - Init START
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO RAS client listening socket at ::1<28028>
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Bootstrap timings total 0.014485 (create 0.000071, send 0.000235, recv 0.004917, ring 0.000086, delay 0.000001)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NVLS multicast support is available on dev 0 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x4861e0d0 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 00/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 01/24 : 0 gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO cudaDriverVersion 13010
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap: Using lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL version 2.27.5+cuda12.9
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Plugin name set by env to libnccl-net.so
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v10)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v10 symbol.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v9 symbol.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v8 symbol.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v7 symbol.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v6 symbol.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Successfully loaded external plugin libnccl-net.so
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Initializing aws-ofi-nccl 1.18.0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Using Libfabric version 2.4
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Using CUDA driver version 13010 with runtime 13000
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Plugin selected platform: AWS
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Configuring AWS-specific options
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Internode latency set at 75.0 us
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI No eligible providers were found
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604821:604821 [2] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):227 NCCL WARN NET/OFI Failed to initialize rdma protocol
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604821:604821 [2] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):366 NCCL WARN NET/OFI aws-ofi-nccl initialization failed
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604821:604821 [2] ncclResult_t nccl_net_ofi_init_v6(ncclDebugLogger_t):114 NCCL WARN NET/OFI Initializing plugin failed
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_IB_HCA set to ^mlx
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/IB : No device found.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_IB_PCI_RELAXED_ORDERING set by environment to 1.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/IB : Using [RO]; OOB lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/Socket : Using [0]lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Initialized NET plugin Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x1e8e5330 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x39c83bb3fd71a7b0 - Init START
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO RAS client listening socket at ::1<28028>
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap timings total 0.009750 (create 0.000069, send 0.000126, recv 0.008847, ring 0.000284, delay 0.000000)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NVLS multicast support is available on dev 2 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x1e8e5330 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 3/-1/-1->2->1 [3] 3/-1/-1->2->1 [4] 3/-1/gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO cudaDriverVersion 13010
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap: Using lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL version 2.27.5+cuda12.9
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Plugin name set by env to libnccl-net.so
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v10)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v10 symbol.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v9 symbol.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v8 symbol.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v7 symbol.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v6 symbol.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Successfully loaded external plugin libnccl-net.so
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Initializing aws-ofi-nccl 1.18.0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Using Libfabric version 2.4
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Using CUDA driver version 13010 with runtime 13000
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Plugin selected platform: AWS
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Configuring AWS-specific options
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Internode latency set at 75.0 us
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI No eligible providers were found
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604822:604822 [3] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):227 NCCL WARN NET/OFI Failed to initialize rdma protocol
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604822:604822 [3] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):366 NCCL WARN NET/OFI aws-ofi-nccl initialization failed
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604822:604822 [3] ncclResult_t nccl_net_ofi_init_v6(ncclDebugLogger_t):114 NCCL WARN NET/OFI Initializing plugin failed
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_IB_HCA set to ^mlx
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/IB : No device found.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_IB_PCI_RELAXED_ORDERING set by environment to 1.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/IB : Using [RO]; OOB lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/Socket : Using [0]lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Initialized NET plugin Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x34e1d910 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x39c83bb3fd71a7b0 - Init START
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO RAS client listening socket at ::1<28028>
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap timings total 0.001018 (create 0.000049, send 0.000097, recv 0.000253, ring 0.000061, delay 0.000000)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NVLS multicast support is available on dev 3 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x34e1d910 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] -1/-1/-1->3->2 [2] -1/-1/-1->3->2 [3] -1/-1/-1->3->2 [4] -gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO cudaDriverVersion 13010
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap: Using lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL version 2.27.5+cuda12.9
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Plugin name set by env to libnccl-net.so
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v10)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v10 symbol.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v9 symbol.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v8 symbol.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v7 symbol.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Plugin: Failed to find ncclCollNetPlugin_v6 symbol.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Successfully loaded external plugin libnccl-net.so
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Initializing aws-ofi-nccl 1.18.0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Using Libfabric version 2.4
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Using CUDA driver version 13010 with runtime 13000
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Plugin selected platform: AWS
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Configuring AWS-specific options
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Internode latency set at 75.0 us
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI No eligible providers were found
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604820:604820 [1] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):227 NCCL WARN NET/OFI Failed to initialize rdma protocol
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604820:604820 [1] int nccl_net_ofi_create_plugin(nccl_net_ofi_plugin_t**):366 NCCL WARN NET/OFI aws-ofi-nccl initialization failed
+
+[2026-03-13 00:31:41] gpu-dev-9b546e1b:604820:604820 [1] ncclResult_t nccl_net_ofi_init_v6(ncclDebugLogger_t):114 NCCL WARN NET/OFI Initializing plugin failed
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_IB_HCA set to ^mlx
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/IB : No device found.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_IB_PCI_RELAXED_ORDERING set by environment to 1.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/IB : Using [RO]; OOB lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_SOCKET_IFNAME set by environment to lo
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/Socket : Using [0]lo:127.0.0.1<0>
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Initialized NET plugin Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x23664e60 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x39c83bb3fd71a7b0 - Init START
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO RAS client listening socket at ::1<28028>
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap timings total 0.009630 (create 0.000044, send 0.000104, recv 0.000333, ring 0.008634, delay 0.000000)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NVLS multicast support is available on dev 1 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x23664e60 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0 [2] 2/-1/-1->1->0 [3] 2/-1/-1->1->0 [4] 2/-1/-11 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 02/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 03/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 04/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 05/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 06/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 07/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 08/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 09/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 10/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 11/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 12/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 13/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 14/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 15/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 16/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 17/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 18/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 19/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 20/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 21/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 22/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 23/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 [2] 1/-1/-1->0->-1 [3] 1/-1/-1->0->-1 [4] 1/-1/-1->0->-1 [5] 1/-1/-1->0->-1 [6] 1/-1/-1->0->-1 [7] 1/-1/-1->0->-1 [8] 1/-1/-1->0->-1 [9] 1/-1/-1->0->-1 [10] 1/-1/-1->0->-1 [11] 1/-1/-1->0->-1 [12] 1/-1/-1->0->-1 [13] 1/-1/-1->0->-1 [14] 1/-1/-1->0->-1 [15] 1/-1/-1->0->-1 [16] 1/-1/-1->0->-1 [17] 1/-1/-1->0->-1 [18] 1/-1/-1->0->-1 [19] 1/-1/-1->0->-1 [20] 1/-1/-1->0->-1 [21] 1/-1/-1->0->-1 [22] 1/-1/-1->0->-1 [23] 1/-1/-1->0->-1
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0
+gpu-dev-9b546e1b:604819:604858 [0] NCCL INFO [Proxy Service] Device 0 CPU core 136
+gpu-dev-9b546e1b:604819:604860 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 36
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Enabled NCCL Func/Proto/Algo Matrix:
+     Function |       LL     LL128    Simple   |          Tree           Ring  CollNetDirect   CollNetChain           NVLS       NVLSTree            PAT  
+    Broadcast |        1         2         1   |             1              1              0              0              0              0              0  
+       Reduce |        1         2         1   |             1              1              0              0              0              0              0  
+    AllGather |        1         2         1   |             1              1              0              0              0              0              0  
+ReduceScatter |        1         2         1   |             1              1              0              0              0              0              0  
+    AllReduce |        1         2         1   |             1              1              0              0              0              0              0  
+
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO TUNER/Plugin: Failed to find ncclTunerPlugin_v4 symbol.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO TUNER/Plugin: Using tuner plugin nccl_ofi_tuner
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner selected platform: AWS
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x4861e0d0 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x39c83bb3fd71a7b0 - Init COMPLETE
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 4 total 1.02 (kernels 0.23, alloc 0.34, bootstrap 0.01, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.28)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x4ff1a7d0 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x8ce0a27d6d07da57 - Init START
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Bootstrap timings total 0.001192 (create 0.000034, send 0.000193, recv 0.000235, ring 0.000445, delay 0.000000)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NVLS multicast support is available on dev 0 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x4ff1a7d0 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 00/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 01/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 02/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 03/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 04/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 05/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 06/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 07/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 08/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 09/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 10/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 11/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 12/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 13/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 14/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 15/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 16/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 17/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 18/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 19/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 20/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 21/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 22/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 23/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 [2] 1/-1/-1->0->-1 [3] 1/-1/-1->0->-1 [4] 1/-1/-1->0->-1 [5] 1/-1/-1->0->-1 [6] 1/-1/-1->0->-1 [7] 1/-1/-1->0->-1 [8] 1/-1/-1->0->-1 [9] 1/-1/-1->0->-1 [10] 1/-1/-1->0->-1 [11] 1/-1/-1->0->-1 [12] 1/-1/-1->0->-1 [13] 1/-1/-1->0->-1 [14] 1/-1/-1->0->-1 [15] 1/-1/-1->0->-1 [16] 1/-1/-1->0->-1 [17] 1/-1/-1->0->-1 [18] 1/-1/-1->0->-1 [19] 1/-1/-1->0->-1 [20] 1/-1/-1->0->-1 [21] 1/-1/-1->0->-1 [22] 1/-1/-1->0->-1 [23] 1/-1/-1->0->-1
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Che1/-1/-1->3->2 [5] -1/-1/-1->3->2 [6] -1/-1/-1->3->2 [7] -1/-1/-1->3->2 [8] -1/-1/-1->3->2 [9] -1/-1/-1->3->2 [10] -1/-1/-1->3->2 [11] -1/-1/-1->3->2 [12] -1/-1/-1->3->2 [13] -1/-1/-1->3->2 [14] -1/-1/-1->3->2 [15] -1/-1/-1->3->2 [16] -1/-1/-1->3->2 [17] -1/-1/-1->3->2 [18] -1/-1/-1->3->2 [19] -1/-1/-1->3->2 [20] -1/-1/-1->3->2 [21] -1/-1/-1->3->2 [22] -1/-1/-1->3->2 [23] -1/-1/-1->3->2
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+gpu-dev-9b546e1b:604822:604862 [3] NCCL INFO [Proxy Service] Device 3 CPU core 66
+gpu-dev-9b546e1b:604822:604863 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 64
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO TUNER/Plugin: Failed to find ncclTunerPlugin_v4 symbol.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO TUNER/Plugin: Using tuner plugin nccl_ofi_tuner
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner selected platform: AWS
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x34e1d910 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x39c83bb3fd71a7b0 - Init COMPLETE
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Init timings - ncclCommInitRank: rank 3 nranks 4 total 1.02 (kernels 0.23, alloc 0.35, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.29)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3c728f70 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x8ce0a27d6d07da57 - Init START
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap timings total 0.001162 (create 0.000035, send 0.000153, recv 0.000350, ring 0.000113, delay 0.000000)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NVLS multicast support is available on dev 3 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x3c728f70 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] -1/-1/-1->3->2 [2] -1/-1/-1->3->2 [3] -1/-1/-1->3->2 [4] -1/-1/-1->3->2 [5] -1/-1/-1->3->2 [6] -1/-1/-1->3->2 [7] -1/-1/-1->3->2 [8] -1/-1/-1->3->2 [9] -1/-1/-1->3->2 [10] -1/-1/-1->3->2 [11] -1/-1/-1->3->2 [12] -1/-1/-1->3->2 [13] -1/-1/-1->3->2 [14] -1/-1/-1->3->2 [15] -1/-1/-1->3->2 [16] -1/-1/-1->3->2 [17] -1/-1/-1->3->2 [18] -1/-1/-1->3->2 [19] -1/-1/-1->3->2 [20] -1/-1/-1->3->2 [21] -1/-1/-1->3->2 [22] -1/-1/-1->3->2 [23] -1/-1/-1->3->2
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604869 [3] NCCL INFO [Proxy Service] Device 3 CPU core 66
+gpu-dev-9b546e1b:604822:604870 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 70
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls chann->1->0 [5] 2/-1/-1->1->0 [6] 2/-1/-1->1->0 [7] 2/-1/-1->1->0 [8] 2/-1/-1->1->0 [9] 2/-1/-1->1->0 [10] 2/-1/-1->1->0 [11] 2/-1/-1->1->0 [12] 2/-1/-1->1->0 [13] 2/-1/-1->1->0 [14] 2/-1/-1->1->0 [15] 2/-1/-1->1->0 [16] 2/-1/-1->1->0 [17] 2/-1/-1->1->0 [18] 2/-1/-1->1->0 [19] 2/-1/-1->1->0 [20] 2/-1/-1->1->0 [21] 2/-1/-1->1->0 [22] 2/-1/-1->1->0 [23] 2/-1/-1->1->0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+gpu-dev-9b546e1b:604820:604859 [1] NCCL INFO [Proxy Service] Device 1 CPU core 105
+gpu-dev-9b546e1b:604820:604861 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 16
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO TUNER/Plugin: Failed to find ncclTunerPlugin_v4 symbol.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO TUNER/Plugin: Using tuner plugin nccl_ofi_tuner
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner selected platform: AWS
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x23664e60 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x39c83bb3fd71a7b0 - Init COMPLETE
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Init timings - ncclCommInitRank: rank 1 nranks 4 total 1.01 (kernels 0.23, alloc 0.34, bootstrap 0.01, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.27)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2af700b0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x8ce0a27d6d07da57 - Init START
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap timings total 0.001168 (create 0.000035, send 0.000176, recv 0.000479, ring 0.000307, delay 0.000000)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NVLS multicast support is available on dev 1 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x2af700b0 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0 [2] 2/-1/-1->1->0 [3] 2/-1/-1->1->0 [4] 2/-1/-1->1->0 [5] 2/-1/-1->1->0 [6] 2/-1/-1->1->0 [7] 2/-1/-1->1->0 [8] 2/-1/-1->1->0 [9] 2/-1/-1->1->0 [10] 2/-1/-1->1->0 [11] 2/-1/-1->1->0 [12] 2/-1/-1->1->0 [13] 2/-1/-1->1->0 [14] 2/-1/-1->1->0 [15] 2/-1/-1->1->0 [16] 2/-1/-1->1->0 [17] 2/-1/-1->1->0 [18] 2/-1/-1->1->0 [19] 2/-1/-1->1->0 [20] 2/-1/-1->1->0 [21] 2/-1/-1->1->0 [22] 2/-1/-1->1->0 [23] 2/-1/-1->1->0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604820:604867 [1] NCCL INFO [Proxy Service] Device 1 CPU core 108
+gpu-dev-9b546e1b:604820:604868 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 117
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gp-1->2->1 [5] 3/-1/-1->2->1 [6] 3/-1/-1->2->1 [7] 3/-1/-1->2->1 [8] 3/-1/-1->2->1 [9] 3/-1/-1->2->1 [10] 3/-1/-1->2->1 [11] 3/-1/-1->2->1 [12] 3/-1/-1->2->1 [13] 3/-1/-1->2->1 [14] 3/-1/-1->2->1 [15] 3/-1/-1->2->1 [16] 3/-1/-1->2->1 [17] 3/-1/-1->2->1 [18] 3/-1/-1->2->1 [19] 3/-1/-1->2->1 [20] 3/-1/-1->2->1 [21] 3/-1/-1->2->1 [22] 3/-1/-1->2->1 [23] 3/-1/-1->2->1
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+gpu-dev-9b546e1b:604821:604856 [2] NCCL INFO [Proxy Service] Device 2 CPU core 66
+gpu-dev-9b546e1b:604821:604857 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 63
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO TUNER/Plugin: Failed to find ncclTunerPlugin_v4 symbol.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO TUNER/Plugin: Using tuner plugin nccl_ofi_tuner
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner selected platform: AWS
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x1e8e5330 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x39c83bb3fd71a7b0 - Init COMPLETE
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Init timings - ncclCommInitRank: rank 2 nranks 4 total 1.03 (kernels 0.23, alloc 0.34, bootstrap 0.01, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.29)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x261f05a0 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x8ce0a27d6d07da57 - Init START
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap timings total 0.001045 (create 0.000056, send 0.000113, recv 0.000488, ring 0.000092, delay 0.000000)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NVLS multicast support is available on dev 2 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x261f05a0 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 3/-1/-1->2->1 [3] 3/-1/-1->2->1 [4] 3/-1/-1->2->1 [5] 3/-1/-1->2->1 [6] 3/-1/-1->2->1 [7] 3/-1/-1->2->1 [8] 3/-1/-1->2->1 [9] 3/-1/-1->2->1 [10] 3/-1/-1->2->1 [11] 3/-1/-1->2->1 [12] 3/-1/-1->2->1 [13] 3/-1/-1->2->1 [14] 3/-1/-1->2->1 [15] 3/-1/-1->2->1 [16] 3/-1/-1->2->1 [17] 3/-1/-1->2->1 [18] 3/-1/-1->2->1 [19] 3/-1/-1->2->1 [20] 3/-1/-1->2->1 [21] 3/-1/-1->2->1 [22] 3/-1/-1->2->1 [23] 3/-1/-1->2->1
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604821:604871 [2] NCCL INFO [Proxy Service] Device 2 CPU core 70
+gpu-dev-9b546e1b:604821:604872 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 63
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gck P2P Type isAllDirectP2p 1 directMode 0
+gpu-dev-9b546e1b:604819:604865 [0] NCCL INFO [Proxy Service] Device 0 CPU core 139
+gpu-dev-9b546e1b:604819:604866 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 121
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Enabled NCCL Func/Proto/Algo Matrix:
+     Function |       LL     LL128    Simple   |          Tree           Ring  CollNetDirect   CollNetChain           NVLS       NVLSTree            PAT  
+    Broadcast |        1         2         1   |             1              1              0              0              0              0              0  
+       Reduce |        1         2         1   |             1              1              0              0              0              0              0  
+    AllGather |        1         2         1   |             1              1              0              0              0              0              0  
+ReduceScatter |        1         2         1   |             1              1              0              0              0              0              0  
+    AllReduce |        1         2         1   |             1              1              0              0              0              0              0  
+
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x4ff1a7d0 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x8ce0a27d6d07da57 - Init COMPLETE
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 4 total 0.18 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.12, rest 0.01)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x50549920 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0xb9f9910a8a5e4e1b - Init START
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Bootstrap timings total 0.001620 (create 0.000033, send 0.000147, recv 0.000633, ring 0.000298, delay 0.000000)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NVLS multicast support is available on dev 0 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x50549920 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 00/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 01/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 02/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 03/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 04/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 05/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 06/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 07/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 08/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 09/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 10/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 11/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 12/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 13/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 14/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 15/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 16/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 17/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 18/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 19/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 20/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 21/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 22/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 23/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 [2] 1/-1/-1->0->-1 [3] 1/-1/-1->0->-1 [4] 1/-1/-1->0->-1 [5] 1/-1/-1->0->-1 [6] 1/-1/-1->0->-1 [7] 1/-1/-1->0->-1 [8] 1/-1/-1->0->-1 [9] 1/-1/-1->0->-1 [10] 1/-1/-1->0->-1 [11] 1/-1/-1->0->-1 [12] 1/-1/-1->0->-1 [13] 1/-1/-1->0->-1 [14] 1/-1/-1->0->-1 [15] 1/-1/-1->0->-1 [16] 1/-1/-1->0->-1 [17] 1/-1/-1->0->-1 [18] 1/-1/-1->0->-1 [19] 1/-1/-1->0->-1 [20] 1/-1/-1->0->-1 [21] 1/-1/-1->0->-1 [22] 1/-1/-1->0->-1 [23] 1/-1/-1->0->-1
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0
+gpu-dev-9b546e1b:604819:604878 [0] NCCL INFO [Proxy Service] Device 0 CPU core 136
+gpu-dev-9b546e1b:604819:604879 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 122
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Enabled NCCL Func/Proto/Algo Matrix:
+     Function |       LL     LL128    Simple   |          Tree           Ring  CollNetDirect   CollNetChain           NVLS       NVLSTree            PAT  
+    Broadcast |        1         2         1   |             1              1              0              0              0              0              0  
+       Reduce |        1         2         1   |             1              1              0              0              0              0              0  
+    AllGather |        1         2         1   |             1              1              0              0              0              0              0  
+ReduceScatter |        1         2         1   |             1              1              0              0              0              0              0  
+    AllReduce |        1         2         1   |             1              1              0              0              0              0              0  
+
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x50549920 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0xb9f9910a8a5e4e1b - Init COMPLETE
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.13, rest 0.02)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x509d3090 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 64000 commId 0x9c70a4ae8a4be386 - Init START
+gpu-dev-9b546e1b:604819:pu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x261f05a0 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x8ce0a27d6d07da57 - Init COMPLETE
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Init timings - ncclCommInitRank: rank 2 nranks 4 total 0.18 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x2681f1d0 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0xb9f9910a8a5e4e1b - Init START
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap timings total 0.001354 (create 0.000036, send 0.000080, recv 0.000964, ring 0.000073, delay 0.000000)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NVLS multicast support is available on dev 2 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x2681f1d0 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 3/-1/-1->2->1 [3] 3/-1/-1->2->1 [4] 3/-1/-1->2->1 [5] 3/-1/-1->2->1 [6] 3/-1/-1->2->1 [7] 3/-1/-1->2->1 [8] 3/-1/-1->2->1 [9] 3/-1/-1->2->1 [10] 3/-1/-1->2->1 [11] 3/-1/-1->2->1 [12] 3/-1/-1->2->1 [13] 3/-1/-1->2->1 [14] 3/-1/-1->2->1 [15] 3/-1/-1->2->1 [16] 3/-1/-1->2->1 [17] 3/-1/-1->2->1 [18] 3/-1/-1->2->1 [19] 3/-1/-1->2->1 [20] 3/-1/-1->2->1 [21] 3/-1/-1->2->1 [22] 3/-1/-1->2->1 [23] 3/-1/-1->2->1
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604821:604874 [2] NCCL INFO [Proxy Service] Device 2 CPU core 64
+gpu-dev-9b546e1b:604821:604875 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 71
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x2681f1d0 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0xb9f9910a8a5e4e1b - Init COMPLETE
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Init timings - ncclCommInitRank: rank 2 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.13, rest 0.01)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x26ca93d0 rank 0 nranks 1 cudaDev 2 nvmlDev 2 busId b9000 commId 0xe0b32637fe8bbeae - Init START
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap timings total 0.000526 (create 0.000031, send 0.000083, recv 0.000237, ring 0.000000, delay 0.000000)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x26ca93d0 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 63/604819 [0] NCCL INFO Bootstrap timings total 0.000527 (create 0.000033, send 0.000141, recv 0.000186, ring 0.000000, delay 0.000000)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x509d3090 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Chels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3c728f70 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x8ce0a27d6d07da57 - Init COMPLETE
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Init timings - ncclCommInitRank: rank 3 nranks 4 total 0.18 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3cd57b60 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0xb9f9910a8a5e4e1b - Init START
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap timings total 0.001496 (create 0.000044, send 0.000103, recv 0.000779, ring 0.000086, delay 0.000000)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NVLS multicast support is available on dev 3 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x3cd57b60 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] -1/-1/-1->3->2 [2] -1/-1/-1->3->2 [3] -1/-1/-1->3->2 [4] -1/-1/-1->3->2 [5] -1/-1/-1->3->2 [6] -1/-1/-1->3->2 [7] -1/-1/-1->3->2 [8] -1/-1/-1->3->2 [9] -1/-1/-1->3->2 [10] -1/-1/-1->3->2 [11] -1/-1/-1->3->2 [12] -1/-1/-1->3->2 [13] -1/-1/-1->3->2 [14] -1/-1/-1->3->2 [15] -1/-1/-1->3->2 [16] -1/-1/-1->3->2 [17] -1/-1/-1->3->2 [18] -1/-1/-1->3->2 [19] -1/-1/-1->3->2 [20] -1/-1/-1->3->2 [21] -1/-1/-1->3->2 [22] -1/-1/-1->3->2 [23] -1/-1/-1->3->2
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604876 [3] NCCL INFO [Proxy Service] Device 3 CPU core 71
+gpu-dev-9b546e1b:604822:604877 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 61
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3cd57b60 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0xb9f9910a8a5e4e1b - Init COMPLETE
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Init timings - ncclCommInitRank: rank 3 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.13, rest 0.02)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3d1e1c90 rank 0 nranks 1 cudaDev 3 nvmlDev 3 busId ca000 commId 0x1be76112604d427a - Init START
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap timings total 0.000507 (create 0.000030, send 0.000135, recv 0.000167, ring 0.000000, delay 0.000000)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x3d1e1c90 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Chu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2af700b0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x8ce0a27d6d07da57 - Init COMPLETE
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Init timings - ncclCommInitRank: rank 1 nranks 4 total 0.18 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2b59ecd0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0xb9f9910a8a5e4e1b - Init START
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap timings total 0.001641 (create 0.000040, send 0.000169, recv 0.001049, ring 0.000190, delay 0.000000)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NVLS multicast support is available on dev 1 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x2b59ecd0 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0 [2] 2/-1/-1->1->0 [3] 2/-1/-1->1->0 [4] 2/-1/-1->1->0 [5] 2/-1/-1->1->0 [6] 2/-1/-1->1->0 [7] 2/-1/-1->1->0 [8] 2/-1/-1->1->0 [9] 2/-1/-1->1->0 [10] 2/-1/-1->1->0 [11] 2/-1/-1->1->0 [12] 2/-1/-1->1->0 [13] 2/-1/-1->1->0 [14] 2/-1/-1->1->0 [15] 2/-1/-1->1->0 [16] 2/-1/-1->1->0 [17] 2/-1/-1->1->0 [18] 2/-1/-1->1->0 [19] 2/-1/-1->1->0 [20] 2/-1/-1->1->0 [21] 2/-1/-1->1->0 [22] 2/-1/-1->1->0 [23] 2/-1/-1->1->0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604820:604880 [1] NCCL INFO [Proxy Service] Device 1 CPU core 19
+gpu-dev-9b546e1b:604820:604881 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 107
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2b59ecd0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0xb9f9910a8a5e4e1b - Init COMPLETE
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Init timings - ncclCommInitRank: rank 1 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2ba28eb0 rank 0 nranks 1 cudaDev 1 nvmlDev 1 busId 86000 commId 0xe96f196f96324997 - Init START
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap timings total 0.000546 (create 0.000032, send 0.000204, recv 0.000150, ring 0.000001, delay 0.000000)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x2ba28eb0 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 63/64 :annel 62/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 63/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604822:604890 [3] NCCL INFO [Proxy Service] Device 3 CPU core 65
+gpu-dev-9b546e1b:604822:604891 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 71
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3d1e1c90 rank 0 nranks 1 cudaDev 3 nvmlDev 3 busId ca000 commId 0x1be76112604d427a - Init COMPLETE
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.14 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.12, rest 0.00)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3d60aeb0 rank 0 nranks 1 cudaDev 3 nvmlDev 3 busId ca000 commId 0xf197ef70fb3d9b2 - Init START
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap timings total 0.000498 (create 0.000032, send 0.000128, recv 0.000173, ring 0.000001, delay 0.000000)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x3d60aeb0 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Channel 63/64 : 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46annel 57/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 63/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604819:604888 [0] NCCL INFO [Proxy Service] Device 0 CPU core 139
+gpu-dev-9b546e1b:604819:604889 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 123
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x509d3090 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 64000 commId 0x9c70a4ae8a4be386 - Init COMPLETE
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.15 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.01, graphs 0.00, connections 0.13, rest 0.00)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x50dfc350 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 64000 commId 0x6242c53baf225f83 - Init START
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Bootstrap timings total 0.000479 (create 0.000031, send 0.000151, recv 0.000146, ring 0.000000, delay 0.000000)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x50dfc350 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 63/64 : 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1  0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604820:604892 [1] NCCL INFO [Proxy Service] Device 1 CPU core 107
+gpu-dev-9b546e1b:604820:604893 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 117
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2ba28eb0 rank 0 nranks 1 cudaDev 1 nvmlDev 1 busId 86000 commId 0xe96f196f96324997 - Init COMPLETE
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.14 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.12, rest 0.00)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2be52150 rank 0 nranks 1 cudaDev 1 nvmlDev 1 busId 86000 commId 0xf50158e40e6b9133 - Init START
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap timings total 0.000604 (create 0.000034, send 0.000205, recv 0.000188, ring 0.000001, delay 0.000000)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x2be52150 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Channel 63/64 : 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO P2P Chunksize se64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604821:604886 [2] NCCL INFO [Proxy Service] Device 2 CPU core 71
+gpu-dev-9b546e1b:604821:604887 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 65
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x26ca93d0 rank 0 nranks 1 cudaDev 2 nvmlDev 2 busId b9000 commId 0xe0b32637fe8bbeae - Init COMPLETE
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.17 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.01, graphs 0.00, connections 0.16, rest 0.00)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x270d2670 rank 0 nranks 1 cudaDev 2 nvmlDev 2 busId b9000 commId 0x1aade00b21be432e - Init START
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap timings total 0.000523 (create 0.000033, send 0.000094, recv 0.000225, ring 0.000000, delay 0.000000)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x270d2670 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 00/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 01/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 02/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 03/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 04/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 05/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 06/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 07/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 08/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 09/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 10/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 11/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 12/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 13/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 14/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 15/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 16/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 17/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 18/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 19/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 20/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 21/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 22/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 23/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 24/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 25/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 26/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 27/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 28/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 29/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 30/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 31/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 32/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 33/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 34/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 35/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 36/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 37/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 38/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 39/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 40/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 41/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 42/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 43/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 44/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 45/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 46/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 47/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 48/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 49/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 50/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 51/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 52/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 53/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 54/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 55/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 56/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 57/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 58/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 59/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 60/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 61/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 62/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Channel 63/64 : 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO P2P Chunksiz[31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604819:604899 [0] NCCL INFO [Proxy Service] Device 0 CPU core 137
+gpu-dev-9b546e1b:604819:604900 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 121
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x50dfc350 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 64000 commId 0x6242c53baf225f83 - Init COMPLETE
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.16 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.13, rest 0.00)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x51087a90 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x8288722058a991e8 - Init START
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Bootstrap timings total 0.054390 (create 0.000030, send 0.053527, recv 0.000461, ring 0.000104, delay 0.000000)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NVLS multicast support is available on dev 0 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x51087a90 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 00/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 01/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 02/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 03/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 04/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 05/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 06/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 07/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 08/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 09/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 10/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 11/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 12/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 13/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 14/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 15/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 16/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 17/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 18/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 19/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 20/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 21/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Channel 22/24 : 0 1 2 3
+gpu-dev-9b546e1b:# Output code written to: /tmp/torchinductor_dev/7q/c7qda3srbhp76juiytslotgnsfo6qlav3zskp6zvo4syns4b4rjw.py
+from __future__ import annotations
+
+import torch
+import helion.language as hl
+import triton
+import triton.language as tl
+from torch._inductor.runtime.triton_compat import libdevice
+from helion.runtime import default_launcher as _default_launcher
+
+import __main__ as _source_module
+
+@triton.jit
+def symm_mem_sync(signal_pad_ptrs, block_id, rank: tl.constexpr, world_size: tl.constexpr, hasPreviousMemAccess: tl.constexpr=False, hasSubsequentMemAccess: tl.constexpr=False) -> None:
+    """
+    Synchronizes blocks with matching block_id across participating devices.
+
+    Note: the function itself is not a system level barrier/fence. It is a
+    building block for expressing different synchronization patterns.
+
+    Pattern 0: Ensures that all writes to symm_mem buffers from previous
+    kernels across all devices are visible to the current kernel:
+
+        symm_mem_sync(..., hasPreviousMemAccess=False, hasSubsequentMemAccess=True)
+
+    Pattern 1: Ensures that all writes to symm_mem buffers from the current
+    block are visible to all remote blocks with matching blockIdx:
+
+        symm_mem_sync(..., hasPreviousMemAccess=True, hasSubsequentMemAccess=True)
+
+    Pattern 2: Ensures that symm_mem buffers read by the current kernel are safe
+    for writing by subsequent kernels across all devices.
+
+        symm_mem_sync(..., hasPreviousMemAccess=True, hasSubsequentMemAccess=False)
+
+    CUDA graph friendliness:
+
+        This barrier operates through atomic operations on a zero-filled signal
+        pad, which resets to a zero-filled state after each successful
+        synchronization. This design eliminates the need for incrementing a
+        flag from host.
+    """
+    # src[05_distributed.py:48]: if "LOCAL_RANK" in os.environ:
+    # src[05_distributed.py:49]:     import torch.distributed as dist
+    if block_id is None:
+        # src[05_distributed.py:49]: import torch.distributed as dist
+        block_id = _get_flat_bid()
+    # src[05_distributed.py:50]: import torch.distributed._symmetric_memory as symm_mem
+    flat_tid = _get_flat_tid()
+    # src[05_distributed.py:52]: rank = int(os.environ["LOCAL_RANK"])
+    remote_ranks = tl.arange(0, world_size)
+    # src[05_distributed.py:53]: torch.manual_seed(42 + rank)
+    signal_pad_ptrs = signal_pad_ptrs.to(tl.pointer_type(tl.uint64))
+    # src[05_distributed.py:54]: device = torch.device(f"cuda:{rank}")
+    # src[05_distributed.py:55]: torch.cuda.set_device(device)
+    # src[05_distributed.py:56]: dist.init_process_group("nccl")
+    remote_signal_pad_addrs = tl.load(signal_pad_ptrs + remote_ranks).to(tl.pointer_type(tl.uint32))
+    # src[05_distributed.py:57]: group = dist.group.WORLD
+    send_addrs = remote_signal_pad_addrs + block_id * world_size + rank
+    # src[05_distributed.py:59]: symm_mem.enable_symm_mem_for_group(group.group_name)  # pyrefly: ignore [deprecated]
+    # src[05_distributed.py:61]: N, D = 128, 4096
+    local_signal_pad_addr = tl.load(signal_pad_ptrs + rank).to(tl.pointer_type(tl.uint32))
+    # src[05_distributed.py:62]: x = torch.randn(N, D, device=device, dtype=torch.bfloat16)
+    wait_addrs = local_signal_pad_addr + block_id * world_size + remote_ranks
+    # src[05_distributed.py:64]: buf = symm_mem.empty(N, D, dtype=x.dtype, device=device)
+    # src[05_distributed.py:65]: hdl = symm_mem.rendezvous(buf, group.group_name)
+    if hasPreviousMemAccess:
+        # src[05_distributed.py:65]: hdl = symm_mem.rendezvous(buf, group.group_name)
+        tl.debug_barrier()
+    # src[05_distributed.py:67]: result = allreduce_rmsnorm(buf, x, weight, hdl.signal_pad_ptrs_dev,
+    # src[05_distributed.py:68]:                            EPS=1e-5, RANK=hdl.rank,
+    # src[05_distributed.py:69]:                            WORLD_SIZE=hdl.world_size, GROUP_NAME=group.group_name)
+    if flat_tid < world_size:
+        # src[05_distributed.py:68]: EPS=1e-5, RANK=hdl.rank,
+        _send_signal(send_addrs, 'release' if hasPreviousMemAccess else 'relaxed')
+        # src[05_distributed.py:69]: WORLD_SIZE=hdl.world_size, GROUP_NAME=group.group_name)
+        _wait_signal(wait_addrs, 'acquire' if hasSubsequentMemAccess else 'relaxed')
+    # src[05_distributed.py:71]: x_ref = x.clone()
+    # src[05_distributed.py:72]: dist.all_reduce(x_ref)
+    if hasSubsequentMemAccess:
+        # src[05_distributed.py:72]: dist.all_reduce(x_ref)
+        tl.debug_barrier()
+
+@triton.jit
+def _get_flat_bid():
+    # src[05_distributed.py:76]: torch.testing.assert_close(result, expected, atol=0.1, rtol=0.1)
+    # src[05_distributed.py:77]: if rank == 0:
+    # src[05_distributed.py:78]:     print("Correctness: PASSED")
+    # src[05_distributed.py:76-80]: ...
+    return tl.program_id(2) * tl.num_programs(1) * tl.num_programs(0) + tl.program_id(1) * tl.num_programs(0) + tl.program_id(0)
+
+@triton.jit
+def _get_flat_tid():
+    # src[05_distributed.py:84]: env = {**os.environ, "NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME": "lo",
+    tid_x, tid_y, tid_z = _get_tid()
+    # src[05_distributed.py:85]: "NCCL_SOCKET_IFNAME": "lo", "HELION_PRINT_OUTPUT_CODE": "1"}
+    ntid_x, ntid_y, _ = _get_ntid()
+    # src[05_distributed.py:86]: sys.exit(subprocess.run([
+    return tid_z * ntid_y * ntid_x + tid_y * ntid_x + tid_x
+
+@triton.jit
+def _get_tid():
+    # src[05_distributed.py:90]:     "--no_python", sys.executable, __file__,
+    # src[05_distributed.py:91]: ], env=env).returncode)
+    return tl.inline_asm_elementwise('\n        mov.u32 $0, %tid.x;\n        mov.u32 $1, %tid.y;\n        mov.u32 $2, %tid.z;\n        ', '=r,=r,=r', [], dtype=(tl.uint32, tl.uint32, tl.uint32), is_pure=True, pack=1)
+
+@triton.jit
+def _get_ntid():
+    # src[05_distributed.py:105]: [source unavailable]
+    return tl.inline_asm_elementwise('\n        mov.u32 $0, %ntid.x;\n        mov.u32 $1, %ntid.y;\n        mov.u32 $2, %ntid.z;\n        ', '=r,=r,=r', [], dtype=(tl.uint32, tl.uint32, tl.uint32), is_pure=True, pack=1)
+
+@triton.jit
+def _send_signal(addrs, sem: tl.constexpr) -> None:
+    # src[05_distributed.py:120]: [source unavailable]
+    tl.inline_asm_elementwise(f'\n        {{\n            .reg .u32   %tmp32_<1>;\n            .reg .pred  %p<1>;\n\n            send_signal:\n                atom.global.{sem}.sys.cas.b32 %tmp32_0, [$1], 0, 1;\n                setp.eq.u32 %p0, %tmp32_0, 0;\n                @!%p0 bra send_signal;\n        }}\n        ', '=r, l', [addrs], dtype=addrs.dtype, is_pure=False, pack=1)
+
+@triton.jit
+def _wait_signal(addrs, sem: tl.constexpr) -> None:
+    # src[05_distributed.py:141]: [source unavailable]
+    tl.inline_asm_elementwise(f'\n        {{\n            .reg .u32   %tmp32_<1>;\n            .reg .pred  %p<1>;\n\n            wait_signal:\n                atom.global.sys.{sem}.cas.b32 %tmp32_0, [$1], 1, 0;\n                setp.eq.u32 %p0, %tmp32_0, 1;\n                @!%p0 bra wait_signal;\n        }}\n        ', '=r, l', [addrs], dtype=tl.int32, is_pure=False, pack=1)
+_BLOCK_SIZE_0 = tl.constexpr(8)
+
+@triton.jit
+def _helion_allreduce_rmsnorm(x, symm_mem_buffer, buffer_tuple_item_0, buffer_tuple_item_1, buffer_tuple_item_2, buffer_tuple_item_3, weight, output, signal_pad_ptrs, _RDIM_SIZE_1: tl.constexpr):
+    # src[05_distributed.py:28]: for tile_n in hl.tile(N):
+    pid_0 = tl.program_id(0)
+    offset_0 = pid_0 * _BLOCK_SIZE_0
+    indices_0 = (offset_0 + tl.arange(0, _BLOCK_SIZE_0)).to(tl.int32)
+    indices_1 = tl.arange(0, _RDIM_SIZE_1).to(tl.int32)
+    # src[05_distributed.py:29]: symm_mem_buffer[tile_n, :] = x[tile_n, :]
+    load = tl.load(x + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), None)
+    tl.store(symm_mem_buffer + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), load, None)
+    # src[05_distributed.py:30]: hl.triton_kernel(symm_mem_sync,
+    # src[05_distributed.py:31]:                  args=(signal_pad_ptrs, None, RANK, WORLD_SIZE, True, True),
+    # src[05_distributed.py:32]:                  output_like=None)
+    symm_mem_sync(signal_pad_ptrs, None, 1, 4, True, True)
+    # src[05_distributed.py:34]: acc = hl.zeros([tile_n, D], dtype=torch.float32)
+    acc = tl.full([_BLOCK_SIZE_0, 4096], 0.0, tl.float32)
+    # src[05_distributed.py:36]: acc = acc + remote[tile_n, :].to(torch.float32)
+    load_1 = tl.load(buffer_tuple_item_0 + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), None)
+    v_0 = tl.cast(load_1, tl.float32)
+    v_1 = acc + v_0
+    load_2 = tl.load(buffer_tuple_item_1 + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), None)
+    v_2 = tl.cast(load_2, tl.float32)
+    v_3 = v_1 + v_2
+    load_3 = tl.load(buffer_tuple_item_2 + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), None)
+    v_4 = tl.cast(load_3, tl.float32)
+    v_5 = v_3 + v_4
+    load_4 = tl.load(buffer_tuple_item_3 + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), None)
+    v_6 = tl.cast(load_4, tl.float32)
+    v_7 = v_5 + v_6
+    # src[05_distributed.py:38]: variance = torch.mean(acc * acc, dim=-1, keepdim=True)
+    v_8 = v_7 * v_7
+    variance_extra = tl.cast(tl.reshape(tl.sum(v_8, 1), [_BLOCK_SIZE_0, 1]), tl.float32)
+    v_9 = 4096
+    v_10 = tl.cast(v_9, tl.float32)
+    v_11 = variance_extra / v_10
+    # src[05_distributed.py:39]: output[tile_n, :] = (acc * torch.rsqrt(variance + EPS)  # type: ignore[unsupported-operation]
+    v_12 = 1e-05
+    v_13 = v_11 + v_12
+    v_14 = libdevice.rsqrt(v_13)
+    v_15 = v_7 * v_14
+    # src[05_distributed.py:40]: * weight[None, :].to(torch.float32)).to(x.dtype)
+    load_5 = tl.load(weight + indices_1[None, :] * 1, None)
+    v_16 = tl.cast(load_5, tl.float32)
+    # src[05_distributed.py:39]: output[tile_n, :] = (acc * torch.rsqrt(variance + EPS)  # type: ignore[unsupported-operation]
+    # src[05_distributed.py:40]:                      * weight[None, :].to(torch.float32)).to(x.dtype)
+    v_17 = v_15 * v_16
+    v_18 = tl.cast(v_17, tl.bfloat16)
+    tl.store(output + (indices_0[:, None] * 4096 + indices_1[None, :] * 1), v_18, None)
+    # src[05_distributed.py:42]: hl.triton_kernel(symm_mem_sync,
+    # src[05_distributed.py:43]:                  args=(signal_pad_ptrs, None, RANK, WORLD_SIZE, True, False),
+    # src[05_distributed.py:44]:                  output_like=None)
+    symm_mem_sync(signal_pad_ptrs, None, 1, 4, True, False)
+
+def allreduce_rmsnorm(symm_mem_buffer: torch.Tensor, x: torch.Tensor, weight: torch.Tensor, signal_pad_ptrs: torch.Tensor, EPS: hl.constexpr, RANK: hl.constexpr, WORLD_SIZE: hl.constexpr, GROUP_NAME: hl.constexpr, *, _launcher=_default_launcher):
+    # src[05_distributed.py:24]: N, D = x.size()
+    N, D = x.size()
+    # src[05_distributed.py:25]: output = torch.empty_like(x)
+    output = torch.empty_like(x)
+    # src[05_distributed.py:26]: buffer_tuple = torch.ops.symm_mem.get_remote_tensors(symm_mem_buffer, GROUP_NAME)
+    buffer_tuple = torch.ops.symm_mem.get_remote_tensors(symm_mem_buffer, '0')
+    # src[05_distributed.py:28]: for tile_n in hl.tile(N):
+    _BLOCK_SIZE_0 = 8
+    _RDIM_SIZE_1 = 4096
+    # src[05_distributed.py:28]: for tile_n in hl.tile(N):
+    # src[05_distributed.py:29]:     symm_mem_buffer[tile_n, :] = x[tile_n, :]
+    # src[05_distributed.py:30]:     hl.triton_kernel(symm_mem_sync,
+    # src[05_distributed.py:28-44]: ...
+    _launcher(_helion_allreduce_rmsnorm, (triton.cdiv(128, _BLOCK_SIZE_0),), x, symm_mem_buffer, buffer_tuple[0], buffer_tuple[1], buffer_tuple[2], buffer_tuple[3], weight, output, signal_pad_ptrs, _RDIM_SIZE_1, num_warps=8, num_stages=1)
+    # src[05_distributed.py:45]: return output
+    return output
+
+def call():
+    from torch._dynamo.testing import rand_strided
+    # src[05_distributed.py:14]: def allreduce_rmsnorm(
+    # src[05_distributed.py:15]:     symm_mem_buffer: torch.Tensor,
+    # src[05_distributed.py:16]:     x: torch.Tensor,
+    # src[05_distributed.py:14-45]: ...
+    symm_mem_buffer = rand_strided(size=(128, 4096), stride=(4096, 1), dtype=torch.bfloat16, device='cuda:1')
+    x = rand_strided(size=(128, 4096), stride=(4096, 1), dtype=torch.bfloat16, device='cuda:1')
+    weight = rand_strided(size=(4096,), stride=(1,), dtype=torch.bfloat16, device='cuda:1')
+    signal_pad_ptrs = 139676663947776
+    EPS = 1e-05
+    RANK = 1
+    WORLD_SIZE = 4
+    GROUP_NAME = '0'
+    allreduce_rmsnorm(symm_mem_buffer, x, weight, signal_pad_ptrs, EPS, RANK, WORLD_SIZE, GROUP_NAME)
+if __name__ == '__main__':
+    call()
+e set to 524288
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604821:604904 [2] NCCL INFO [Proxy Service] Device 2 CPU core 67
+gpu-dev-9b546e1b:604821:604905 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 152
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x270d2670 rank 0 nranks 1 cudaDev 2 nvmlDev 2 busId b9000 commId 0x1aade00b21be432e - Init COMPLETE
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.13 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.10, rest 0.00)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x2735d940 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x8288722058a991e8 - Init START
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Bootstrap timings total 0.054354 (create 0.000033, send 0.000109, recv 0.000202, ring 0.053632, delay 0.000000)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NVLS multicast support is available on dev 2 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x2735d940 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 3/-1/-1->2->1 [3] 3/-1/-1->2->1 [4] 3/-1/-1->2->1 [5] 3/-1/-1->2->1 [6] 3/-1/-1->2->1 [7] 3/-1/-1->2->1 [8] 3/-1/-1->2->1 [9] 3/-1/-1->2->1 [10] 3/-1/-1->2->1 [11] 3/-1/-1->2->1 [12] 3/-1/-1->2->1 [13] 3/-1/-1->2->1 [14] 3/-1/-1->2->1 [15] 3/-1/-1->2->1 [16] 3/-1/-1->2->1 [17] 3/-1/-1->2->1 [18] 3/-1/-1->2->1 [19] 3/-1/-1->2->1 [20] 3/-1/-1->2->1 [21] 3/-1/-1->2->1 [22] 3/-1/-1->2->1 [23] 3/-1/-1->2->1
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604821:604909 [2] NCCL INFO [Proxy Service] Device 2 CPU core 68
+gpu-dev-9b546e1b:604821:604910 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 152
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO ncclCommInitRank comm 0x2735d940 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x8288722058a991e8 - Init COMPLETE
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Init timings - ncclCommInitRank: rank 2 nranks 4 total 0.31 (kernels 0.00, alloc 0.00, bootstrap 0.05, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.20, rest 0.02)
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO Comm config Blocking set to 1
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO Using network Socket
+gpu-det to 524288
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604820:604902 [1] NCCL INFO [Proxy Service] Device 1 CPU core 107
+gpu-dev-9b546e1b:604820:604903 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 19
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2be52150 rank 0 nranks 1 cudaDev 1 nvmlDev 1 busId 86000 commId 0xf50158e40e6b9133 - Init COMPLETE
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.15 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.13, rest 0.00)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2c0dd420 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x8288722058a991e8 - Init START
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Bootstrap timings total 0.054227 (create 0.000051, send 0.000100, recv 0.000234, ring 0.000077, delay 0.000000)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NVLS multicast support is available on dev 1 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x2c0dd420 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0 [2] 2/-1/-1->1->0 [3] 2/-1/-1->1->0 [4] 2/-1/-1->1->0 [5] 2/-1/-1->1->0 [6] 2/-1/-1->1->0 [7] 2/-1/-1->1->0 [8] 2/-1/-1->1->0 [9] 2/-1/-1->1->0 [10] 2/-1/-1->1->0 [11] 2/-1/-1->1->0 [12] 2/-1/-1->1->0 [13] 2/-1/-1->1->0 [14] 2/-1/-1->1->0 [15] 2/-1/-1->1->0 [16] 2/-1/-1->1->0 [17] 2/-1/-1->1->0 [18] 2/-1/-1->1->0 [19] 2/-1/-1->1->0 [20] 2/-1/-1->1->0 [21] 2/-1/-1->1->0 [22] 2/-1/-1->1->0 [23] 2/-1/-1->1->0
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604820:604914 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 105
+gpu-dev-9b546e1b:604820:604913 [1] NCCL INFO [Proxy Service] Device 1 CPU core 117
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO ncclCommInitRank comm 0x2c0dd420 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x8288722058a991e8 - Init COMPLETE
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Init timings - ncclCommInitRank: rank 1 nranks 4 total 0.31 (kernels 0.00, alloc 0.00, bootstrap 0.05, allgathers 0.00, topo 0.02, graphs 0.01, connections 0.20, rest 0.02)
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO Comm config Blocking set to 1
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO Using network Socket
+gpu-dev-9b5] -1/-1/-1->0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0
+gpu-dev-9b546e1b:604822:604897 [3] NCCL INFO [Proxy Service] Device 3 CPU core 64
+gpu-dev-9b546e1b:604822:604898 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 65
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner init: comm with 1 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3d60aeb0 rank 0 nranks 1 cudaDev 3 nvmlDev 3 busId ca000 commId 0xf197ef70fb3d9b2 - Init COMPLETE
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 1 total 0.15 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.13, rest 0.00)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3d896180 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x8288722058a991e8 - Init START
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Bootstrap timings total 0.054324 (create 0.000034, send 0.000084, recv 0.053618, ring 0.000391, delay 0.000000)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NVLS multicast support is available on dev 3 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x3d896180 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] -1/-1/-1->3->2 [2] -1/-1/-1->3->2 [3] -1/-1/-1->3->2 [4] -1/-1/-1->3->2 [5] -1/-1/-1->3->2 [6] -1/-1/-1->3->2 [7] -1/-1/-1->3->2 [8] -1/-1/-1->3->2 [9] -1/-1/-1->3->2 [10] -1/-1/-1->3->2 [11] -1/-1/-1->3->2 [12] -1/-1/-1->3->2 [13] -1/-1/-1->3->2 [14] -1/-1/-1->3->2 [15] -1/-1/-1->3->2 [16] -1/-1/-1->3->2 [17] -1/-1/-1->3->2 [18] -1/-1/-1->3->2 [19] -1/-1/-1->3->2 [20] -1/-1/-1->3->2 [21] -1/-1/-1->3->2 [22] -1/-1/-1->3->2 [23] -1/-1/-1->3->2
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604907 [3] NCCL INFO [Proxy Service] Device 3 CPU core 66
+gpu-dev-9b546e1b:604822:604908 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 152
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO ncclCommInitRank comm 0x3d896180 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x8288722058a991e8 - Init COMPLETE
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Init timings - ncclCommInitRank: rank 3 nranks 4 total 0.31 (kernels 0.00, alloc 0.00, bootstrap 0.05, allgathers 0.00, topo 0.02, graphs 0.01, connections 0.20, rest 0.02)
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO Comm config Blocking set to 1
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO Assigned NET p604819:604819 [0] NCCL INFO Channel 23/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 [2] 1/-1/-1->0->-1 [3] 1/-1/-1->0->-1 [4] 1/-1/-1->0->-1 [5] 1/-1/-1->0->-1 [6] 1/-1/-1->0->-1 [7] 1/-1/-1->0->-1 [8] 1/-1/-1->0->-1 [9] 1/-1/-1->0->-1 [10] 1/-1/-1->0->-1 [11] 1/-1/-1->0->-1 [12] 1/-1/-1->0->-1 [13] 1/-1/-1->0->-1 [14] 1/-1/-1->0->-1 [15] 1/-1/-1->0->-1 [16] 1/-1/-1->0->-1 [17] 1/-1/-1->0->-1 [18] 1/-1/-1->0->-1 [19] 1/-1/-1->0->-1 [20] 1/-1/-1->0->-1 [21] 1/-1/-1->0->-1 [22] 1/-1/-1->0->-1 [23] 1/-1/-1->0->-1
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0
+gpu-dev-9b546e1b:604819:604911 [0] NCCL INFO [Proxy Service] Device 0 CPU core 139
+gpu-dev-9b546e1b:604819:604912 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 122
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Enabled NCCL Func/Proto/Algo Matrix:
+     Function |       LL     LL128    Simple   |          Tree           Ring  CollNetDirect   CollNetChain           NVLS       NVLSTree            PAT  
+    Broadcast |        1         2         1   |             1              1              0              0              0              0              0  
+       Reduce |        1         2         1   |             1              1              0              0              0              0              0  
+    AllGather |        1         2         1   |             1              1              0              0              0              0              0  
+ReduceScatter |        1         2         1   |             1              1              0              0              0              0              0  
+    AllReduce |        1         2         1   |             1              1              0              0              0              0              0  
+
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO ncclCommInitRank comm 0x51087a90 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x8288722058a991e8 - Init COMPLETE
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Init timings - ncclCommInitRank: rank 0 nranks 4 total 0.31 (kernels 0.00, alloc 0.00, bootstrap 0.05, allgathers 0.00, topo 0.02, graphs 0.01, connections 0.20, rest 0.02)
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO Comm config Blocking set to 1
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Assigned NET plugin Socket to comm
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO ncclCommInitRankConfig comm 0x51da48c0 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x8225d7de936fbd9c - Init START
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Bootstrap timings total 0.006455 (create 0.000089, send 0.000263, recv 0.000409, ring 0.000080, delay 0.000000)
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO MNNVL busId 0x64000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Setting affinity for GPU 0 to 24-47,120-143
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO NVLS multicast support is available on dev 0 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO comm 0x51da48c0 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 00/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 01/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 02/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 03/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 04/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 05/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 06/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 07/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 08/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 09/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 10/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 11/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 12/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 13/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 14/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 15/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 16/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 17/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 18/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 19/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 20/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 21/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 22/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Channel 23/24 : 0 1 2 3
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 [2] 1/-1/-1->0->-1 [3] 1/-1/-1->0->-1 [4] 1/-1/-1->0->-1 [5] 1/-1/-1->0->-1 [6] 1/-1/-1->0->-1 [7] 1/-1/-1->0->-1 [8] 1/-1/-1->0->-1 [9] 1/-1/-1->0->-1 [10] 1/-1/-1->0->-1 [11] 1/-1/-1->0->-1 [12] 1/-1/-1->0->-1 [13] 1/-1/-1->0->-1 [14] 1/-1/-1->0->-1 [15] 1/-1/-1->0->-1 [16] 1/-1/-1->0->-1 [17] 1/-1/-1->0->-1 [18] 1/-1/-1->0->-1 [19] 1/-1/-1->0->-1 [20] 1/-1/-1->0->-1 [21] 1/-1/-1->0->-1 [22] 1/-1/-1->0->-1 [23] 1/-1/-1->0->-1
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0
+gpu-dev-9b546e1b:604819:604942 [0] NCCL INFO [Proxy Service] Device 0 CPU core 40
+gpu-dev-9b546e1b:604819:604943 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 123
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Enabled NCCL Func/Proto/Algo Matrix:
+     Function |       LL     LL128    Simple   |          Tree           Ring  CollNetDirect   CollNetChain           NVLS       NVLSTree            PAT  
+    Broadcast |        1         2         1   |             1              1              0              0              0              0              0  
+       Reduce |        1         2         1   |             1              1              0              0              0              0              0  
+    AllGather |        1         2         1   |             1              1              0              0              0              0              0  
+ReduceScatter |        1         2         1   |             1              1              0              0              0              0              0  
+    AllReduce |        1         2         1   |             1              1              0              0              0              0              0  
+
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO CC Off, workFifoBytes 1048576
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INF46e1b:604820:604937 [1] NCCL INFO ncclCommInitRankConfig comm 0x2cdfb3b0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x8225d7de936fbd9c - Init START
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO Bootstrap timings total 0.006088 (create 0.000070, send 0.000116, recv 0.000346, ring 0.005233, delay 0.000000)
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO MNNVL busId 0x86000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO Setting affinity for GPU 1 to 0-23,96-119
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO NVLS multicast support is available on dev 1 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO comm 0x2cdfb3b0 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0 [2] 2/-1/-1->1->0 [3] 2/-1/-1->1->0 [4] 2/-1/-1->1->0 [5] 2/-1/-1->1->0 [6] 2/-1/-1->1->0 [7] 2/-1/-1->1->0 [8] 2/-1/-1->1->0 [9] 2/-1/-1->1->0 [10] 2/-1/-1->1->0 [11] 2/-1/-1->1->0 [12] 2/-1/-1->1->0 [13] 2/-1/-1->1->0 [14] 2/-1/-1->1->0 [15] 2/-1/-1->1->0 [16] 2/-1/-1->1->0 [17] 2/-1/-1->1->0 [18] 2/-1/-1->1->0 [19] 2/-1/-1->1->0 [20] 2/-1/-1->1->0 [21] 2/-1/-1->1->0 [22] 2/-1/-1->1->0 [23] 2/-1/-1->1->0
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604820:604944 [1] NCCL INFO [Proxy Service] Device 1 CPU core 20
+gpu-dev-9b546e1b:604820:604946 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 109
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO ncclCommInitRankConfig comm 0x2cdfb3b0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 86000 commId 0x8225d7de936fbd9c - Init COMPLETE
+gpu-dev-9b546e1b:604820:604937 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.01, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 00/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 01/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 02/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 03/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 04/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 05/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 06/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 07/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 08/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 09/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 10/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 11/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 12/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 13/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 14/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 15/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 16/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 17/0 : 1[1] -> 2[2] via P2P/CUMEM
+gv-9b546e1b:604821:604938 [2] NCCL INFO ncclCommInitRankConfig comm 0x283772e0 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x8225d7de936fbd9c - Init START
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO Bootstrap timings total 0.006107 (create 0.000051, send 0.000106, recv 0.005572, ring 0.000165, delay 0.000000)
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO MNNVL busId 0xb9000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO Setting affinity for GPU 2 to 48-71,144-167
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO NVLS multicast support is available on dev 2 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO comm 0x283772e0 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 3/-1/-1->2->1 [3] 3/-1/-1->2->1 [4] 3/-1/-1->2->1 [5] 3/-1/-1->2->1 [6] 3/-1/-1->2->1 [7] 3/-1/-1->2->1 [8] 3/-1/-1->2->1 [9] 3/-1/-1->2->1 [10] 3/-1/-1->2->1 [11] 3/-1/-1->2->1 [12] 3/-1/-1->2->1 [13] 3/-1/-1->2->1 [14] 3/-1/-1->2->1 [15] 3/-1/-1->2->1 [16] 3/-1/-1->2->1 [17] 3/-1/-1->2->1 [18] 3/-1/-1->2->1 [19] 3/-1/-1->2->1 [20] 3/-1/-1->2->1 [21] 3/-1/-1->2->1 [22] 3/-1/-1->2->1 [23] 3/-1/-1->2->1
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604821:604945 [2] NCCL INFO [Proxy Service] Device 2 CPU core 65
+gpu-dev-9b546e1b:604821:604947 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 152
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO ncclCommInitRankConfig comm 0x283772e0 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId b9000 commId 0x8225d7de936fbd9c - Init COMPLETE
+gpu-dev-9b546e1b:604821:604938 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 2 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.01, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 00/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 01/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 02/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 03/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 04/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 05/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 06/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 07/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 08/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 09/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 10/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 11/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 12/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 13/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 14/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 15/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 16/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 17/0 : 2[2] -> 3[3] via P2P/lugin Socket to comm
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO Using network Socket
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO ncclCommInitRankConfig comm 0x3e5b50d0 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x8225d7de936fbd9c - Init START
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO Bootstrap timings total 0.000782 (create 0.000049, send 0.000106, recv 0.000356, ring 0.000076, delay 0.000000)
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO MNNVL busId 0xca000 fabric UUID 0.0 cliqueId 0x0 state 3 healthMask 0x0
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO Setting affinity for GPU 3 to 48-71,144-167
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO NVLS multicast support is available on dev 3 (NVLS_NCHANNELS 16)
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO comm 0x3e5b50d0 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] -1/-1/-1->3->2 [2] -1/-1/-1->3->2 [3] -1/-1/-1->3->2 [4] -1/-1/-1->3->2 [5] -1/-1/-1->3->2 [6] -1/-1/-1->3->2 [7] -1/-1/-1->3->2 [8] -1/-1/-1->3->2 [9] -1/-1/-1->3->2 [10] -1/-1/-1->3->2 [11] -1/-1/-1->3->2 [12] -1/-1/-1->3->2 [13] -1/-1/-1->3->2 [14] -1/-1/-1->3->2 [15] -1/-1/-1->3->2 [16] -1/-1/-1->3->2 [17] -1/-1/-1->3->2 [18] -1/-1/-1->3->2 [19] -1/-1/-1->3->2 [20] -1/-1/-1->3->2 [21] -1/-1/-1->3->2 [22] -1/-1/-1->3->2 [23] -1/-1/-1->3->2
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO P2P Chunksize set to 524288
+gpu-dev-9b546e1b:604822:604940 [3] NCCL INFO [Proxy Service] Device 3 CPU core 69
+gpu-dev-9b546e1b:604822:604941 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 65
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO NCCL_ALGO set by environment to ring,tree
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO 24 coll channels, 24 collnet channels, 16 nvls channels, 32 p2p channels, 32 p2p channels per peer
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO NET/OFI Region base Tuner is chosen for platform: p5e.48xlarge
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO NET/OFI Region Tuner init (platform 0): comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO ncclCommInitRankConfig comm 0x3e5b50d0 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId ca000 commId 0x8225d7de936fbd9c - Init COMPLETE
+gpu-dev-9b546e1b:604822:604939 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 3 nranks 4 total 0.18 (kernels 0.00, alloc 0.00, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 00/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 01/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 02/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 03/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 04/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 05/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 06/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 07/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 08/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 09/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 10/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 11/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 12/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 13/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 14/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 15/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO ChannelCorrectness: PASSED
+CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 18/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 19/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 20/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 21/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 22/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Channel 23/0 : 2[2] -> 3[3] via P2P/CUMEM
+gpu-dev-9b546e1b:604821:604950 [2] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+gpu-dev-9b546e1b:604821:604821 [2] NCCL INFO comm 0x283772e0 rank 2 nranks 4 cudaDev 2 busId b9000 - Destroy COMPLETE
+O NET/OFI Tuner init: comm with 4 ranks and 1 nodes.
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO ncclCommInitRankConfig comm 0x51da48c0 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 64000 commId 0x8225d7de936fbd9c - Init COMPLETE
+gpu-dev-9b546e1b:604819:604936 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 4 total 0.19 (kernels 0.00, alloc 0.00, bootstrap 0.01, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.12, rest 0.02)
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 00/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 01/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 02/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 03/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 04/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 05/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 06/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 07/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 08/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 09/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 10/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 11/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 12/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 13/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 14/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 15/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 16/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 17/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 18/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 19/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 20/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 21/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 22/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Channel 23/0 : 0[0] -> 1[1] via P2P/CUMEM
+gpu-dev-9b546e1b:604819:604951 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+gpu-dev-9b546e1b:604819:604819 [0] NCCL INFO comm 0x51da48c0 rank 0 nranks 4 cudaDev 0 busId 64000 - Destroy COMPLETE
+gpu-dev-9b546e1b:604819:604911 [0] NCCL INFO [Service thread] Connection closed by localRank 2
+gpu-dev-9b546e1b:604819:604878 [0] NCCL INFO [Service thread] Connection closed by localRank 2
+gpu-dev-9b546e1b:604819:604865 [0] NCCL INFO [Service thread] Connection closed by localRank 2
+gpu-dev-9b546e1b:604819:604858 [0] NCCL INFO [Service thread] Connection closed by localRank 2
+ 16/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 17/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 18/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 19/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 20/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 21/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 22/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Channel 23/0 : 3[3] -> 0[0] via P2P/CUMEM
+gpu-dev-9b546e1b:604822:604949 [3] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+gpu-dev-9b546e1b:604822:604822 [3] NCCL INFO comm 0x3e5b50d0 rank 3 nranks 4 cudaDev 3 busId ca000 - Destroy COMPLETE
+pu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 18/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 19/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 20/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 21/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 22/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Channel 23/0 : 1[1] -> 2[2] via P2P/CUMEM
+gpu-dev-9b546e1b:604820:604948 [1] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+gpu-dev-9b546e1b:604820:604820 [1] NCCL INFO comm 0x2cdfb3b0 rank 1 nranks 4 cudaDev 1 busId 86000 - Destroy COMPLETE

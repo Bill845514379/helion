@@ -1,0 +1,158 @@
+[0s] Autotune random seed: 3832745998
+[0s] Starting LFBOTreeSearch with initial_population=FROM_DEFAULT, copies=2, max_generations=5, similarity_penalty=1.0
+Initial population precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+Initial population exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+[0s] Adaptive compile timeout: 30s (90% percentile=0.1s, bounds=[30.0s, 60s])
+[0s] Initial random population of 1, 1 starting points: 
+ok=1
+min=0.0158
+mid=0.0158
+max=0.0158
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[0s] All labels are identical, skip training surrogate.
+[0s] Generation 1 starting: 8 neighbors, 1 active search path(s)
+Generation 1: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9/9 17.2 configs/s
+Generation 1: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 9/9 17.3 configs/s
+[1s] Generation 1 complete: 
+ok=10
+min=0.0141
+mid=0.0148
+max=0.0401
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', 'last', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 2,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [2048]}
+[1s] Fitting surrogate: 11 points, 11 targets
+[1s] Generation 2 starting: 7 neighbors, 1 active search path(s)
+Generation 2: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7/7 16.2 configs/s
+Generation 2: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 7/7 17.7 configs/s
+[2s] Generation 2 complete: 
+ok=8
+min=0.0141
+mid=0.0145
+max=0.0346
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', 'last', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 2,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [2048]}
+[2s] Fitting surrogate: 19 points, 19 targets
+[3s] Generation 3 starting: 9 neighbors, 1 active search path(s)
+Generation 3: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9/9 17.6 configs/s
+Generation 3: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 9/9 17.7 configs/s
+[4s] Generation 3 complete: 
+ok=10
+min=0.0141
+mid=0.0143
+max=0.0150
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', 'last', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 2,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [2048]}
+[4s] Fitting surrogate: 29 points, 29 targets
+[4s] Autotuning complete in 4.5s after searching 26 configs.
+One can hardcode the best config and skip autotuning with:
+    @helion.kernel(config=helion.Config(block_sizes=[1], indexing=['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'], load_eviction_policies=['', 'last', '', '', ''], num_stages=1, num_warps=2, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[2048]), static_shapes=True)
+
+[4s] Code of selected kernel: /tmp/torchinductor_dev/kw/ckwzd7nsfx23cr36io7f6gfkpbqe3qjlm4fo3jfwvusnhedxt343.py
+
+Best config: Config(block_sizes=[1], indexing=['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'], load_eviction_policies=['', 'last', '', '', ''], num_stages=1, num_warps=2, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[2048])
+
+from __future__ import annotations
+
+import torch
+import triton
+import triton.language as tl
+from helion.runtime import default_launcher as _default_launcher
+
+_BLOCK_SIZE_0 = tl.constexpr(1)
+
+@triton.jit
+def _helion_rms_norm(x, weight, out, eps, _REDUCTION_BLOCK_1: tl.constexpr):
+    # src[02_autotune.py:15]: for tile_m in hl.tile(m):
+    pid_0 = tl.program_id(0)
+    offset_0 = pid_0
+    indices_0 = offset_0 + tl.zeros([1], tl.int32)
+    # src[02_autotune.py:17]: rms = torch.sqrt(torch.mean(row * row, dim=-1) + eps)
+    mean_extra_acc = tl.full([_BLOCK_SIZE_0, _REDUCTION_BLOCK_1], 0, tl.float32)
+    # src[02_autotune.py:16]: row = x[tile_m, :].to(torch.float32)
+    for roffset_1 in tl.range(0, 4096, _REDUCTION_BLOCK_1):
+        rindex_1 = roffset_1 + tl.arange(0, _REDUCTION_BLOCK_1).to(tl.int32)
+        load = tl.load(x + (indices_0[:, None] * 4096 + rindex_1[None, :] * 1), None)
+        v_0 = tl.cast(load, tl.float32)
+        # src[02_autotune.py:17]: rms = torch.sqrt(torch.mean(row * row, dim=-1) + eps)
+        v_1 = v_0 * v_0
+        v_2 = mean_extra_acc + v_1
+        mean_extra_acc = v_2
+    mean_extra = tl.cast(tl.sum(mean_extra_acc, 1), tl.float32)
+    v_3 = 4096
+    v_4 = tl.cast(v_3, tl.float32)
+    v_5 = mean_extra / v_4
+    v_6 = v_5 + eps
+    v_7 = tl.sqrt_rn(v_6)
+    # src[02_autotune.py:18]: out[tile_m, :] = (row / rms[:, None] * weight[:].to(torch.float32)).to(out.dtype)
+    subscript = v_7[:, None]
+    # src[02_autotune.py:16]: row = x[tile_m, :].to(torch.float32)
+    for roffset_1 in tl.range(0, 4096, _REDUCTION_BLOCK_1):
+        rindex_1 = roffset_1 + tl.arange(0, _REDUCTION_BLOCK_1).to(tl.int32)
+        subscript_copy = subscript
+        load_1 = tl.load(x + (indices_0[:, None] * 4096 + rindex_1[None, :] * 1), None, eviction_policy='evict_last')
+        v_8 = tl.cast(load_1, tl.float32)
+        # src[02_autotune.py:18]: out[tile_m, :] = (row / rms[:, None] * weight[:].to(torch.float32)).to(out.dtype)
+        v_9 = v_8 / subscript_copy
+        load_2 = tl.load(weight + rindex_1 * 1, None)
+        v_10 = tl.cast(load_2, tl.float32)
+        v_11 = v_10[None, :]
+        v_12 = v_9 * v_11
+        v_13 = tl.cast(v_12, tl.bfloat16)
+        tl.store(out + (indices_0[:, None] * 4096 + rindex_1[None, :] * 1), v_13, None)
+
+def rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float=1e-05, *, _launcher=_default_launcher):
+    # src[02_autotune.py:13]: m, n = x.size()
+    m, n = x.size()
+    # src[02_autotune.py:14]: out = torch.empty_like(x)
+    out = torch.empty_like(x)
+    # src[02_autotune.py:16]: row = x[tile_m, :].to(torch.float32)
+    _REDUCTION_BLOCK_1 = 2048
+    # src[02_autotune.py:15]: for tile_m in hl.tile(m):
+    # src[02_autotune.py:16]:     row = x[tile_m, :].to(torch.float32)
+    # src[02_autotune.py:17]:     rms = torch.sqrt(torch.mean(row * row, dim=-1) + eps)
+    # src[02_autotune.py:15-18]: ...
+    _launcher(_helion_rms_norm, (2048,), x, weight, out, eps, _REDUCTION_BLOCK_1, num_warps=2, num_stages=1)
+    # src[02_autotune.py:19]: return out
+    return out
+Correctness: PASSED

@@ -1,0 +1,653 @@
+Launching aot_runner --standalone -> /workspace/helion-08/helion/examples/demo/07_aot_standalone_data
+2026-03-12 23:05:37,803 - INFO - Starting new run: 20260312_230537_5d1b67
+2026-03-12 23:05:37,857 - INFO - Logging to: /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/logs/runner_cuda_NVIDIA_H200_12.8.log
+2026-03-12 23:05:37,857 - INFO - Starting AOT autotuning workflow
+2026-03-12 23:05:37,857 - INFO - Run ID: 20260312_230537_5d1b67
+2026-03-12 23:05:37,857 - INFO - Run directory: /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67
+2026-03-12 23:05:37,857 - INFO - Hardware ID: cuda_NVIDIA_H200_12.8
+2026-03-12 23:05:37,857 - INFO - Performance goal: max_slowdown <= 1.1
+2026-03-12 23:05:37,857 - INFO - ============================================================
+2026-03-12 23:05:37,857 - INFO - PHASE 1: Collecting tuned configs
+2026-03-12 23:05:37,857 - INFO - ============================================================
+2026-03-12 23:05:37,857 - INFO - Running collect phase: /workspace/helion-08/.venv/bin/python /workspace/helion-08/helion/examples/demo/07_aot_standalone.py
+2026-03-12 23:05:37,857 - INFO - Environment overrides: {'HELION_AOT_MODE': 'collect', 'HELION_AOT_DATA_DIR': '/workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67', 'HELION_AUTOTUNE_CACHE': 'AOTAutotuneCache'}
+[AOT] Mode: collect, Data dir: /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67, Hardware: cuda_NVIDIA_H200_12.8
+[0s] Starting autotuning process, this may take a while...
+[0s] Autotune random seed: 3830215411
+[0s] Starting LFBOTreeSearch with initial_population=FROM_DEFAULT, copies=2, max_generations=5, similarity_penalty=1.0
+AOT mode: collect
+           Shape       ms     GB/s
+Initial population precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+Initial population exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+[0s] Adaptive compile timeout: 30s (90% percentile=0.1s, bounds=[30.0s, 60s])
+[0s] Initial random population of 1, 1 starting points: 
+ok=1
+min=0.0065
+mid=0.0065
+max=0.0065
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[0s] All labels are identical, skip training surrogate.
+[0s] Generation 1 starting: 7 neighbors, 1 active search path(s)
+Generation 1: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8/8 54.7 configs/s
+Generation 1: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 8/8 17.0 configs/s
+[1s] Generation 1 complete: 
+ok=9
+min=0.0065
+mid=0.0069
+max=0.0076
+best={'block_sizes': [2],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[1s] Fitting surrogate: 10 points, 10 targets
+[1s] Generation 2 starting: 8 neighbors, 1 active search path(s)
+Generation 2: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8/8 40.2 configs/s
+Generation 2: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 8/8 17.2 configs/s
+[2s] Generation 2 complete: 
+ok=9
+min=0.0064
+mid=0.0068
+max=0.0077
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'tensor_descriptor',
+              'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[2s] Fitting surrogate: 19 points, 19 targets
+[2s] Generation 3 starting: 14 neighbors, 1 active search path(s)
+Generation 3: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 15/15 97.4 configs/s
+Generation 3: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 15/15 17.6 configs/s
+[4s] Generation 3 complete: 
+ok=16
+min=0.0060
+mid=0.0064
+max=0.0068
+best={'block_sizes': [2],
+ 'indexing': ['pointer', 'pointer', 'tensor_descriptor', 'pointer', 'tensor_descriptor',
+              'tensor_descriptor', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[4s] Fitting surrogate: 35 points, 35 targets
+[4s] Generation 4 starting: 15 neighbors, 1 active search path(s)
+Generation 4: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16/16 32.4 configs/s
+Generation 4: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 16/16 13.9 configs/s
+[6s] Generation 4 complete: 
+ok=17
+min=0.0060
+mid=0.0062
+max=0.0075
+best={'block_sizes': [2],
+ 'indexing': ['pointer', 'pointer', 'tensor_descriptor', 'pointer', 'tensor_descriptor',
+              'tensor_descriptor', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[6s] Fitting surrogate: 52 points, 52 targets
+[7s] Generation 5 starting: 17 neighbors, 1 active search path(s)
+Generation 5: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17/17 36.4 configs/s
+Generation 5: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 17/17 16.7 configs/s
+[8s] Generation 5 complete: 
+ok=19
+min=0.0060
+mid=0.0060
+max=0.0064
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'tensor_descriptor', 'pointer', 'pointer', 'tensor_descriptor',
+              'tensor_descriptor', 'pointer'],
+ 'load_eviction_policies': ['last', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[8s] Fitting surrogate: 71 points, 71 targets
+[8s] Autotuning complete in 8.9s after searching 65 configs.
+One can hardcode the best config and skip autotuning with:
+    @helion.kernel(config=helion.Config(block_sizes=[1], indexing=['pointer', 'tensor_descriptor', 'pointer', 'pointer', 'tensor_descriptor', 'tensor_descriptor', 'pointer'], load_eviction_policies=['last', '', '', '', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+
+[8s] Code of selected kernel: /tmp/torchinductor_dev/di/cdiwlneaewpmhs3jugujgpfakcqdoc2vlpl4m4dvsgcvus567v7n.py
+[AOT collect] Saved config for kernel=rms_norm shape_hash=3e833dc2 hashes=[['3a3e8f26', 'b8f793d4'], ['3a3e8f26', 'b8f793d4'], ['4faec5ac']] to /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/tuned_configs_cuda_NVIDIA_H200_12.8.json
+[0s] Starting autotuning process, this may take a while...
+[0s] Autotune random seed: 3830215411
+[0s] Starting LFBOTreeSearch with initial_population=FROM_DEFAULT, copies=2, max_generations=5, similarity_penalty=1.0
+     (256, 1024)   0.0377     27.8
+Initial population precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+Initial population exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+[0s] Adaptive compile timeout: 30s (90% percentile=0.1s, bounds=[30.0s, 30s])
+[0s] Initial random population of 1, 1 starting points: 
+ok=1
+min=0.0080
+mid=0.0080
+max=0.0080
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[0s] All labels are identical, skip training surrogate.
+[0s] Generation 1 starting: 7 neighbors, 1 active search path(s)
+Generation 1: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8/8 38.6 configs/s
+Generation 1: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 8/8 17.3 configs/s
+[1s] Generation 1 complete: 
+ok=9
+min=0.0080
+mid=0.0085
+max=0.0095
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[1s] Fitting surrogate: 10 points, 10 targets
+[1s] Generation 2 starting: 9 neighbors, 1 active search path(s)
+Generation 2: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10/10 30.9 configs/s
+Generation 2: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 10/10 17.1 configs/s
+[2s] Generation 2 complete: 
+ok=11
+min=0.0080
+mid=0.0088
+max=0.0124
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[2s] Fitting surrogate: 21 points, 21 targets
+[3s] Generation 3 starting: 13 neighbors, 1 active search path(s)
+Generation 3: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13/13 37.1 configs/s
+Generation 3: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 13/13 17.5 configs/s
+[4s] Generation 3 complete: 
+ok=15
+min=0.0075
+mid=0.0083
+max=0.0107
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[4s] Fitting surrogate: 36 points, 36 targets
+[4s] Generation 4 starting: 16 neighbors, 1 active search path(s)
+Generation 4: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17/17 25.7 configs/s
+Generation 4: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 17/17 16.5 configs/s
+[6s] Generation 4 complete: 
+ok=18
+min=0.0075
+mid=0.0079
+max=0.0094
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[6s] Fitting surrogate: 54 points, 54 targets
+[7s] Generation 5 starting: 16 neighbors, 1 active search path(s)
+Generation 5: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17/17 - configs/s
+Generation 5: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 17/17 14.0 configs/s
+[9s] Generation 5 complete: 
+ok=18
+min=0.0071
+mid=0.0074
+max=0.0080
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer', 'tensor_descriptor',
+              'tensor_descriptor'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[9s] Fitting surrogate: 72 points, 72 targets
+[9s] Autotuning complete in 9.2s after searching 66 configs.
+One can hardcode the best config and skip autotuning with:
+    @helion.kernel(config=helion.Config(block_sizes=[1], indexing=['pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer', 'tensor_descriptor', 'tensor_descriptor'], load_eviction_policies=['', '', '', '', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+
+[9s] Code of selected kernel: /tmp/torchinductor_dev/a3/ca3hj2tjullyivgynvigyvitbt3nxlswy52jkcrepskb2rj6ozwd.py
+[AOT collect] Saved config for kernel=rms_norm shape_hash=19f2f948 hashes=[['91bc1149', '46231d8a'], ['91bc1149', '46231d8a'], ['ff6a0b8a']] to /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/tuned_configs_cuda_NVIDIA_H200_12.8.json
+[0s] Starting autotuning process, this may take a while...
+[0s] Autotune random seed: 3830215411
+[0s] Starting LFBOTreeSearch with initial_population=FROM_DEFAULT, copies=2, max_generations=5, similarity_penalty=1.0
+     (512, 2048)   0.0366    114.7
+Initial population precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+Initial population exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 1/1 - configs/s
+[0s] Adaptive compile timeout: 30s (90% percentile=0.1s, bounds=[30.0s, 30s])
+[0s] Initial random population of 1, 1 starting points: 
+ok=1
+min=0.0111
+mid=0.0111
+max=0.0111
+best={'block_sizes': [1],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 4,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[0s] All labels are identical, skip training surrogate.
+[0s] Generation 1 starting: 7 neighbors, 1 active search path(s)
+Generation 1: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8/8 16.7 configs/s
+Generation 1: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 8/8 17.6 configs/s
+[1s] Generation 1 complete: 
+ok=9
+min=0.0105
+mid=0.0112
+max=0.0143
+best={'block_sizes': [2],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[1s] Fitting surrogate: 10 points, 10 targets
+[1s] Generation 2 starting: 8 neighbors, 1 active search path(s)
+Generation 2: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8/8 44.9 configs/s
+Generation 2: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━━━ 8/8 17.7 configs/s
+[2s] Generation 2 complete: 
+ok=9
+min=0.0105
+mid=0.0116
+max=0.0137
+best={'block_sizes': [2],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', '', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[2s] Fitting surrogate: 19 points, 19 targets
+[3s] Generation 3 starting: 13 neighbors, 1 active search path(s)
+Generation 3: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13/13 30.2 configs/s
+Generation 3: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 13/13 17.2 configs/s
+[4s] Generation 3 complete: 
+ok=14
+min=0.0093
+mid=0.0105
+max=0.0107
+best={'block_sizes': [2],
+ 'indexing': ['pointer', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', 'last', '', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+2026-03-12 23:06:11,985 - INFO - Collected 3 configs for 1 kernels
+2026-03-12 23:06:11,985 - INFO - ============================================================
+2026-03-12 23:06:11,985 - INFO - PHASE 2: Measuring configs across shapes
+2026-03-12 23:06:11,985 - INFO - ============================================================
+2026-03-12 23:06:11,985 - INFO - Running measure phase: /workspace/helion-08/.venv/bin/python /workspace/helion-08/helion/examples/demo/07_aot_standalone.py
+2026-03-12 23:06:11,985 - INFO - Environment overrides: {'HELION_AOT_MODE': 'measure', 'HELION_AOT_DATA_DIR': '/workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67', 'HELION_AUTOTUNE_CACHE': 'AOTAutotuneCache'}
+2026-03-12 23:06:18,560 - INFO - Recorded 9 measurements
+2026-03-12 23:06:18,560 - INFO - ============================================================
+2026-03-12 23:06:18,561 - INFO - PHASE 3: Building heuristics
+2026-03-12 23:06:18,561 - INFO - ============================================================
+2026-03-12 23:06:18,561 - INFO - Generating heuristic for kernel: rms_norm
+
+=== Generating heuristic for kernel: rms_norm ===
+
+=== Score Matrix (shapes x configs) ===
+Times in ms, * = best for shape, - = invalid
+
+Shape          8a4f801f   a4b15250   d334f0b7       Best
+--------------------------------------------------------
+19f2f948         0.0075     0.0072    *0.0071 0.0071
+3e833dc2        *0.0059     0.0060     0.0062 0.0059
+6aef783d         0.0094    *0.0093     0.0094 0.0093
+
+========================================
+Total measurements: 9
+Invalid measurements: 0
+Min timing: 0.0059ms
+Max timing: 0.0094ms
+2026-03-12 23:06:18,562 - INFO -   Selected 1 configs with max_slowdown=1.05x, geomean_slowdown=1.02x
+
+Selected 1 configs: max_slowdown=1.05x, geomean_slowdown=1.02x
+
+=== Shape Feature Selection ===
+Original features: 11
+Selected features: 1
+Removed features: 10
+
+Removed features:
+  - arg0_ndim: constant value: 2.0
+  - arg0_dtype_size: constant value: 2.0
+  - arg0_dtype_cat: constant value: 2.0
+  - arg1_ndim: constant value: 1.0
+  - arg1_dtype_size: constant value: 2.0
+  - arg1_dtype_cat: constant value: 2.0
+  - arg0_dim1: fully dependent on arg0_dim0 (corr=1.0000)
+  - arg0_numel: functionally dependent on arg0_dim0
+  - arg1_dim0: fully dependent on arg0_dim0 (corr=1.0000)
+  - arg1_numel: fully dependent on arg0_dim0 (corr=1.0000)
+
+Surviving features:
+  + arg0_dim0
+================================
+2026-03-12 23:06:18,563 - INFO -   Model accuracy: 100.00%
+
+Model accuracy: 100.00%
+2026-03-12 23:06:18,564 - INFO -   Saved heuristic to /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/heuristic_rms_norm.py
+2026-03-12 23:06:18,564 - INFO -   Saved combined heuristic for 1 kernel(s) to: /workspace/helion-08/helion/examples/demo/_helion_aot_07_aot_standalone_cuda_sm90.py
+2026-03-12 23:06:18,564 - INFO - Saved heuristic summary to /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/heuristic_summary_cuda_NVIDIA_H200_12.8.json
+2026-03-12 23:06:18,564 - INFO - ============================================================
+2026-03-12 23:06:18,564 - INFO - PHASE 4: Evaluating heuristics
+2026-03-12 23:06:18,564 - INFO - ============================================================
+2026-03-12 23:06:18,565 - INFO - Running evaluate phase: /workspace/helion-08/.venv/bin/python /workspace/helion-08/helion/examples/demo/07_aot_standalone.py
+2026-03-12 23:06:18,565 - INFO - Environment overrides: {'HELION_AOT_MODE': 'evaluate', 'HELION_AOT_DATA_DIR': '/workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67', 'HELION_AUTOTUNE_CACHE': 'AOTAutotuneCache'}
+2026-03-12 23:06:23,958 - INFO - Saved evaluation results to /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/evaluation_cuda_NVIDIA_H200_12.8.json
+2026-03-12 23:06:23,958 - INFO - ============================================================
+2026-03-12 23:06:23,958 - INFO - AOT autotuning workflow completed successfully!
+2026-03-12 23:06:23,958 - INFO - ============================================================
+2026-03-12 23:06:23,958 - INFO - To emit standalone Triton files (no helion deps), re-run with --standalone
+2026-03-12 23:06:23,958 - INFO - ============================================================
+2026-03-12 23:06:23,958 - INFO - Generating standalone Triton files
+2026-03-12 23:06:23,958 - INFO - ============================================================
+2026-03-12 23:06:23,958 - INFO - Running compile phase: /workspace/helion-08/.venv/bin/python /workspace/helion-08/helion/examples/demo/07_aot_standalone.py
+2026-03-12 23:06:23,958 - INFO - Environment overrides: {'HELION_AOT_MODE': 'compile', 'HELION_AOT_DATA_DIR': '/workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67', 'HELION_AUTOTUNE_CACHE': 'AOTAutotuneCache'}
+2026-03-12 23:06:29,483 - INFO - Run directory: /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[4s] Fitting surrogate: 33 points, 33 targets
+[4s] Generation 4 starting: 16 neighbors, 1 active search path(s)
+Generation 4: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17/17 18.8 configs/s
+Generation 4: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 17/17 16.7 configs/s
+[6s] Generation 4 complete: 
+ok=18
+min=0.0093
+mid=0.0098
+max=0.0110
+best={'block_sizes': [2],
+ 'indexing': ['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', 'last', 'first', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[6s] Fitting surrogate: 51 points, 51 targets
+[7s] Generation 5 starting: 17 neighbors, 1 active search path(s)
+Generation 5: precompiling 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17/17 5.0 configs/s
+Generation 5: exploring neighbors 100% ━━━━━━━━━━━━━━━━━━━━ 17/17 17.3 configs/s
+[9s] Generation 5 complete: 
+ok=18
+min=0.0093
+mid=0.0098
+max=0.0124
+best={'block_sizes': [2],
+ 'indexing': ['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer',
+              'pointer'],
+ 'load_eviction_policies': ['', '', 'last', 'first', ''],
+ 'num_stages': 1,
+ 'num_warps': 8,
+ 'pid_type': 'flat',
+ 'range_flattens': [None],
+ 'range_multi_buffers': [None],
+ 'range_num_stages': [0],
+ 'range_unroll_factors': [0],
+ 'range_warp_specializes': [],
+ 'reduction_loops': [None]}
+[9s] Fitting surrogate: 69 points, 69 targets
+[9s] Autotuning complete in 9.7s after searching 64 configs.
+One can hardcode the best config and skip autotuning with:
+    @helion.kernel(config=helion.Config(block_sizes=[2], indexing=['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer'], load_eviction_policies=['', '', 'last', 'first', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+
+[9s] Code of selected kernel: /tmp/torchinductor_dev/xs/cxsvrilbdwsm227u3mmn6exg2lruor2asiivaxbjzl5vs2rw7vop.py
+[AOT collect] Saved config for kernel=rms_norm shape_hash=6aef783d hashes=[['38048f43', 'be4ef8ef'], ['38048f43', 'be4ef8ef'], ['0e9e25f4']] to /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67/tuned_configs_cuda_NVIDIA_H200_12.8.json
+    (1024, 4096)   0.0450    372.9
+[AOT] Mode: measure, Data dir: /workspace/helion-08/helion/examples/demo/07_aot_standalone_data/20260312_230537_5d1b67, Hardware: cuda_NVIDIA_H200_12.8
+[AOT] Loaded 3 existing configs
+[0s] Autotune random seed: 3830249525
+[AOT measure] Testing 3 configs for rms_norm shape_hash=3e833dc2
+AOT mode: measure
+           Shape       ms     GB/s
+[AOT measure] Config 1/3: 0.0062ms
+[AOT measure] Config 2/3: 0.0060ms
+[AOT measure] Config 3/3: 0.0059ms
+[AOT measure] Completed: 3/3 configs succeeded
+[0s] Autotune random seed: 3830249525
+[AOT measure] Testing 3 configs for rms_norm shape_hash=19f2f948
+     (256, 1024)   0.0373     28.1
+[AOT measure] Config 1/3: 0.0071ms
+[AOT measure] Config 2/3: 0.0072ms
+[AOT measure] Config 3/3: 0.0075ms
+[AOT measure] Completed: 3/3 configs succeeded
+[0s] Autotune random seed: 3830249525
+[AOT measure] Testing 3 configs for rms_norm shape_hash=6aef783d
+     (512, 2048)   0.0366    114.6
+[AOT measure] Config 1/3: 0.0094ms
+[AOT measure] Config 2/3: 0.0093ms
+[AOT measure] Config 3/3: 0.0094ms
+[AOT measure] Completed: 3/3 configs succeeded
+    (1024, 4096)   0.0375    447.2
+Using cached config:
+	@helion.kernel(config=helion.Config(block_sizes=[2], indexing=['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer'], load_eviction_policies=['', '', 'last', 'first', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+[0s] Found cached config for rms_norm, skipping autotuning.
+
+AOT mode: evaluate
+           Shape       ms     GB/s
+     (256, 1024)   0.0309     33.9
+     (512, 2048)   0.0285    147.1
+    (1024, 4096)   0.0265    632.5
+[AOT] Standalone: /workspace/helion-08/helion/examples/demo/07_aot_standalone_rms_norm_standalone.py
+Using cached config:
+	@helion.kernel(config=helion.Config(block_sizes=[2], indexing=['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer'], load_eviction_policies=['', '', 'last', 'first', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+[0s] Found cached config for rms_norm, skipping autotuning.
+
+Using cached config:
+	@helion.kernel(config=helion.Config(block_sizes=[2], indexing=['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer'], load_eviction_policies=['', '', 'last', 'first', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+[0s] Found cached config for rms_norm, skipping autotuning.
+
+Using cached config:
+	@helion.kernel(config=helion.Config(block_sizes=[2], indexing=['tensor_descriptor', 'pointer', 'pointer', 'pointer', 'tensor_descriptor', 'pointer', 'pointer'], load_eviction_policies=['', '', 'last', 'first', ''], num_stages=1, num_warps=8, pid_type='flat', range_flattens=[None], range_multi_buffers=[None], range_num_stages=[0], range_unroll_factors=[0], range_warp_specializes=[], reduction_loops=[None]), static_shapes=False)
+[0s] Found cached config for rms_norm, skipping autotuning.
+
+AOT mode: compile
+           Shape       ms     GB/s
+     (256, 1024)   0.0461     22.8
+     (512, 2048)   0.0444     94.5
+    (1024, 4096)   0.0415    404.4
+
+============================================================
+Generated: /workspace/helion-08/helion/examples/demo/07_aot_standalone_rms_norm_standalone.py
+============================================================
+# Auto-generated standalone Triton kernel for 'rms_norm'.
+# No Helion dependency required at runtime.
+
+from __future__ import annotations
+
+import torch
+import triton
+import triton.language as tl
+
+
+def _default_launcher(
+    triton_kernel,
+    grid,
+    *args,
+    num_warps,
+    num_stages,
+    launch_cooperative_grid=False,
+    **kwargs,
+):
+    return triton_kernel.run(
+        *args,
+        grid=grid,
+        warmup=False,
+        num_warps=num_warps,
+        num_stages=num_stages,
+        launch_cooperative_grid=launch_cooperative_grid,
+        **kwargs,
+    )
+
+
+# =================================================================
+# Config 0
+# =================================================================
+
+_BLOCK_SIZE_0_c0 = tl.constexpr(2)
+
+@triton.jit
+def _helion_rms_norm_c0(x, weight, out, out_stride_0, out_stride_1, weight_stride_0, x_stride_0, x_stride_1, m, n, eps, _RDIM_SIZE_1: tl.constexpr):
+    # src[07_aot_standalone.py:20]: for tile_m in hl.tile(m):
+    pid_0 = tl.program_id(0)
+    offset_0 = pid_0 * _BLOCK_SIZE_0_c0
+    indices_0 = (offset_0 + tl.arange(0, _BLOCK_SIZE_0_c0)).to(tl.int32)
+    mask_0 = indices_0 < m
+    indices_1 = tl.arange(0, _RDIM_SIZE_1).to(tl.int32)
+    mask_1 = indices_1 < n
+    # src[07_aot_standalone.py:21]: row = x[tile_m, :].to(torch.float32)
+    load = tl.load(x + (indices_0[:, None] * x_stride_0 + indices_1[None, :] * x_stride_1), mask_0[:, None] & mask_1[None, :], other=0)
+    v_0 = tl.cast(load, tl.float32)
+    # src[07_aot_standalone.py:22]: rms = torch.sqrt(torch.mean(row * row, dim=-1) + eps)
+    v_1 = v_0 * v_0
+    mean_extra = tl.cast(tl.sum(v_1, 1), tl.float32)
+    v_2 = tl.cast(n, tl.float32)
+    v_3 = mean_extra / v_2
+    v_4 = v_3 + eps
+    v_5 = tl.sqrt_rn(v_4)
+    # src[07_aot_standalone.py:23]: out[tile_m, :] = (row / rms[:, None] * weight[:].to(torch.float32)).to(out.dtype)
+    subscript = v_5[:, None]
+    v_6 = v_0 / subscript
+    load_1 = tl.load(weight + indices_1 * weight_stride_0, mask_1, other=0)
+    v_7 = tl.cast(load_1, tl.float32)
+    v_8 = v_7[None, :]
+    v_9 = v_6 * v_8
+    v_10 = tl.cast(v_9, tl.bfloat16)
+    tl.store(out + (indices_0[:, None] * out_stride_0 + indices_1[None, :] * out_stride_1), v_10, mask_0[:, None] & mask_1[None, :])
+
+def _rms_norm_c0(x: torch.Tensor, weight: torch.Tensor, eps: float=1e-05, *, _launcher=_default_launcher):
+    # src[07_aot_standalone.py:18]: m, n = x.size()
+    m, n = x.size()
+    # src[07_aot_standalone.py:19]: out = torch.empty_like(x)
+    out = torch.empty_like(x)
+    # src[07_aot_standalone.py:20]: for tile_m in hl.tile(m):
+    _BLOCK_SIZE_0_c0 = 2
+    _RDIM_SIZE_1 = triton.next_power_of_2(n)
+    # src[07_aot_standalone.py:20]: for tile_m in hl.tile(m):
+    # src[07_aot_standalone.py:21]:     row = x[tile_m, :].to(torch.float32)
+    # src[07_aot_standalone.py:22]:     rms = torch.sqrt(torch.mean(row * row, dim=-1) + eps)
+    # src[07_aot_standalone.py:20-23]: ...
+    _launcher(_helion_rms_norm_c0, (triton.cdiv(m, _BLOCK_SIZE_0_c0),), x, weight, out, out.stride(0), out.stride(1), weight.stride(0), x.stride(0), x.stride(1), m, n, eps, _RDIM_SIZE_1, num_warps=8, num_stages=1)
+    # src[07_aot_standalone.py:24]: return out
+    return out
+
+def rms_norm(*args, **kwargs):
+    return [
+        _rms_norm_c0,
+    ][0](*args, **kwargs)
+
