@@ -11,6 +11,8 @@ from typing import TypeVar
 import torch
 import torch.distributed as dist
 
+from helion import _compat
+
 from .progress_bar import iter_with_progress
 
 T = TypeVar("T")
@@ -42,7 +44,7 @@ def compute_repeat(
     end_event = di.Event(enable_timing=True)
     start_event.record()
     for _ in range(estimate_runs):
-        runtime.driver.active.clear_cache(cache)  # type: ignore[attr-defined]
+        _compat.safe_clear_cache()
         fn()
     end_event.record()
     di.synchronize()
@@ -103,11 +105,7 @@ def interleaved_bench(
     # warmup
     for fn in fns:
         fn()
-    clear_cache = functools.partial(
-        runtime.driver.active.clear_cache,  # type: ignore[attr-defined]
-        runtime.driver.active.get_empty_cache_for_benchmark(),  # type: ignore[attr-defined]
-    )
-    clear_cache()
+    _compat.safe_clear_cache()
     di = runtime.driver.active.get_device_interface()  # type: ignore[attr-defined]
     start_events = [
         [di.Event(enable_timing=True) for _ in range(repeat)] for _ in range(len(fns))
@@ -128,7 +126,7 @@ def interleaved_bench(
     )
     for i in iterator:
         for j in range(len(fns)):
-            clear_cache()
+            _compat.safe_clear_cache()
             start_events[j][i].record()
             fns[j]()
             end_events[j][i].record()
@@ -191,29 +189,38 @@ def sync_object(obj: T) -> T:
 
 
 def _summarize_statistics_fallback(
-    times: list[float],
+    times: list[float] | object,
     quantiles: list[float] | None,
     return_mode: str,
 ) -> float | tuple[float, ...]:
-    """Fallback statistics summarizer when triton.testing._summarize_statistics is unavailable."""
+    """Fallback statistics summarizer when triton.testing._summarize_statistics is unavailable.
+    Handles both Python lists and torch tensors.
+    """
+    # Convert tensor to list if needed
+    import torch
+    if isinstance(times, torch.Tensor):
+        times_list = times.cpu().tolist()
+    else:
+        times_list = list(times) if not isinstance(times, list) else times
+    
     if return_mode == "min":
-        return min(times)
+        return min(times_list)
     if return_mode == "max":
-        return max(times)
+        return max(times_list)
     if return_mode == "mean":
-        return statistics.mean(times)
+        return statistics.mean(times_list)
     if return_mode == "median":
-        return statistics.median(times)
+        return statistics.median(times_list)
     # "all" mode
     if quantiles is not None:
-        sorted_times = sorted(times)
+        sorted_times = sorted(times_list)
         n = len(sorted_times)
         result = []
         for q in quantiles:
             idx = min(int(q * n), n - 1)
             result.append(sorted_times[idx])
         return tuple(result)
-    return statistics.median(times)
+    return statistics.median(times_list)
 
 
 # This function is copied from triton._testing.do_bench with modification
@@ -256,12 +263,12 @@ def do_bench(
 
     cache = runtime.driver.active.get_empty_cache_for_benchmark()  # pyrefly: ignore
 
-    # Estimate the runtime of the function
+    # estimate number of repeats
     start_event = di.Event(enable_timing=True)
     end_event = di.Event(enable_timing=True)
     start_event.record()
     for _ in range(5):
-        runtime.driver.active.clear_cache(cache)  # pyrefly: ignore
+        _compat.safe_clear_cache()
         fn()
     end_event.record()
     di.synchronize()
@@ -283,8 +290,8 @@ def do_bench(
         if grad_to_none is not None:
             for x in grad_to_none:
                 x.grad = None
-        # we clear the L2 cache before each run
-        runtime.driver.active.clear_cache(cache)  # pyrefly: ignore
+        # we clear the L2 cache before each run if supported
+        _compat.safe_clear_cache()
         # record time of `fn`
         start_event[i].record()
         fn()
@@ -292,7 +299,16 @@ def do_bench(
     # Record clocks
     di.synchronize()
     times = [s.elapsed_time(e) for s, e in zip(start_event, end_event, strict=True)]
-    return _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
+    
+    # Triton-Ascend expects times to be a Tensor, not a list
+    # To support both Triton and Triton-Ascend, always convert to Tensor first
+    try:
+        import torch
+        times_tensor = torch.tensor(times)
+        return _summarize_statistics(times_tensor, quantiles, return_mode)  # pyrefly: ignore
+    except Exception:
+        # Fall back to list if tensor conversion fails
+        return _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
 
 
 def do_bench_generic(

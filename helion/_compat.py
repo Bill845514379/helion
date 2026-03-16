@@ -277,6 +277,45 @@ if triton_is_available():
         )(torch_dtype_to_tl(lhs), torch_dtype_to_tl(rhs))
 
     @functools.cache
+    def _supports_launch_cooperative_grid() -> bool:
+        """Check if the current Triton version supports launch_cooperative_grid parameter."""
+        try:
+            # First check if we're using Triton-ascend backend
+            try:
+                from triton.runtime.driver.active import get_current_target
+                target = get_current_target()
+                # Check if the target or backend is Ascend-specific
+                if hasattr(target, 'backend') and target.backend == 'ascend':
+                    return False
+                if hasattr(target, '__class__') and 'ascend' in target.__class__.__name__.lower():
+                    return False
+            except Exception:
+                pass
+            
+            # Check if current device is NPU
+            import torch
+            try:
+                # Check the current device type
+                if torch.cuda.is_available():
+                    device = torch.device('cuda')
+                    if device.type == 'npu':
+                        return False
+                # Check if NPU device type exists and is available
+                if hasattr(torch, 'npu') and torch.npu.is_available():
+                    return False
+            except Exception:
+                pass
+                
+            # Check Triton version for other backends
+            return version.parse(triton.__version__) >= version.parse("3.0")
+        except Exception:
+            return False
+
+    def supports_launch_cooperative_grid() -> bool:
+        """Check if the current Triton version supports launch_cooperative_grid parameter."""
+        return _supports_launch_cooperative_grid()
+
+    @functools.cache
     def use_tileir_tunables() -> bool:
         if not torch.cuda.is_available():
             return False
@@ -321,10 +360,36 @@ else:
     def use_tileir_tunables() -> bool:  # type: ignore[misc]
         return False
 
+    def _supports_launch_cooperative_grid() -> bool:  # type: ignore[misc]
+        return False
+
+    def supports_launch_cooperative_grid() -> bool:  # type: ignore[misc]
+        return False
+
 
 def supports_tensor_descriptor() -> bool:
     # call private func we can patch in testing
     return _supports_tensor_descriptor()
+
+
+def supports_launch_cooperative_grid() -> bool:
+    # call private func we can patch in testing
+    return _supports_launch_cooperative_grid()
+
+
+def safe_clear_cache() -> None:
+    """Safely clear cache if the current driver supports it.
+    Works around the issue where NPUDriver doesn't have clear_cache method.
+    """
+    try:
+        from triton import runtime
+        # Check if driver has clear_cache method
+        if hasattr(runtime.driver.active, 'clear_cache') and hasattr(runtime.driver.active, 'get_empty_cache_for_benchmark'):
+            cache = runtime.driver.active.get_empty_cache_for_benchmark()
+            runtime.driver.active.clear_cache(cache)
+    except Exception:
+        # Ignore any errors when clearing cache (especially for NPU)
+        pass
 
 
 def min_dot_size(
@@ -501,7 +566,11 @@ def supports_maxnreg() -> bool:
 
 @functools.cache
 def _supports_maxnreg() -> bool:
-    return torch.version.hip is None and torch.version.xpu is None
+    # Check if we're not on HIP (AMD), XPU (Intel), or NPU (Ascend) devices
+    return (torch.version.hip is None and 
+            torch.version.xpu is None and 
+            not hasattr(torch, 'npu') and 
+            not hasattr(torch, 'ascend'))
 
 
 @functools.cache

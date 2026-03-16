@@ -68,6 +68,7 @@ BACKEND_TUNABLE_KEYS: frozenset[str] = _get_backend_tunable_keys()
 # class rejects these by default; each backend subclass opts in selectively.
 BACKEND_SPECIFIC_KEYS: frozenset[str] = BACKEND_TUNABLE_KEYS | {
     "elements_per_thread",
+    "maxnreg",
     "pallas_loop_type",
 }
 VALID_KEYS: frozenset[str] = frozenset(

@@ -543,6 +543,10 @@ class TritonBackend(Backend):
             from .._compat import supports_amd_cdna_tunables
 
             return supports_amd_cdna_tunables()
+        if key == "maxnreg":
+            from .._compat import supports_maxnreg
+
+            return supports_maxnreg()
 
         from .._compat import get_mtia_tunable_fragments
         from .._compat import supports_mtia_tunables
@@ -701,10 +705,12 @@ class TritonBackend(Backend):
         if any(config.range_warp_specializes):
             num_warps = max(4, num_warps)
 
+        from .. import _compat
+        
         args = [
             f"num_warps={num_warps}",
             f"num_stages={config.num_stages}",
-            *(["launch_cooperative_grid=True"] if has_barrier else []),
+            *(["launch_cooperative_grid=True"] if has_barrier and _compat.supports_launch_cooperative_grid() else []),
         ] + [
             f"{x.removeprefix('_triton_config_')}={config[x]}"
             for x in config
