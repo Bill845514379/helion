@@ -2019,6 +2019,7 @@ def _prepare_precompiler_for_fork(
         fn(*args, _launcher=extract_launcher)
         raise RuntimeError("Expected _ExtractedLaunchArgs to be raised")
     except _ExtractedLaunchArgs as extracted:
+        # debug_jitfunction(extracted.kernel)
         precompiler = make_precompiler(
             cast("Any", extracted.kernel),
             config,

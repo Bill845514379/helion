@@ -22,6 +22,7 @@ if triton_is_available():
         triton_wait_multiple_signal as triton_wait_multiple_signal,
     )
     from .triton_helpers import triton_wait_signal as triton_wait_signal
+    from triton.runtime.driver import driver
 
     def _alloc_fn(size: int, alignment: int, stream: int | None) -> torch.Tensor:
         # Dynamically get device from Triton backend
@@ -69,6 +70,7 @@ def get_num_sm(device: torch.device, *, reserved_sms: int = 0) -> int:
         "cuda",
         "xpu",
         "mtia",
+        "npu",
     ], "TODO: implement for other devices"
     if device.type == "cuda":
         available_sms = torch.cuda.get_device_properties(
@@ -88,6 +90,11 @@ def get_num_sm(device: torch.device, *, reserved_sms: int = 0) -> int:
                 f"Unable to determine SM count for MTIA device. "
                 f"Available properties: {list(device_props.keys())}"
             )
+    elif device.type == "npu":
+        if triton_is_available():
+            available_sms = driver.active.utils.get_device_properties(device)["num_aicore"]
+        else:
+            raise RuntimeError("Triton is not available for NPU device")
     else:
         raise NotImplementedError(
             f"get_num_sm not implemented for device type: {device.type}"
