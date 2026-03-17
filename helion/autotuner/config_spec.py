@@ -171,6 +171,10 @@ class ConfigSpec:
             )
 
     def valid_indexing_types(self) -> tuple[IndexingLiteral, ...]:
+        # NPU backends (e.g. Triton-ascend) may not fully support block_ptr and can
+        # hit device-side faults (e.g. unaligned UUB access). Keep indexing conservative.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            return ("pointer",)
         if supports_tensor_descriptor():
             return ("pointer", "tensor_descriptor")
         if not self.backend.supports_block_ptr_indexing():
