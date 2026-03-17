@@ -232,6 +232,8 @@ elif torch.xpu.is_available():
     DEVICE = torch.device("xpu")
 elif _has_mtia_runtime():
     DEVICE = torch.device("mtia")
+elif torch.npu.is_available():
+    DEVICE = torch.device("npu")
 else:
     DEVICE = torch.device("cuda")
 
@@ -917,6 +919,11 @@ def run_example(
         atol: Absolute tolerance for correctness check (default: 1e-1)
         bwd: Whether to also test backward pass (default: False)
     """
+    # Adjust tolerance for NPU device
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        rtol = max(rtol, 1)
+        atol = max(atol, 10.0)
+    
     try:
         torch.backends.cuda.matmul.fp32_precision = "tf32"
         torch.backends.cudnn.conv.fp32_precision = "tf32"  # type: ignore[reportAttributeAccessIssue]

@@ -14,6 +14,19 @@ from torch._inductor.lowering import to_dtype
 inductor_lowering_dispatch: dict[Callable[..., Any] | str, Callable[..., Any]] = {}
 
 
+# pyrefly: ignore [implicit-import]
+register_inductor_lowering = torch._inductor.lowering.register_lowering
+
+
+try:
+    if hasattr(torch.ops, "npu") and hasattr(torch.ops.npu, "_npu_dtype_cast"):
+        _npu_dtype_cast_op = torch.ops.npu._npu_dtype_cast.default
+    else:
+        _npu_dtype_cast_op = None
+except (AttributeError, RuntimeError):
+    _npu_dtype_cast_op = None
+
+
 def create_fp16_to_fp32_unary_fallback_lowering(
     original_op: Callable[..., object],
 ) -> Callable[..., object]:
@@ -54,6 +67,19 @@ for op in FP32_FALLBACK_OPS_UNARY:
     )
 
 
+# Handle NPU dtype cast operation by delegating to standard to_dtype
+if _npu_dtype_cast_op is not None:
+    @register_inductor_lowering(
+        [_npu_dtype_cast_op],
+        lowering_dict=inductor_lowering_dispatch,
+    )
+    def npu_dtype_cast(
+        x: TensorBox,
+        dtype: torch.dtype,
+    ) -> TensorBox:
+        return to_dtype(x, dtype)
+
+
 @contextlib.contextmanager
 def patch_inductor_lowerings() -> Generator[None, Any, Any]:
     """Context manager to temporarily patch the inductor lowering table.
@@ -71,10 +97,6 @@ def patch_inductor_lowerings() -> Generator[None, Any, Any]:
     finally:
         # pyrefly: ignore [implicit-import]
         torch._inductor.lowering.lowerings = original_lowerings
-
-
-# pyrefly: ignore [implicit-import]
-register_inductor_lowering = torch._inductor.lowering.register_lowering
 
 
 def var_mean_helper_(
