@@ -100,11 +100,12 @@ class MatMulFunction(torch.autograd.Function):
     ) -> tuple[Tensor | None, Tensor | None]:
         grad_out = grad_outputs[0]
         mat1, mat2 = ctx.saved_tensors
+        # Ensure transposed tensors are contiguous for proper memory layout
         grad_mat1 = (
-            matmul(grad_out, mat2.T) if ctx.needs_input_grad[0] else None
+            matmul(grad_out, mat2.T.contiguous()) if ctx.needs_input_grad[0] else None
         )
         grad_mat2 = (
-            matmul(mat1.T, grad_out) if ctx.needs_input_grad[1] else None
+            matmul(mat1.T.contiguous(), grad_out) if ctx.needs_input_grad[1] else None
         )
         return grad_mat1, grad_mat2
 
