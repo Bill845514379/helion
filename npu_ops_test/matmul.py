@@ -39,6 +39,13 @@ if TYPE_CHECKING:
     autotune_config_overrides={
         "range_unroll_factors": [0, 0],
         "range_num_stages": [0, 0],
+        **({
+            "num_stages": 1,
+            "num_warps": 4,
+            "range_multi_buffers": [None, None],
+            # Use a more conservative pid_type for NPU
+            "pid_type": "flat",
+        } if DEVICE == "npu" else {}),
     }
     if not use_tileir_tunables()
     else {},
