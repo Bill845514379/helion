@@ -206,12 +206,12 @@ def check(m: int, k: int, n: int) -> None:
         k (int): Number of columns in matrix x and rows in matrix y.
         n (int): Number of columns in matrix y.
     """
-    x = torch.randn([m, k], device=DEVICE, dtype=HALF_DTYPE)
-    y = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE)
-    bias = torch.randn([n], device=DEVICE, dtype=HALF_DTYPE)
-    bias_scalar = torch.randn([1], device=DEVICE, dtype=HALF_DTYPE)
+    x = torch.randn([m, k], device=DEVICE, dtype=torch.float32)
+    y = torch.randn([k, n], device=DEVICE, dtype=torch.float32)
+    bias = torch.randn([n], device=DEVICE, dtype=torch.float32)
+    bias_scalar = torch.randn([1], device=DEVICE, dtype=torch.float32)
     # Test without bias
-    run_example(matmul, torch.matmul, (x, y), rtol=0.1, atol=0.1)
+    run_example(matmul, torch.matmul, (x, y))
 
     # Test for addmm with scalar bias
     def addmm(bias: Tensor, mat1: Tensor, mat2: Tensor) -> Tensor:
@@ -250,8 +250,8 @@ def check(m: int, k: int, n: int) -> None:
 
     # Test matmul forward + backward pass
     print("\n\n=== MatMul Forward + Backward Pass Test ===")
-    x_grad = torch.randn([m, k], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
-    y_grad = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
+    x_grad = torch.randn([m, k], device=DEVICE, dtype=torch.float32, requires_grad=True)
+    y_grad = torch.randn([k, n], device=DEVICE, dtype=torch.float32, requires_grad=True)
 
     run_example(
         matmul_autograd,
@@ -259,18 +259,16 @@ def check(m: int, k: int, n: int) -> None:
         (x_grad, y_grad),
         kernel_name="helion_matmul_autograd",
         baseline_name="torch",
-        rtol=1e-2,
-        atol=1e-2,
         bwd=True,
     )
 
     # Test addmm forward + backward pass
     print("\n\n=== AddMM Forward + Backward Pass Test ===")
     input_grad = torch.randn(
-        [m, n], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True
+        [m, n], device=DEVICE, dtype=torch.float32, requires_grad=True
     )
-    mat1_grad = torch.randn([m, k], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
-    mat2_grad = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
+    mat1_grad = torch.randn([m, k], device=DEVICE, dtype=torch.float32, requires_grad=True)
+    mat2_grad = torch.randn([k, n], device=DEVICE, dtype=torch.float32, requires_grad=True)
 
     # Use lambda to handle the keyword argument format for torch.addmm
     run_example(
@@ -278,11 +276,9 @@ def check(m: int, k: int, n: int) -> None:
         lambda bias, mat1, mat2, alpha, beta: torch.addmm(
             bias, mat1, mat2, alpha=alpha, beta=beta
         ),
-        (input_grad, mat1_grad, mat2_grad),
+        (input_grad, mat1_grad, mat2_grad, 1.0, 1.0),
         kernel_name="helion_addmm_autograd",
         baseline_name="torch",
-        rtol=1e-2,
-        atol=1e-2,
         bwd=True,
     )
 
@@ -296,8 +292,6 @@ def check(m: int, k: int, n: int) -> None:
         (input_grad, mat1_grad, mat2_grad, 2.0, 0.5),
         kernel_name="helion_addmm_autograd_scaled",
         baseline_name="torch",
-        rtol=1e-2,
-        atol=1e-2,
         bwd=True,
     )
 
