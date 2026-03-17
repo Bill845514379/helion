@@ -337,7 +337,11 @@ def main() -> None:
     Main function to run autotuning (commented out) and correctness checks.
     """
     # autotune(1024, 1024, 1024)
-    check(1024, 1024, 1024)
+    # check(1024, 1024, 1024)
+    # check(512, 512, 512)
+
+
+    check(256, 256, 256)
 
 
 # %%
