@@ -153,7 +153,11 @@ class ConfigSpec:
         self.range_flattens: BlockIdSequence[RangeFlattenSpec] = BlockIdSequence()
         self.static_ranges: BlockIdSequence[StaticRangeSpec] = BlockIdSequence()
 
-        self.allowed_pid_types: tuple[PidTypeLiteral, ...] = tuple(VALID_PID_TYPES)
+        # NPU backends can be sensitive to program-id strategies; keep conservative.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self.allowed_pid_types = ("flat",)
+        else:
+            self.allowed_pid_types = tuple(VALID_PID_TYPES)
         self.grid_block_ids: list[int] = []
         self.load_eviction_policies = ListOf(
             EnumFragment(choices=get_valid_eviction_policies(self.backend_name)),
