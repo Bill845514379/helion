@@ -39,13 +39,6 @@ if TYPE_CHECKING:
     autotune_config_overrides={
         "range_unroll_factors": [0, 0],
         "range_num_stages": [0, 0],
-        **({
-            "num_stages": 1,
-            "num_warps": 4,
-            "range_multi_buffers": [None, None],
-            # Use a more conservative pid_type for NPU
-            "pid_type": "flat",
-        } if DEVICE == "npu" else {}),
     }
     if not use_tileir_tunables()
     else {},
@@ -100,12 +93,11 @@ class MatMulFunction(torch.autograd.Function):
     ) -> tuple[Tensor | None, Tensor | None]:
         grad_out = grad_outputs[0]
         mat1, mat2 = ctx.saved_tensors
-        # Ensure transposed tensors are contiguous for proper memory layout
         grad_mat1 = (
-            matmul(grad_out, mat2.T.contiguous()) if ctx.needs_input_grad[0] else None
+            matmul(grad_out, mat2.T) if ctx.needs_input_grad[0] else None
         )
         grad_mat2 = (
-            matmul(mat1.T.contiguous(), grad_out) if ctx.needs_input_grad[1] else None
+            matmul(mat1.T, grad_out) if ctx.needs_input_grad[1] else None
         )
         return grad_mat1, grad_mat2
 

@@ -350,12 +350,12 @@ def _get_ref_mode() -> RefMode:
 def _get_dot_precision() -> DotPrecision:
     """
     Get the dot precision setting from TRITON_F32_DEFAULT environment variable.
-    Defaults to 'tf32', 'ieee' if rocm and not CDNA, 'hf32' if npu.
+    Defaults to 'tf32', 'ieee' if rocm and not CDNA, 'ieee' if npu.
     """
     if is_hip():
         default_precision = "tf32" if supports_tf32_precision_on_amd() else "ieee"
     elif hasattr(torch, "npu") and torch.npu.is_available():
-        default_precision = "hf32"
+        default_precision = "ieee"
     else:
         default_precision = "tf32"
 
