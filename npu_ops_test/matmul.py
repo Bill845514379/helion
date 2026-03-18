@@ -27,6 +27,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+import torch_npu
+# fix: /workspace/helion/helion/_testing.py:974: UserWarning: Cannot create tensor with interal format while 
+torch_npu.npu.config.allow_internal_format = True
+
 # %%
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
@@ -338,10 +342,11 @@ def main() -> None:
     Main function to run autotuning (commented out) and correctness checks.
     """
     # autotune(1024, 1024, 1024)
-    # check(1024, 1024, 1024)
+    # No valid compile times found, keeping default timeout
+    # check(1024, 1024, 1024) 
+    # pass
     # check(512, 512, 512)
-
-
+    # pass
     check(256, 256, 256)
 
 
