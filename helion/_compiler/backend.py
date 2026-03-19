@@ -799,6 +799,72 @@ class NPUBackend(TritonBackend):
 
         return do_bench_npu
 
+    def adjust_block_size_constraints(
+        self,
+        block_specs: list[object],
+        ndim: int,
+        block_sizes: list[object] | None = None,
+        kernel_tensor_sizes: dict[tuple[object, ...], int] | None = None,
+        min_element_bits: int = 32,
+    ) -> None:
+        """Enforce NPU alignment on block sizes.
+
+        NPU requires 16-byte aligned memory accesses for vector operations:
+        - bfloat16 (2 bytes): block_size must be multiple of 8
+        - float32 (4 bytes): block_size must be multiple of 4
+        - float16 (2 bytes): block_size must be multiple of 8
+        - int32 (4 bytes): block_size must be multiple of 4
+
+        This ensures that memory accesses are properly aligned and prevents
+        UUB (Unified Unified Buffer) access errors and illegal instructions.
+        """
+        from torch._inductor.runtime.runtime_utils import next_power_of_2
+
+        from ..autotuner.config_spec import BlockSizeSpec
+        from .compile_environment import BlockSizeInfo
+
+        # Determine minimum alignment based on min_element_bits
+        # 16 bytes / element_bits = min_elements_per_block
+        min_elements_per_block = max(16 // min_element_bits, 1)
+
+        # Map block_id -> minimum dim_from_end across all tensors
+        min_dim_from_end: dict[int, int] = {}
+        min_tensor_ndim: dict[int, int] = {}
+        if block_sizes is not None and kernel_tensor_sizes is not None:
+            for shape in kernel_tensor_sizes:
+                tensor_ndim = len(shape)
+                for d, dim_expr in enumerate(shape):
+                    for info in block_sizes:
+                        if not isinstance(info, BlockSizeInfo):
+                            continue
+                        if info.size_matches(dim_expr):  # pyrefly: ignore[bad-argument-type]
+                            dfe = tensor_ndim - 1 - d
+                            if info.block_id not in min_dim_from_end:
+                                min_dim_from_end[info.block_id] = dfe
+                                min_tensor_ndim[info.block_id] = tensor_ndim
+                            else:
+                                min_dim_from_end[info.block_id] = min(
+                                    min_dim_from_end[info.block_id], dfe
+                                )
+                                min_tensor_ndim[info.block_id] = min(
+                                    min_tensor_ndim[info.block_id], tensor_ndim,
+                                )
+
+        for i, spec in enumerate(block_specs):
+            if not isinstance(spec, BlockSizeSpec):
+                continue
+
+            # Update minimum to ensure 16-byte alignment
+            # Find next power of 2 that satisfies alignment requirement
+            current_min = spec.size_hint
+            aligned_min = current_min
+            while aligned_min % min_elements_per_block != 0:
+                aligned_min += 1
+
+            # Use the larger of: alignment requirement or tensor dimension
+            dim_size = next_power_of_2(max(spec.size_hint, 1))
+            spec.update_min(min(aligned_min, dim_size))
+
 
 # Mapping from torch dtype to JAX dtype string (e.g., "jnp.float32")
 _TORCH_TO_JAX_DTYPE: dict[str, str] = {
