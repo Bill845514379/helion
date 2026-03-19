@@ -815,6 +815,9 @@ class NPUBackend(TritonBackend):
         - float16 (2 bytes): block_size must be multiple of 8
         - int32 (4 bytes): block_size must be multiple of 4
 
+        Additionally, use a more conservative minimum (16 or 32) to avoid
+        edge cases where aligned addresses still cause UUB access errors.
+
         This ensures that memory accesses are properly aligned and prevents
         UUB (Unified Unified Buffer) access errors and illegal instructions.
         """
@@ -830,6 +833,18 @@ class NPUBackend(TritonBackend):
         #   bfloat16 (16 bits): 128 / 16 = 8 elements needed
         #   float32 (32 bits): 128 / 32 = 4 elements needed
         min_elements_per_block = max(128 // min_element_bits, 1)
+
+        # Use a more conservative minimum to avoid edge cases
+        # For bfloat16: at least 16 elements (32 bytes) to ensure safe alignment
+        # For float32: at least 8 elements (32 bytes) to ensure safe alignment
+        conservative_min = {
+            16: 16,   # bfloat16/float16 (2 bytes): 16 elements = 32 bytes
+            32: 8,    # float32/int32 (4 bytes): 8 elements = 32 bytes
+            64: 4,    # float64 (8 bytes): 4 elements = 32 bytes
+        }.get(min_element_bits, 16)
+
+        # Use the more restrictive of alignment requirement and conservative minimum
+        min_elements_per_block = max(min_elements_per_block, conservative_min)
 
         # Map block_id -> minimum dim_from_end across all tensors
         min_dim_from_end: dict[int, int] = {}
