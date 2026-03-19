@@ -368,6 +368,69 @@ def do_bench_npu(
     """
     Benchmark function using triton.testing.do_bench_npu for NPU devices.
 
+    This function wraps triton.testing.do_bench_npu to provide a consistent
+    API with other Helion benchmarking functions.
+
+    Note: triton.testing.do_bench_npu has different parameter names:
+    - warmup (ms) instead of warmup (iterations)
+    - active instead of rep
+    We map these appropriately.
+
+    Args:
+        fn: Function to benchmark
+        warmup: Warmup time in ms (mapped to do_bench_npu's warmup)
+        rep: Number of benchmark iterations (mapped to do_bench_npu's active)
+        grad_to_none: Reset gradient of provided tensor (not used by do_bench_npu)
+        quantiles: Performance percentiles to return (not used by do_bench_npu)
+        return_mode: Statistical measure to return (not used by do_bench_npu)
+
+    Returns:
+        Timing in ms (float)
+    """
+    # Import triton.testing.do_bench_npu for NPU-specific benchmarking
+    try:
+        from triton.testing import do_bench_npu as triton_do_bench_npu
+    except ImportError:
+        # Fallback to our implementation if triton.testing.do_bench_npu not available
+        return _do_bench_npu_fallback(
+            fn, warmup, rep, grad_to_none, quantiles, return_mode
+        )
+
+    # Handle grad_to_none (reset before benchmarking)
+    if grad_to_none is not None:
+        for x in grad_to_none:
+            x.grad = None
+
+    # Call triton.testing.do_bench_npu
+    # Note: it returns a list of timings when passed a list of functions,
+    # or a single timing when passed a single function
+    result = triton_do_bench_npu(
+        fn,
+        warmup=warmup,  # warmup is in ms for do_bench_npu
+        active=rep,  # active is the number of iterations
+    )
+
+    # Handle return type (may be list or scalar)
+    if isinstance(result, list):
+        if len(result) > 0:
+            return result[0]
+        else:
+            return 0.0
+    else:
+        return result
+
+
+def _do_bench_npu_fallback(
+    fn: Callable[[], Any],
+    warmup: int = 25,
+    rep: int = 100,
+    grad_to_none: torch.Tensor | None = None,
+    quantiles: list[float] | None = None,
+    return_mode: str = "mean",
+) -> float | tuple[float, ...]:
+    """
+    Fallback implementation of NPU benchmarking when triton.testing.do_bench_npu is unavailable.
+
     This function is specifically optimized for NPU (Ascend) hardware and
     should provide more accurate timing measurements than the generic
     triton.testing.do_bench on NPU platforms.
