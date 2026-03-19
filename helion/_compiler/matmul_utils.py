@@ -279,6 +279,18 @@ def emit_tl_dot_with_padding(
     m, k, n = lhs_shape_list[-2], lhs_shape_list[-1], rhs_shape_list[-1]
     common_dtype = torch.promote_types(lhs_dtype, rhs_dtype)
     lhs_cast, rhs_cast = cast_ast(lhs, common_dtype), cast_ast(rhs, common_dtype)
+
+    # On NPU, hf32 precision only works with f32 * f32 = f32
+    # For f16/bf16 inputs, we need to use ieee precision
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        if input_precision == "hf32" and common_dtype in (torch.float16, torch.bfloat16):
+            input_precision = "ieee"
+        # Some NPU backends can be numerically unstable or incorrect for half-precision
+        # dot variants. Prefer promoting operands to fp32 for correctness, then cast
+        # the result back to the requested output dtype downstream.
+        if common_dtype in (torch.float16, torch.bfloat16):
+            lhs_cast = cast_ast(lhs_cast, torch.float32)
+            rhs_cast = cast_ast(rhs_cast, torch.float32)
     m, n, k = (_resolve_dim_size(d) for d in (m, n, k))
 
     fuse_acc = (

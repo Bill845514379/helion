@@ -37,8 +37,9 @@ if TYPE_CHECKING:
         ) -> BaseAutotuner: ...
 
 
+
 BackendLiteral = Literal["triton", "pallas", "cute", "tileir", "npu"]
-DotPrecision = Literal["tf32", "tf32x3", "ieee"]
+DotPrecision = Literal["tf32", "tf32x3", "ieee", "hf32"]
 PrecompileMode = Literal["spawn", "fork"] | None
 _TRUE_LITERALS = frozenset({"1", "true", "yes", "on"})
 _FALSE_LITERALS = frozenset({"0", "false", "no", "off"})
@@ -350,17 +351,19 @@ def _get_ref_mode() -> RefMode:
 def _get_dot_precision() -> DotPrecision:
     """
     Get the dot precision setting from TRITON_F32_DEFAULT environment variable.
-    Defaults to 'tf32', 'ieee' if rocm and not CDNA.
+    Defaults to 'tf32', 'ieee' if rocm and not CDNA, 'ieee' if npu.
     """
     if is_hip():
         default_precision = "tf32" if supports_tf32_precision_on_amd() else "ieee"
+    elif hasattr(torch, "npu") and torch.npu.is_available():
+        default_precision = "ieee"
     else:
         default_precision = "tf32"
 
     return _env_get_literal(
         "TRITON_F32_DEFAULT",
         cast("DotPrecision", default_precision),
-        mapping={k: k for k in ("tf32", "tf32x3", "ieee")},
+        mapping={k: k for k in ("tf32", "tf32x3", "ieee", "hf32")},
     )
 
 

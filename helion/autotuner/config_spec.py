@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import cast
 
+import torch
 from torch._inductor.runtime.runtime_utils import next_power_of_2
 
 from .._compat import supports_amd_cdna_tunables
@@ -152,7 +153,11 @@ class ConfigSpec:
         self.range_flattens: BlockIdSequence[RangeFlattenSpec] = BlockIdSequence()
         self.static_ranges: BlockIdSequence[StaticRangeSpec] = BlockIdSequence()
 
-        self.allowed_pid_types: tuple[PidTypeLiteral, ...] = tuple(VALID_PID_TYPES)
+        # NPU backends can be sensitive to program-id strategies; keep conservative.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self.allowed_pid_types = ("flat",)
+        else:
+            self.allowed_pid_types = tuple(VALID_PID_TYPES)
         self.grid_block_ids: list[int] = []
         self.load_eviction_policies = ListOf(
             EnumFragment(choices=get_valid_eviction_policies(self.backend_name)),
@@ -170,6 +175,10 @@ class ConfigSpec:
             )
 
     def valid_indexing_types(self) -> tuple[IndexingLiteral, ...]:
+        # NPU backends (e.g. Triton-ascend) may not fully support block_ptr and can
+        # hit device-side faults (e.g. unaligned UUB access). Keep indexing conservative.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            return ("pointer",)
         if supports_tensor_descriptor():
             return ("pointer", "tensor_descriptor")
         if not self.backend.supports_block_ptr_indexing():
@@ -564,6 +573,7 @@ class ConfigSpec:
 
         # Scalar fields (ConfigSpecFragment)
         is_tileir = self.backend_name == "tileir"
+        is_npu = hasattr(torch, "npu") and torch.npu.is_available()
 
         if is_tileir:
             # TileIR: num_warps is unused (fixed at 4), num_stages has wider range
@@ -571,6 +581,11 @@ class ConfigSpec:
             num_stages_fragment: ConfigSpecFragment = EnumFragment(
                 choices=tuple(range(1, 11))
             )
+        elif is_npu:
+            # NPU: keep num_warps/num_stages fixed to avoid wasting autotune budget
+            # exploring unsupported / numerically unstable combinations.
+            num_warps_fragment = NumWarpsFragment(4, 4)
+            num_stages_fragment = IntegerFragment(1, 1, 1)
         elif supports_amd_cdna_tunables():
             num_warps_fragment = NumWarpsFragment(1, 16, DEFAULT_NUM_WARPS)
             num_stages_fragment = IntegerFragment(1, 4, DEFAULT_NUM_STAGES)
