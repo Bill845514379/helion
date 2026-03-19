@@ -29,47 +29,35 @@ def benchmark_functions(fns_dict, warmup=10, active=30):
     """
     from triton.testing import do_bench_npu
 
-    # Convert dict to lists for do_bench_npu
-    names = list(fns_dict.keys())
-    functions = list(fns_dict.values())
+    result_dict = {}
+    for name, fn in fns_dict.items():
+        try:
+            # Call do_bench_npu with a single function
+            # It will automatically convert to list: if not isinstance(funcs, list): funcs = [funcs]
+            result = do_bench_npu(
+                fn,
+                warmup=warmup,
+                active=active,
+            )
 
-    try:
-        # do_bench_npu benchmarks all functions at once
-        results = do_bench_npu(
-            functions,
-            warmup=warmup,
-            active=active,
-        )
+            # Handle different return types from do_bench_npu
+            # It may return a list (when passed multiple functions) or a single value
+            if isinstance(result, list):
+                # Extract single value from list
+                if len(result) > 0:
+                    result = result[0]
+                else:
+                    result = 0.0
 
-        # results should be a list of timing values, one per function
-        result_dict = {}
-        for name, result in zip(names, results):
+            # Store the result
             result_dict[name] = result
             print(f"{name:30s}: {result:.4f} ms")
 
-        return result_dict
+        except Exception as e:
+            print(f"{name:30s}: Error - {e}")
+            result_dict[name] = None
 
-    except Exception as e:
-        # If bulk benchmarking fails, try each function individually
-        print(f"Bulk benchmarking failed: {e}, trying individual benchmarks...")
-        result_dict = {}
-        for name, fn in fns_dict.items():
-            try:
-                result = do_bench_npu(
-                    [fn],
-                    warmup=warmup,
-                    active=active,
-                )
-                # Extract timing from list
-                if isinstance(result, list):
-                    result = result[0] if len(result) > 0 else 0.0
-                result_dict[name] = result
-                print(f"{name:30s}: {result:.4f} ms")
-            except Exception as e2:
-                print(f"{name:30s}: Error - {e2}")
-                result_dict[name] = None
-
-        return result_dict
+    return result_dict
 
 
 def run_comparison(M=1024, N=1024, dtype=torch.bfloat16, warmup=10, rep=100):
@@ -183,7 +171,7 @@ def run_comparison(M=1024, N=1024, dtype=torch.bfloat16, warmup=10, rep=100):
         torch_throughput = (num_elements / torch_time) / 1e6  # Mega elements per second
         print(f"PyTorch throughput: {torch_throughput:.2f} M elements/s")
 
-    if best_time > 0:
+    if triton_results and best_time is not None and best_time > 0:
         triton_throughput = (num_elements / best_time) / 1e6
         print(f"Triton throughput: {triton_throughput:.2f} M elements/s")
         print(f"Throughput ratio: {triton_throughput / torch_throughput:.2f}x")
