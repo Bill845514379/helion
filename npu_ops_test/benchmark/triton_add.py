@@ -86,7 +86,7 @@ def triton_add_2d(x: torch.Tensor, y: torch.Tensor, block_m: int = 128, block_n:
         Output tensor containing x + y
     """
     x, y = torch.broadcast_tensors(x, y)
-    output = torch.empty_like(x)
+    output = torch.empty(x.shape, dtype=x.dtype, device=x.device)
 
     M, N = x.shape
     # Compute grid size
@@ -107,11 +107,11 @@ def triton_add_2d(x: torch.Tensor, y: torch.Tensor, block_m: int = 128, block_n:
         stride_y_n,
         stride_out_m,
         stride_out_n,
+        grid_m,
         BLOCK_M: tl.constexpr,
         BLOCK_N: tl.constexpr,
     ):
         pid = tl.program_id(axis=0)
-        grid_m = triton.cdiv(M, BLOCK_M)
         pid_m = pid // grid_m
         pid_n = pid % grid_m
 
@@ -149,6 +149,7 @@ def triton_add_2d(x: torch.Tensor, y: torch.Tensor, block_m: int = 128, block_n:
         y.stride(1),
         output.stride(0),
         output.stride(1),
+        grid_m,
         BLOCK_M=block_m,
         BLOCK_N=block_n,
     )
