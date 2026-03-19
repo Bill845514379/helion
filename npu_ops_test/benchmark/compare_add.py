@@ -15,14 +15,14 @@ import triton
 from triton_add import triton_add_2d
 
 
-def benchmark_functions(fns_dict, warmup=10, rep=100):
+def benchmark_functions(fns_dict, warmup=10, active=30):
     """
     Benchmark multiple functions using triton.testing.do_bench_npu.
 
     Args:
         fns_dict: Dictionary of {name: function} to benchmark
-        warmup: Number of warmup iterations
-        rep: Number of benchmark iterations
+        warmup: Number of warmup iterations (default: 5 in do_bench_npu)
+        active: Number of benchmark iterations (default: 30 in do_bench_npu)
 
     Returns:
         Dictionary of {name: timing_result}
@@ -32,12 +32,14 @@ def benchmark_functions(fns_dict, warmup=10, rep=100):
     results = {}
     for name, fn in fns_dict.items():
         try:
+            # do_bench_npu expects a list of functions
             result = do_bench_npu(
-                fn,
+                [fn],
                 warmup=warmup,
-                rep=rep,
-                return_mode="median",
+                active=active,
             )
+            # result is a list, take the first element
+            result = result[0] if isinstance(result, list) and len(result) > 0 else result
             results[name] = result
             print(f"{name:30s}: {result:.4f} ms")
         except Exception as e:
@@ -111,7 +113,7 @@ def run_comparison(M=1024, N=1024, dtype=torch.bfloat16, warmup=10, rep=100):
     }
 
     # Benchmark
-    results = benchmark_functions(fns_dict, warmup=warmup, rep=rep)
+    results = benchmark_functions(fns_dict, warmup=warmup, active=rep)
 
     # Calculate speedup
     print()

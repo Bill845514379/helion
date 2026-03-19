@@ -62,7 +62,11 @@ Best Triton configuration: Triton (block=64x64)
 
 ## Why Use do_bench_npu?
 
-`triton.testing.do_bench_npu` is specifically optimized for NPU (Ascend) hardware:
+`triton.testing.do_bench_npu` is specifically optimized for NPU (Ascend) hardware. Note that it has a different API than standard `do_bench`:
+
+- Accepts a list of functions as the first argument (`funcs`), not a single function
+- Uses `active` parameter instead of `rep` for number of iterations
+- Returns a list of results, one per function
 
 1. **Accurate Timing**: Uses `torch.npu.synchronize()` for proper NPU synchronization
 2. **Cache Management**: Clears NPU caches between measurements
