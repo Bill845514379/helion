@@ -33,6 +33,32 @@ from ._utils import counters
 from .autotuner.benchmarking import sync_object as sync_object
 from .runtime.settings import _get_backend
 
+
+def _get_triton_backend() -> str | None:
+    try:
+        import triton
+
+        # pyrefly: ignore [missing-attribute]
+        return triton.runtime.driver.active.get_current_target().backend
+    except Exception:
+        return None
+
+
+def is_mtia() -> bool:
+    """Return True if running on MTIA."""
+    return _get_triton_backend() == "mtia"
+
+
+def is_npu() -> bool:
+    """Return True if running on NPU (Ascend)."""
+    return _get_triton_backend() == "npu"
+
+
+def is_cuda() -> bool:
+    """Return True if running on CUDA (NVIDIA GPU)."""
+    return _get_triton_backend() == "cuda" and torch.cuda.is_available()
+
+
 if _get_backend() == "pallas":
     from .autotuner.benchmarking import compute_repeat_generic as compute_repeat
     from .autotuner.benchmarking import do_bench_generic as do_bench
@@ -73,31 +99,6 @@ def _strip_launcher_args(value: str) -> str:
     for pattern, replacement in strip_pairs:
         value = re.sub(pattern, replacement, value)
     return value
-
-
-def _get_triton_backend() -> str | None:
-    try:
-        import triton
-
-        # pyrefly: ignore [missing-attribute]
-        return triton.runtime.driver.active.get_current_target().backend
-    except Exception:
-        return None
-
-
-def is_mtia() -> bool:
-    """Return True if running on MTIA."""
-    return _get_triton_backend() == "mtia"
-
-
-def is_npu() -> bool:
-    """Return True if running on NPU (Ascend)."""
-    return _get_triton_backend() == "npu"
-
-
-def is_cuda() -> bool:
-    """Return True if running on CUDA (NVIDIA GPU)."""
-    return _get_triton_backend() == "cuda" and torch.cuda.is_available()
 
 
 def skipIfFn(
