@@ -824,8 +824,12 @@ class NPUBackend(TritonBackend):
         from .compile_environment import BlockSizeInfo
 
         # Determine minimum alignment based on min_element_bits
-        # 16 bytes / element_bits = min_elements_per_block
-        min_elements_per_block = max(16 // min_element_bits, 1)
+        # NPU requires 16-byte aligned memory accesses
+        # min_elements_per_block = 16 bytes * 8 bits/byte / element_bits = 128 / element_bits
+        # Examples:
+        #   bfloat16 (16 bits): 128 / 16 = 8 elements needed
+        #   float32 (32 bits): 128 / 32 = 4 elements needed
+        min_elements_per_block = max(128 // min_element_bits, 1)
 
         # Map block_id -> minimum dim_from_end across all tensors
         min_dim_from_end: dict[int, int] = {}
@@ -860,10 +864,12 @@ class NPUBackend(TritonBackend):
             aligned_min = current_min
             while aligned_min % min_elements_per_block != 0:
                 aligned_min += 1
+            # Ensure aligned_min is a power of 2
+            aligned_min = next_power_of_2(aligned_min)
 
-            # Use the larger of: alignment requirement or tensor dimension
-            dim_size = next_power_of_2(max(spec.size_hint, 1))
-            spec.update_min(min(aligned_min, dim_size))
+            # Update min_size to the aligned minimum
+            # This ensures all generated configs satisfy the alignment requirement
+            spec.update_min(aligned_min)
 
 
 # Mapping from torch dtype to JAX dtype string (e.g., "jnp.float32")
