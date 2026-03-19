@@ -783,6 +783,23 @@ class TileIRBackend(TritonBackend):
         }
 
 
+class NPUBackend(TritonBackend):
+    """NPU (Ascend) code generation backend using Triton-Ascend."""
+
+    @property
+    def name(self) -> str:
+        return "npu"
+
+    @property
+    def codegen_name(self) -> str:
+        return "triton"
+
+    def get_do_bench(self) -> Callable[..., float | tuple[float, ...]]:
+        from ..autotuner.benchmarking import do_bench_npu
+
+        return do_bench_npu
+
+
 # Mapping from torch dtype to JAX dtype string (e.g., "jnp.float32")
 _TORCH_TO_JAX_DTYPE: dict[str, str] = {
     "torch.float16": "jnp.float16",

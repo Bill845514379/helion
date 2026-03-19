@@ -37,6 +37,10 @@ if _get_backend() == "pallas":
     from .autotuner.benchmarking import compute_repeat_generic as compute_repeat
     from .autotuner.benchmarking import do_bench_generic as do_bench
     from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
+elif is_npu():
+    from .autotuner.benchmarking import compute_repeat as compute_repeat
+    from .autotuner.benchmarking import do_bench_npu as do_bench
+    from .autotuner.benchmarking import interleaved_bench as interleaved_bench
 else:
     from .autotuner.benchmarking import compute_repeat
     from .autotuner.benchmarking import do_bench as do_bench
@@ -154,6 +158,11 @@ def is_mtia() -> bool:
     return _get_triton_backend() == "mtia"
 
 
+def is_npu() -> bool:
+    """Return True if running on NPU (Ascend)."""
+    return _get_triton_backend() == "npu"
+
+
 def skipIfMTIA(reason: str) -> Callable[[Callable], Callable]:
     # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
     return skipIfFn(is_mtia, reason)
@@ -232,6 +241,8 @@ elif torch.xpu.is_available():
     DEVICE = torch.device("xpu")
 elif _has_mtia_runtime():
     DEVICE = torch.device("mtia")
+elif is_npu():
+    DEVICE = torch.device("npu")
 else:
     DEVICE = torch.device("cuda")
 
@@ -301,6 +312,12 @@ def skipUnlessMTIA(reason: str) -> Callable[[Callable], Callable]:
 
     # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
     return skipIfFn(lambda: not supports_mtia_tunables(), reason)
+
+
+def skipUnlessNPU(reason: str) -> Callable[[Callable], Callable]:
+    """Skip test unless running on NPU (Ascend) hardware."""
+    # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
+    return skipIfFn(lambda: not is_npu(), reason)
 
 
 def skipUnlessTileIR(reason: str) -> Callable[[Callable], Callable]:

@@ -355,3 +355,62 @@ def do_bench_generic(
         t1 = time.perf_counter()
         times.append((t1 - t0) * 1000)  # convert to ms
     return _summarize_statistics_fallback(times, quantiles, return_mode)
+
+
+def do_bench_npu(
+    fn: Callable[[], Any],
+    warmup: int = 25,
+    rep: int = 100,
+    grad_to_none: torch.Tensor | None = None,
+    quantiles: list[float] | None = None,
+    return_mode: str = "mean",
+) -> float | tuple[float, ...]:
+    """
+    Benchmark function using triton.testing.do_bench_npu for NPU devices.
+
+    This function is specifically optimized for NPU (Ascend) hardware and
+    should provide more accurate timing measurements than the generic
+    triton.testing.do_bench on NPU platforms.
+    """
+    from triton.testing import _summarize_statistics
+
+    assert return_mode in ["min", "max", "mean", "median", "all"]
+
+    # Warmup
+    fn()
+    torch.npu.synchronize()
+
+    # Estimate number of repeats
+    start = time.perf_counter()
+    for _ in range(5):
+        _compat.safe_clear_cache()
+        fn()
+    torch.npu.synchronize()
+    end = time.perf_counter()
+    estimate_ms = sync_object((end - start) * 1000 / 5)
+
+    # compute number of warmup and repeat
+    n_warmup = max(1, int(warmup / estimate_ms))
+    n_repeat = max(1, int(rep / estimate_ms))
+
+    # Warm-up
+    for _ in range(n_warmup):
+        fn()
+
+    # Benchmark
+    times: list[float] = []
+    for _i in range(n_repeat):
+        if grad_to_none is not None:
+            for x in grad_to_none:
+                x.grad = None
+        _compat.safe_clear_cache()
+        torch.npu.synchronize()
+        t0 = time.perf_counter()
+        fn()
+        torch.npu.synchronize()
+        t1 = time.perf_counter()
+        times.append((t1 - t0) * 1000)  # convert to ms
+
+    # Convert to tensor for _summarize_statistics
+    times_tensor = torch.tensor(times)
+    return _summarize_statistics(times_tensor, quantiles, return_mode)
