@@ -51,7 +51,11 @@ def is_mtia() -> bool:
 
 def is_npu() -> bool:
     """Return True if running on NPU (Ascend)."""
-    return _get_triton_backend() == "npu"
+    # Check both Helion backend setting and actual NPU availability
+    return (
+        _get_backend() == "npu"
+        or (hasattr(torch, "npu") and torch.npu.is_available())
+    )
 
 
 def is_cuda() -> bool:
