@@ -85,6 +85,21 @@ def _get_triton_backend() -> str | None:
         return None
 
 
+def is_mtia() -> bool:
+    """Return True if running on MTIA."""
+    return _get_triton_backend() == "mtia"
+
+
+def is_npu() -> bool:
+    """Return True if running on NPU (Ascend)."""
+    return _get_triton_backend() == "npu"
+
+
+def is_cuda() -> bool:
+    """Return True if running on CUDA (NVIDIA GPU)."""
+    return _get_triton_backend() == "cuda" and torch.cuda.is_available()
+
+
 def skipIfFn(
     cond_fn: Callable[[], bool], reason: str
 ) -> Callable[[Callable], Callable]:
@@ -153,19 +168,14 @@ def xfailIfFn(
     return decorator
 
 
-def is_mtia() -> bool:
-    """Return True if running on MTIA."""
-    return _get_triton_backend() == "mtia"
-
-
-def is_npu() -> bool:
-    """Return True if running on NPU (Ascend)."""
-    return _get_triton_backend() == "npu"
-
-
 def skipIfMTIA(reason: str) -> Callable[[Callable], Callable]:
     # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
     return skipIfFn(is_mtia, reason)
+
+
+def skipUnlessNPU(reason: str) -> Callable[[Callable], Callable]:
+    # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
+    return skipIfFn(lambda: not is_npu(), reason)
 
 
 class _LogCapture(logging.Handler):
@@ -199,11 +209,6 @@ class _OutputCapture:
         self.stderr.seek(0)
         self.stderr.truncate()
         return (stdout_val, stderr_val)
-
-
-def is_cuda() -> bool:
-    """Return True if running on CUDA (NVIDIA GPU)."""
-    return _get_triton_backend() == "cuda" and torch.cuda.is_available()
 
 
 PROJECT_ROOT: Path = Path(__file__).parent.parent
