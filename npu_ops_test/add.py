@@ -67,8 +67,15 @@ def check(m: int, n: int) -> None:
         m: First dimension of the test tensors
         n: Second dimension of the test tensors
     """
+    # Create tensors
     x = torch.randn([m, n], device=DEVICE, dtype=torch.bfloat16)
     y = torch.randn([m, n], device=DEVICE, dtype=torch.bfloat16)
+
+    # Ensure memory alignment to avoid NPU UUB access errors
+    # NPU requires 16-byte aligned addresses for vector operations
+    x = x.clone().contiguous()
+    y = y.clone().contiguous()
+
     run_example(add, torch.add, (x, y))
 
 
