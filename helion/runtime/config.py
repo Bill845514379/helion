@@ -224,16 +224,42 @@ class Config(Mapping[str, object]):
     def reduction_loops(self) -> list[int | None]:
         return cast("list[int | None]", self.config.get("reduction_loops", []))
 
+    def _is_npu_backend(self) -> bool:
+        """Check if current backend is NPU."""
+        try:
+            from .._compiler.compile_environment import CompileEnvironment
+
+            env = CompileEnvironment.current()
+            return env.backend.name == "npu"
+        except Exception:
+            # If CompileEnvironment is not available, try to check from device
+            try:
+                import torch
+                if hasattr(torch, "npu") and torch.npu.is_available():
+                    return True
+                # Also check if current device is NPU
+                if torch.cuda.is_available():
+                    device = torch.cuda.current_device()
+                    device_type = torch.cuda.get_device_properties(device).name.lower()
+                    return "ascend" in device_type or "npu" in device_type
+            except Exception:
+                pass
+            return False
+
     @property
-    def num_warps(self) -> int:
+    def num_warps(self) -> int | None:
         from ..autotuner.config_spec import DEFAULT_NUM_WARPS
 
+        if self._is_npu_backend():
+            return None
         return cast("int", self.config.get("num_warps", DEFAULT_NUM_WARPS))
 
     @property
-    def num_stages(self) -> int:
+    def num_stages(self) -> int | None:
         from ..autotuner.config_spec import DEFAULT_NUM_STAGES
 
+        if self._is_npu_backend():
+            return None
         return cast("int", self.config.get("num_stages", DEFAULT_NUM_STAGES))
 
     @property

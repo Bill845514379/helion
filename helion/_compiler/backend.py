@@ -699,23 +699,28 @@ class TritonBackend(Backend):
     def launcher_keyword_args(self, config: Config, *, has_barrier: bool) -> list[str]:
         from .._compat import supports_maxnreg
 
+        # num_warps and num_stages may be None for NPU backend
+        # But NPUBackend overrides this method, so this should only be called for CUDA/MTIA
+        num_warps = config.num_warps
+        num_stages = config.num_stages
+
         # Workaround for triton bug: warp_specialize requires at least 4 warps
         # See: https://github.com/triton-lang/triton/issues/7354
-        num_warps = config.num_warps
-        if any(config.range_warp_specializes):
+        if num_warps is not None and any(config.range_warp_specializes):
             num_warps = max(4, num_warps)
 
         from .. import _compat
-        
-        args = [
-            f"num_warps={num_warps}",
-            f"num_stages={config.num_stages}",
-            *(["launch_cooperative_grid=True"] if has_barrier and _compat.supports_launch_cooperative_grid() else []),
-        ] + [
+
+        args = []
+        if num_warps is not None:
+            args.append(f"num_warps={num_warps}")
+        if num_stages is not None:
+            args.append(f"num_stages={num_stages}")
+        args.extend([*(["launch_cooperative_grid=True"] if has_barrier and _compat.supports_launch_cooperative_grid() else [])] + [
             f"{x.removeprefix('_triton_config_')}={config[x]}"
             for x in config
             if x.startswith("_triton_config_")
-        ]
+        ])
 
         from ..autotuner.config_spec import _get_backend_tunable_keys
 
@@ -793,6 +798,16 @@ class NPUBackend(TritonBackend):
     @property
     def codegen_name(self) -> str:
         return "triton"
+
+    def supports_config_key(self, key: str) -> bool:
+        """NPU does not support num_warps and num_stages."""
+        if key in ("num_warps", "num_stages"):
+            return False
+        return super().supports_config_key(key)
+
+    def launcher_keyword_args(self, config: Config, *, has_barrier: bool) -> list[str]:
+        """For NPU, num_warps and num_stages are not supported."""
+        return []
 
     def get_do_bench(self) -> Callable[..., float | tuple[float, ...]]:
         from ..autotuner.benchmarking import do_bench_npu
