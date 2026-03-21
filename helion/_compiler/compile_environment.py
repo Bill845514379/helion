@@ -34,6 +34,7 @@ from .._utils import triton_is_available
 from ..language.constexpr import ConstExpr
 from .backend import Backend
 from .backend import CuteBackend
+from .backend import NPUBackend
 from .backend import PallasBackend
 from .backend import TileIRBackend
 from .backend import TritonBackend
@@ -126,6 +127,7 @@ class CompileEnvironment:
             "pallas": PallasBackend,
             "cute": CuteBackend,
             "tileir": TileIRBackend,
+            "npu": NPUBackend,
         }
         self._backend = backend_factory[settings.backend]()
         if settings.backend in ("pallas", "cute"):

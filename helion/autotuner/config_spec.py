@@ -573,7 +573,7 @@ class ConfigSpec:
 
         # Scalar fields (ConfigSpecFragment)
         is_tileir = self.backend_name == "tileir"
-        is_npu = hasattr(torch, "npu") and torch.npu.is_available()
+        is_npu = self.backend_name == "npu"
 
         if is_tileir:
             # TileIR: num_warps is unused (fixed at 4), num_stages has wider range
@@ -582,9 +582,9 @@ class ConfigSpec:
                 choices=tuple(range(1, 11))
             )
         elif is_npu:
-            # NPU: keep num_warps/num_stages fixed to avoid wasting autotune budget
-            # exploring unsupported / numerically unstable combinations.
-            num_warps_fragment = NumWarpsFragment(4, 4)
+            # NPU: num_warps and num_stages are not supported
+            # NPUBackend.supports_config_key returns False for these keys
+            num_warps_fragment = NumWarpsFragment(1, 1)
             num_stages_fragment = IntegerFragment(1, 1, 1)
         elif supports_amd_cdna_tunables():
             num_warps_fragment = NumWarpsFragment(1, 16, DEFAULT_NUM_WARPS)
