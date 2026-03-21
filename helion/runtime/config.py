@@ -106,6 +106,11 @@ class Config(Mapping[str, object]):
         for key, value in core_props.items():
             if value is not None:
                 self.config[key] = value
+            elif key in ("num_warps", "num_stages"):
+                # In NPU environment, explicitly set num_warps and num_stages to None
+                import torch
+                if hasattr(torch, "npu") and torch.npu.is_available():
+                    self.config[key] = None
         self.config.update(kwargs)
 
     def __getitem__(self, key: str) -> object:
@@ -225,15 +230,22 @@ class Config(Mapping[str, object]):
         return cast("list[int | None]", self.config.get("reduction_loops", []))
 
     @property
-    def num_warps(self) -> int:
+    def num_warps(self) -> int | None:
         from ..autotuner.config_spec import DEFAULT_NUM_WARPS
 
+        # In NPU environment, return None if explicitly set to None
+        if "num_warps" in self.config and self.config["num_warps"] is None:
+            return None
         return cast("int", self.config.get("num_warps", DEFAULT_NUM_WARPS))
 
     @property
-    def num_stages(self) -> int:
+    def num_stages(self) -> int | None:
         from ..autotuner.config_spec import DEFAULT_NUM_STAGES
+        import torch
 
+        # In NPU environment, return None if explicitly set to None
+        if "num_stages" in self.config and self.config["num_stages"] is None:
+            return None
         return cast("int", self.config.get("num_stages", DEFAULT_NUM_STAGES))
 
     @property

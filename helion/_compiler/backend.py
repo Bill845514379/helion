@@ -553,6 +553,12 @@ class TritonBackend(Backend):
 
         if key in get_mtia_tunable_fragments():
             return supports_mtia_tunables()
+        
+        # In NPU environment, disable num_warps and num_stages tuning
+        if key in ("num_warps", "num_stages"):
+            if hasattr(torch, "npu") and torch.npu.is_available():
+                return False
+        
         return super().supports_config_key(key)
 
     def tunable_fragments(self) -> dict[str, ConfigSpecFragment]:
@@ -702,20 +708,35 @@ class TritonBackend(Backend):
         # Workaround for triton bug: warp_specialize requires at least 4 warps
         # See: https://github.com/triton-lang/triton/issues/7354
         num_warps = config.num_warps
-        if any(config.range_warp_specializes):
+        num_stages = config.num_stages
+        num_warps_in_config = "num_warps" in config
+        num_stages_in_config = "num_stages" in config
+        emit_num_warps = num_warps is not None or num_warps_in_config
+        emit_num_stages = num_stages is not None or num_stages_in_config
+
+        if emit_num_warps and num_warps is not None and any(config.range_warp_specializes):
             num_warps = max(4, num_warps)
 
         from .. import _compat
         
-        args = [
-            f"num_warps={num_warps}",
-            f"num_stages={config.num_stages}",
-            *(["launch_cooperative_grid=True"] if has_barrier and _compat.supports_launch_cooperative_grid() else []),
-        ] + [
+        # Build args list.
+        #
+        # In NPU mode we intentionally set `num_warps/num_stages` to `None`.
+        # Some launcher wrappers expect these keyword-only arguments to be
+        # present (even if the value is None), so we emit them whenever they
+        # exist in `config`.
+        args = []
+        if emit_num_warps:
+            args.append(f"num_warps={num_warps!r}")
+        if emit_num_stages:
+            args.append(f"num_stages={num_stages!r}")
+        if has_barrier and _compat.supports_launch_cooperative_grid():
+            args.append("launch_cooperative_grid=True")
+        args.extend([
             f"{x.removeprefix('_triton_config_')}={config[x]}"
             for x in config
             if x.startswith("_triton_config_")
-        ]
+        ])
 
         from ..autotuner.config_spec import _get_backend_tunable_keys
 
