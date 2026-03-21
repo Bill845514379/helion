@@ -748,6 +748,10 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
         self.max_size: int = (
             next_power_of_2(bounded_hint) if max_size is None else max_size
         )
+        # Keep NPU autotuning search space conservative. Ascend backends can
+        # degrade or fail with very large block sizes, so clamp to <= 32.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self.max_size = min(self.max_size, 128)
         if self.max_size < self.min_size:
             self.max_size = self.min_size
         assert self.min_size <= self.max_size
