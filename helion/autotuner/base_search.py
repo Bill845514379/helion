@@ -1234,7 +1234,15 @@ class PopulationBasedSearch(BaseSearch):
         duplicates = 0
         for i, entry in enumerate(cached_entries):
             try:
-                self.log.debug(f"Cached config {i + 1}: {entry.config}")
+                # Filter out unsupported keys from cached config before printing
+                cached_config_dict = dict(entry.config)
+                unsupported_keys = [
+                    k for k in cached_config_dict.keys()
+                    if not self.config_spec.supports_config_key(k)
+                ]
+                for k in unsupported_keys:
+                    cached_config_dict.pop(k, None)
+                self.log.debug(f"Cached config {i + 1}: {cached_config_dict}")
                 flat = entry.to_mutable_flat_config()
                 transferred_config = self.config_gen.unflatten(flat)
                 if transferred_config in seen:
@@ -1536,14 +1544,24 @@ def population_statistics(population: list[PopulationMember]) -> str:
         if count:
             parts.append(f"{label}={count}")
 
+    # Filter out unsupported keys from best config before printing
+    # e.g., num_warps and num_stages are not supported on NPU
+    best_config_dict = dict(population[0].config)
+    unsupported_keys = [
+        k for k in best_config_dict.keys()
+        if not self.config_spec.supports_config_key(k)
+    ]
+    for k in unsupported_keys:
+        best_config_dict.pop(k, None)
+
     parts.extend(
         (
             f"min={working[0].perf:.4f}",
             f"mid={working[len(working) // 2].perf:.4f}",
             f"max={working[-1].perf:.4f}",
-            f"best={pprint.pformat(dict(population[0].config), width=100, compact=True)}",
+            f"best={pprint.pformat(best_config_dict, width=100, compact=True)}",
+            )
         )
-    )
     return "\n" + "\n".join(parts)
 
 

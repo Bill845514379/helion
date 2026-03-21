@@ -83,10 +83,15 @@ def iter_cache_entries(
                 flat_config = tuple(raw_flat)
             else:
                 flat_config = None
+            config = Config.from_json(data["config"])
+            # Remove num_warps and num_stages if they exist in cached config
+            # These will be re-added by normalize() if supported by current backend
+            config.config.pop("num_warps", None)
+            config.config.pop("num_stages", None)
             yield SavedBestConfig(
                 hardware=fields.get("hardware", ""),
                 specialization_key=fields.get("specialization_key", ""),
-                config=Config.from_json(data["config"]),
+                config=config,
                 config_spec_hash=fields.get("config_spec_hash", ""),
                 flat_config=flat_config,
             )
@@ -174,7 +179,12 @@ class LocalAutotuneCache(AutotuneCacheBase):
         path = self._get_local_cache_path()
         try:
             data = json.loads(path.read_text())
-            return Config.from_json(data["config"])
+            config = Config.from_json(data["config"])
+            # Remove num_warps and num_stages if they exist in cached config
+            # These will be re-added by normalize() if supported by current backend
+            config.config.pop("num_warps", None)
+            config.config.pop("num_stages", None)
+            return config
         except Exception:
             return None
 
