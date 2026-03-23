@@ -48,8 +48,9 @@ from .._compat import extract_device
 from .._compat import get_device_name
 from ..runtime.precompile_shim import already_compiled
 from ..runtime.precompile_shim import make_precompiler
-from .benchmarking import do_bench
-from .benchmarking import interleaved_bench
+from .benchmarking import _bench_device_synchronize
+from .benchmarking import default_do_bench
+from .benchmarking import default_interleaved_bench
 from .benchmarking import sync_object
 from .logger import SUPPRESSED_TRITON_CODE_MSG
 from .logger import AutotuneLogEntry
@@ -357,7 +358,7 @@ class BaseSearch(BaseAutotuner):
         if self.settings.autotune_baseline_fn is not None:
             try:
                 baseline_output = self.settings.autotune_baseline_fn(*new_args)
-                torch.accelerator.synchronize()
+                _bench_device_synchronize()
             except Exception as e:
                 raise exc.AutotuneError(
                     "Custom baseline function failed while computing baseline.\n"
@@ -370,7 +371,7 @@ class BaseSearch(BaseAutotuner):
                 baseline_output = self.kernel.compile_config(
                     baseline_config, allow_print=False
                 )(*new_args)
-                torch.accelerator.synchronize()
+                _bench_device_synchronize()
             except Exception as e:
                 decorator = self.kernel.format_kernel_decorator(
                     baseline_config, self.settings
@@ -582,10 +583,10 @@ class BaseSearch(BaseAutotuner):
                 )
             else:
                 working_args = self.args
-            torch.accelerator.synchronize()
+            _bench_device_synchronize()
             with _capture_ctx as _captured_output:
                 output = fn(*working_args)  # make sure the kernel is compiled
-            torch.accelerator.synchronize()
+            _bench_device_synchronize()
             if (
                 self.settings.autotune_accuracy_check
                 and not self._validate_against_baseline(config, output, working_args)
@@ -597,7 +598,7 @@ class BaseSearch(BaseAutotuner):
             _backend = getattr(getattr(self, "config_spec", None), "backend", None)
             _bench_fn = (
                 _backend.get_do_bench() if _backend is not None else None
-            ) or do_bench
+            ) or default_do_bench()
             res = _bench_fn(
                 functools.partial(fn, *working_args),
                 return_mode="median",
@@ -1338,7 +1339,7 @@ class PopulationBasedSearch(BaseSearch):
         _backend = getattr(getattr(self, "config_spec", None), "backend", None)
         _ib = (
             _backend.get_interleaved_bench() if _backend is not None else None
-        ) or interleaved_bench
+        ) or default_interleaved_bench()
         bench_fn: Callable[..., list[float]] = (
             self.settings.autotune_benchmark_fn or _ib
         )
@@ -1966,10 +1967,10 @@ def _run_kernel_in_subprocess_spawn(
         fn = _load_compiled_fn(fn_spec)
         args = torch.load(args_path)
         assert isinstance(args, (tuple, list))
-        torch.accelerator.synchronize()
+        _bench_device_synchronize()
         with capture_output() as _cap:
             fn(*args)
-        torch.accelerator.synchronize()
+        _bench_device_synchronize()
         _write_result_file(result_path, {"status": "ok"})
     except Exception as exc:
         status = 1
