@@ -37,7 +37,8 @@ if TYPE_CHECKING:
         ) -> BaseAutotuner: ...
 
 
-BackendLiteral = Literal["triton", "pallas", "cute", "tileir"]
+
+BackendLiteral = Literal["triton", "pallas", "cute", "tileir", "npu"]
 DotPrecision = Literal["tf32", "tf32x3", "ieee", "hf32"]
 PrecompileMode = Literal["spawn", "fork"] | None
 _TRUE_LITERALS = frozenset({"1", "true", "yes", "on"})
@@ -375,6 +376,7 @@ def _get_backend() -> BackendLiteral:
             "pallas": "pallas",
             "cute": "cute",
             "tileir": "tileir",
+            "npu": "npu",
         },
     )
 

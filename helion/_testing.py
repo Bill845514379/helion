@@ -33,10 +33,44 @@ from ._utils import counters
 from .autotuner.benchmarking import sync_object as sync_object
 from .runtime.settings import _get_backend
 
+
+def _get_triton_backend() -> str | None:
+    try:
+        import triton
+
+        # pyrefly: ignore [missing-attribute]
+        return triton.runtime.driver.active.get_current_target().backend
+    except Exception:
+        return None
+
+
+def is_mtia() -> bool:
+    """Return True if running on MTIA."""
+    return _get_triton_backend() == "mtia"
+
+
+def is_npu() -> bool:
+    """Return True if running on NPU (Ascend)."""
+    # Check both Helion backend setting and actual NPU availability
+    return (
+        _get_backend() == "npu"
+        or (hasattr(torch, "npu") and torch.npu.is_available())
+    )
+
+
+def is_cuda() -> bool:
+    """Return True if running on CUDA (NVIDIA GPU)."""
+    return _get_triton_backend() == "cuda" and torch.cuda.is_available()
+
+
 if _get_backend() == "pallas":
     from .autotuner.benchmarking import compute_repeat_generic as compute_repeat
     from .autotuner.benchmarking import do_bench_generic as do_bench
     from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
+elif is_npu():
+    from .autotuner.benchmarking import compute_repeat as compute_repeat
+    from .autotuner.benchmarking import do_bench_npu as do_bench
+    from .autotuner.benchmarking import interleaved_bench as interleaved_bench
 else:
     from .autotuner.benchmarking import compute_repeat
     from .autotuner.benchmarking import do_bench as do_bench
@@ -69,16 +103,6 @@ def _strip_launcher_args(value: str) -> str:
     for pattern, replacement in strip_pairs:
         value = re.sub(pattern, replacement, value)
     return value
-
-
-def _get_triton_backend() -> str | None:
-    try:
-        import triton
-
-        # pyrefly: ignore [missing-attribute]
-        return triton.runtime.driver.active.get_current_target().backend
-    except Exception:
-        return None
 
 
 def skipIfFn(
@@ -149,14 +173,14 @@ def xfailIfFn(
     return decorator
 
 
-def is_mtia() -> bool:
-    """Return True if running on MTIA."""
-    return _get_triton_backend() == "mtia"
-
-
 def skipIfMTIA(reason: str) -> Callable[[Callable], Callable]:
     # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
     return skipIfFn(is_mtia, reason)
+
+
+def skipUnlessNPU(reason: str) -> Callable[[Callable], Callable]:
+    # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
+    return skipIfFn(lambda: not is_npu(), reason)
 
 
 class _LogCapture(logging.Handler):
@@ -190,11 +214,6 @@ class _OutputCapture:
         self.stderr.seek(0)
         self.stderr.truncate()
         return (stdout_val, stderr_val)
-
-
-def is_cuda() -> bool:
-    """Return True if running on CUDA (NVIDIA GPU)."""
-    return _get_triton_backend() == "cuda" and torch.cuda.is_available()
 
 
 PROJECT_ROOT: Path = Path(__file__).parent.parent
@@ -232,7 +251,7 @@ elif torch.xpu.is_available():
     DEVICE = torch.device("xpu")
 elif _has_mtia_runtime():
     DEVICE = torch.device("mtia")
-elif torch.npu.is_available():
+elif is_npu():
     DEVICE = torch.device("npu")
 else:
     DEVICE = torch.device("cuda")
@@ -303,6 +322,12 @@ def skipUnlessMTIA(reason: str) -> Callable[[Callable], Callable]:
 
     # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
     return skipIfFn(lambda: not supports_mtia_tunables(), reason)
+
+
+def skipUnlessNPU(reason: str) -> Callable[[Callable], Callable]:
+    """Skip test unless running on NPU (Ascend) hardware."""
+    # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
+    return skipIfFn(lambda: not is_npu(), reason)
 
 
 def skipUnlessTileIR(reason: str) -> Callable[[Callable], Callable]:

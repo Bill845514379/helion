@@ -69,6 +69,7 @@ def check(m: int, n: int) -> None:
     """
     x = torch.randn([m, n], device=DEVICE, dtype=torch.bfloat16)
     y = torch.randn([m, n], device=DEVICE, dtype=torch.bfloat16)
+
     run_example(add, torch.add, (x, y))
 
 

@@ -379,7 +379,11 @@ class ConfigSpec:
             "maxnreg",
         ):
             if not self.supports_config_key(name):
-                config.pop(name, None)
+                # In NPU environment, set num_warps and num_stages to None instead of removing
+                if name in ("num_warps", "num_stages") and hasattr(torch, "npu") and torch.npu.is_available():
+                    config[name] = None
+                else:
+                    config.pop(name, None)
 
         if self.supports_config_key("num_warps"):
             config.setdefault("num_warps", DEFAULT_NUM_WARPS)
@@ -520,6 +524,10 @@ class ConfigSpec:
         allowed_keys = self.supported_config_keys() | {
             *self.user_defined_tunables.keys()
         }
+        # In NPU environment, allow num_warps and num_stages keys (set to None)
+        is_npu = hasattr(torch, "npu") and torch.npu.is_available()
+        if is_npu:
+            allowed_keys = allowed_keys | {"num_warps", "num_stages"}
         if invalid_keys := ({*config} - allowed_keys):
             raise InvalidConfig(f"Invalid config keys {sorted(invalid_keys)!r}")
 
@@ -575,6 +583,8 @@ class ConfigSpec:
         is_tileir = self.backend_name == "tileir"
         is_npu = hasattr(torch, "npu") and torch.npu.is_available()
 
+        # Create num_warps and num_stages fragments for backends that support them
+        # Note: In NPU environment, supports_config_key returns False for these keys
         if is_tileir:
             # TileIR: num_warps is unused (fixed at 4), num_stages has wider range
             num_warps_fragment: ConfigSpecFragment = NumWarpsFragment(4, 4)
@@ -582,8 +592,8 @@ class ConfigSpec:
                 choices=tuple(range(1, 11))
             )
         elif is_npu:
-            # NPU: keep num_warps/num_stages fixed to avoid wasting autotune budget
-            # exploring unsupported / numerically unstable combinations.
+            # NPU: num_warps and num_stages fragments (for backward compatibility)
+            # but supports_config_key returns False, so they won't be added to fields
             num_warps_fragment = NumWarpsFragment(4, 4)
             num_stages_fragment = IntegerFragment(1, 1, 1)
         elif supports_amd_cdna_tunables():
@@ -738,6 +748,10 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
         self.max_size: int = (
             next_power_of_2(bounded_hint) if max_size is None else max_size
         )
+        # Keep NPU autotuning search space conservative. Ascend backends can
+        # degrade or fail with very large block sizes, so clamp to <= 32.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self.max_size = min(self.max_size, 128)
         if self.max_size < self.min_size:
             self.max_size = self.min_size
         assert self.min_size <= self.max_size

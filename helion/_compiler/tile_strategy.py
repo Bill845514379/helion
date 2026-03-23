@@ -1170,11 +1170,10 @@ class NDTileStrategy(_BaseNDTileStrategy):
         index_var: str,
         end: object,
     ) -> ast.stmt | None:
-        if (
-            CompileEnvironment.current()
-            .block_sizes[block_idx]
-            .known_multiple(block_size)
-        ):
+        env = CompileEnvironment.current()
+        if not env.backend.force_tile_mask() and env.block_sizes[
+            block_idx
+        ].known_multiple(block_size):
             self.mask_vars[block_idx] = None
             return None
         self.mask_vars[block_idx] = mask_var = self.fn.new_var(
