@@ -534,6 +534,16 @@ class TritonBackend(Backend):
     def name(self) -> str:
         return "triton"
 
+    def force_tile_mask(self) -> bool:
+        """Emit explicit bounds masks on NPU even when shapes divide the block size.
+
+        Ascend's vector core can fault on unmasked ``tl.load``/``tl.store`` in
+        some codegen paths.  TileIR keeps the default (no forced masks).
+        """
+        if self.name == "tileir":
+            return False
+        return hasattr(torch, "npu") and torch.npu.is_available()
+
     def supports_config_key(self, key: str) -> bool:
         if key == "waves_per_eu":
             from .._compat import is_hip
@@ -802,110 +812,6 @@ class TileIRBackend(TritonBackend):
             "num_ctas": PowerOfTwoFragment(1, 2, 1),
             "occupancy": PowerOfTwoFragment(1, 8, 1),
         }
-
-
-class NPUBackend(TritonBackend):
-    """NPU (Ascend) code generation backend using Triton-Ascend."""
-
-    @property
-    def name(self) -> str:
-        return "npu"
-
-    @property
-    def codegen_name(self) -> str:
-        return "triton"
-
-    def get_do_bench(self) -> Callable[..., float | tuple[float, ...]]:
-        from ..autotuner.benchmarking import do_bench_npu
-
-        return do_bench_npu
-
-    def adjust_block_size_constraints(
-        self,
-        block_specs: list[object],
-        ndim: int,
-        block_sizes: list[object] | None = None,
-        kernel_tensor_sizes: dict[tuple[object, ...], int] | None = None,
-        min_element_bits: int = 32,
-    ) -> None:
-        """Enforce NPU alignment on block sizes.
-
-        NPU requires 16-byte aligned memory accesses for vector operations:
-        - bfloat16 (2 bytes): block_size must be multiple of 8
-        - float32 (4 bytes): block_size must be multiple of 4
-        - float16 (2 bytes): block_size must be multiple of 8
-        - int32 (4 bytes): block_size must be multiple of 4
-
-        Additionally, use a more conservative minimum (16 or 32) to avoid
-        edge cases where aligned addresses still cause UUB access errors.
-
-        This ensures that memory accesses are properly aligned and prevents
-        UUB (Unified Unified Buffer) access errors and illegal instructions.
-        """
-        from torch._inductor.runtime.runtime_utils import next_power_of_2
-
-        from ..autotuner.config_spec import BlockSizeSpec
-        from .compile_environment import BlockSizeInfo
-
-        # Determine minimum alignment based on min_element_bits
-        # NPU requires 16-byte aligned memory accesses
-        # min_elements_per_block = 16 bytes * 8 bits/byte / element_bits = 128 / element_bits
-        # Examples:
-        #   bfloat16 (16 bits): 128 / 16 = 8 elements needed
-        #   float32 (32 bits): 128 / 32 = 4 elements needed
-        min_elements_per_block = max(128 // min_element_bits, 1)
-
-        # Use a more conservative minimum to avoid edge cases
-        # For bfloat16: at least 16 elements (32 bytes) to ensure safe alignment
-        # For float32: at least 8 elements (32 bytes) to ensure safe alignment
-        conservative_min = {
-            16: 16,   # bfloat16/float16 (2 bytes): 16 elements = 32 bytes
-            32: 8,    # float32/int32 (4 bytes): 8 elements = 32 bytes
-            64: 4,    # float64 (8 bytes): 4 elements = 32 bytes
-        }.get(min_element_bits, 16)
-
-        # Use the more restrictive of alignment requirement and conservative minimum
-        min_elements_per_block = max(min_elements_per_block, conservative_min)
-
-        # Map block_id -> minimum dim_from_end across all tensors
-        min_dim_from_end: dict[int, int] = {}
-        min_tensor_ndim: dict[int, int] = {}
-        if block_sizes is not None and kernel_tensor_sizes is not None:
-            for shape in kernel_tensor_sizes:
-                tensor_ndim = len(shape)
-                for d, dim_expr in enumerate(shape):
-                    for info in block_sizes:
-                        if not isinstance(info, BlockSizeInfo):
-                            continue
-                        if info.size_matches(dim_expr):  # pyrefly: ignore[bad-argument-type]
-                            dfe = tensor_ndim - 1 - d
-                            if info.block_id not in min_dim_from_end:
-                                min_dim_from_end[info.block_id] = dfe
-                                min_tensor_ndim[info.block_id] = tensor_ndim
-                            else:
-                                min_dim_from_end[info.block_id] = min(
-                                    min_dim_from_end[info.block_id], dfe
-                                )
-                                min_tensor_ndim[info.block_id] = min(
-                                    min_tensor_ndim[info.block_id], tensor_ndim,
-                                )
-
-        for i, spec in enumerate(block_specs):
-            if not isinstance(spec, BlockSizeSpec):
-                continue
-
-            # Update minimum to ensure 16-byte alignment
-            # Find next power of 2 that satisfies alignment requirement
-            current_min = spec.size_hint
-            aligned_min = current_min
-            while aligned_min % min_elements_per_block != 0:
-                aligned_min += 1
-            # Ensure aligned_min is a power of 2
-            aligned_min = next_power_of_2(aligned_min)
-
-            # Update min_size to the aligned minimum
-            # This ensures all generated configs satisfy the alignment requirement
-            spec.update_min(aligned_min)
 
 
 # Mapping from torch dtype to JAX dtype string (e.g., "jnp.float32")
