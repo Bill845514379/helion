@@ -18,6 +18,19 @@ from .progress_bar import iter_with_progress
 T = TypeVar("T")
 
 
+def _bench_device_synchronize() -> None:
+    """Synchronize the active device for wall-clock microbenchmarks.
+
+    On Ascend, ``torch.accelerator.synchronize()`` can disagree with torch_npu's
+    stream bookkeeping when multiple kernels were queued; use
+    ``torch.npu.synchronize()`` when NPU is available.
+    """
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        torch.npu.synchronize()
+    else:
+        torch.accelerator.synchronize()
+
+
 def compute_repeat(
     fn: Callable[[], object],
     *,
@@ -71,12 +84,12 @@ def compute_repeat_generic(
     """
     # Warm the pipeline once before collecting timing samples.
     fn()
-    torch.accelerator.synchronize()
+    _bench_device_synchronize()
 
     start = time.perf_counter()
     for _ in range(estimate_runs):
         fn()
-    torch.accelerator.synchronize()
+    _bench_device_synchronize()
     end = time.perf_counter()
 
     estimate_ms = (end - start) * 1000 / max(estimate_runs, 1)
@@ -153,7 +166,7 @@ def interleaved_bench_generic(
     # warmup
     for fn in fns:
         fn()
-    torch.accelerator.synchronize()
+    _bench_device_synchronize()
 
     all_times: list[list[float]] = [[] for _ in range(len(fns))]
 
@@ -165,14 +178,26 @@ def interleaved_bench_generic(
     )
     for _i in iterator:
         for j in range(len(fns)):
-            torch.accelerator.synchronize()
+            _bench_device_synchronize()
             start = time.perf_counter()
             fns[j]()
-            torch.accelerator.synchronize()
+            _bench_device_synchronize()
             end = time.perf_counter()
             all_times[j].append((end - start) * 1000)  # convert to ms
 
     return [statistics.median(times) for times in all_times]
+
+
+def _coerce_triton_timing(val: object) -> float | tuple[float, ...]:
+    """When ``_summarize_statistics`` is given a Tensor, some builds return Tensor outputs."""
+    if isinstance(val, torch.Tensor):
+        return float(val.detach().cpu().item())
+    if isinstance(val, tuple):
+        return tuple(
+            float(x.detach().cpu().item()) if isinstance(x, torch.Tensor) else float(x)
+            for x in val
+        )
+    return float(val)
 
 
 def sync_object(obj: T) -> T:
@@ -299,16 +324,16 @@ def do_bench(
     # Record clocks
     di.synchronize()
     times = [s.elapsed_time(e) for s, e in zip(start_event, end_event, strict=True)]
-    
-    # Triton-Ascend expects times to be a Tensor, not a list
-    # To support both Triton and Triton-Ascend, always convert to Tensor first
-    try:
-        import torch
-        times_tensor = torch.tensor(times)
-        return _summarize_statistics(times_tensor, quantiles, return_mode)  # pyrefly: ignore
-    except Exception:
-        # Fall back to list if tensor conversion fails
-        return _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
+    # Ascend Triton expects a Tensor here; CUDA upstream returns plain floats from a list.
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        try:
+            raw = _summarize_statistics(
+                torch.tensor(times), quantiles, return_mode
+            )  # pyrefly: ignore
+        except Exception:
+            raw = _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
+        return _coerce_triton_timing(raw)
+    return _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
 
 
 def do_bench_generic(
@@ -410,14 +435,13 @@ def do_bench_npu(
         active=rep,  # active is the number of iterations
     )
 
-    # Handle return type (may be list or scalar)
     if isinstance(result, list):
-        if len(result) > 0:
-            return result[0]
-        else:
+        if not result:
             return 0.0
+        r = result[0]
     else:
-        return result
+        r = result
+    return float(r.item()) if isinstance(r, torch.Tensor) else float(r)
 
 
 def _do_bench_npu_fallback(
@@ -474,6 +498,6 @@ def _do_bench_npu_fallback(
         t1 = time.perf_counter()
         times.append((t1 - t0) * 1000)  # convert to ms
 
-    # Convert to tensor for _summarize_statistics
-    times_tensor = torch.tensor(times)
-    return _summarize_statistics(times_tensor, quantiles, return_mode)
+    return _coerce_triton_timing(
+        _summarize_statistics(torch.tensor(times), quantiles, return_mode)
+    )
