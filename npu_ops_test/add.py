@@ -14,6 +14,11 @@ from __future__ import annotations
 
 import torch
 import torch_npu
+
+# Match matmul NPU setup: avoid internal-format tensors that can disagree with
+# Helion/Triton pointer loads and fault the Ascend vector core.
+torch_npu.npu.config.allow_internal_format = True
+
 import helion
 # from helion._testing import DEVICE
 DEVICE = "npu"
