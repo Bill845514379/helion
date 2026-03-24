@@ -34,3 +34,5 @@ _logging.init_logs()
 from ._compiler._dynamo.variables import register_dynamo_variable  # noqa: E402
 
 register_dynamo_variable()
+_compat_module.register_npu_backend()
+_compat_module._register_interface_for_device()

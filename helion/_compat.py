@@ -22,6 +22,12 @@ if TYPE_CHECKING:
 
     from .autotuner.config_fragment import ConfigSpecFragment
 
+from torch_npu._inductor.codegen.wrapper import NPUWrapperCodeGen
+from torch._inductor.codegen.common import register_backend_for_device
+from torch._inductor.codegen.triton import TritonScheduling
+from torch._dynamo.device_interface import register_interface_for_device
+from torch_npu._inductor.runtime import NPUDeviceProperties
+
 if triton_is_available():
     from torch._inductor.utils import triton_type
     import triton
@@ -599,3 +605,14 @@ def extract_device(args: Sequence[object]) -> torch.device | None:
         if isinstance(arg, list) and len(arg) > 0 and isinstance(arg[0], torch.Tensor):
             return arg[0].device
     return None
+
+def register_npu_backend():
+    """Register Inductor backend for NPU device"""
+    register_backend_for_device(
+        device="npu",  # or "privateuseone" if NPU is a custom device
+        device_scheduling=TritonScheduling,  # or use your custom Scheduling class
+        device_wrapper_codegen=NPUWrapperCodeGen,
+    )
+
+def _register_interface_for_device():
+    register_interface_for_device("npu", NPUDeviceProperties)
