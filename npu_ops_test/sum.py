@@ -21,12 +21,13 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
+
 # %%
 # Sum Kernel
 # ----------
 
 # %%
-@helion.kernel()
+@helion.kernel(l)
 def sum_kernel(x: torch.Tensor) -> torch.Tensor:
     """
     Sums a 2D tensor along the last dimension.
