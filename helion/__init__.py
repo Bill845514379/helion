@@ -13,7 +13,7 @@ from .runtime import kernel
 from .runtime import kernel as jit  # alias
 from .runtime.settings import RefMode
 from .runtime.settings import Settings
-
+from ._testing import is_npu
 __all__ = [
     "Config",
     "Kernel",
@@ -34,3 +34,6 @@ _logging.init_logs()
 from ._compiler._dynamo.variables import register_dynamo_variable  # noqa: E402
 
 register_dynamo_variable()
+if is_npu():
+    _compat_module.register_npu_backend()
+    _compat_module._register_interface_for_device()
