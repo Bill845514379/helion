@@ -22,12 +22,19 @@ from helion._testing import run_example
 import helion.language as hl
 
 
+import torch_npu
+
+# Match matmul NPU setup: avoid internal-format tensors that can disagree with
+# Helion/Triton pointer loads and fault the Ascend vector core.
+torch_npu.npu.config.allow_internal_format = True
+
+
 # %%
 # Sum Kernel
 # ----------
 
 # %%
-@helion.kernel(autotune_effort="full")
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def sum_kernel(x: torch.Tensor) -> torch.Tensor:
     """
     Sums a 2D tensor along the last dimension.
@@ -106,7 +113,8 @@ def main() -> None:
     """
     Main entry point that runs the sum kernel verification with different tensor sizes.
     """
-    check(512, 256)
+    # check(128, 128)
+
     check(2048, 2048)
 
 

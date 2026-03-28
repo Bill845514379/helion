@@ -714,15 +714,18 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
         )
         with ctx:
             config = self.env.backend.autotune(self, args, force=force, **kwargs)
+        # Autotuning compiles many trial configs, each cached in PyCodeCache
+        # as a separate module with its own Triton JIT function.  When the
+        # best config is recompiled afterwards, PyCodeCache may return the
+        # stale module whose JIT function is associated with incorrect
+        # binaries in Triton's disk cache.  Clearing all autotuning-related
+        # caches ensures set_config() gets a fresh module and JIT function.
+        self._compile_cache.clear()
+        self._cache_path_map.clear()
+        if isinstance(self.env.backend, TritonBackend):
+            PyCodeCache.cache_clear()
         if use_ephemeral:
             self._clear_triton_jit_cache(config)
-            evict = config
-            if self._compile_cache.pop(evict, None) is None:
-                default = self.config_spec.default_config()
-                # pyrefly: ignore [bad-argument-type]
-                evict = Config(**(default.config | config.config))
-                self._compile_cache.pop(evict, None)
-            self._cache_path_map.pop(evict, None)
         self.set_config(config)
         return config
 

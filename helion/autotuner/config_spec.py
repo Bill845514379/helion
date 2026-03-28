@@ -114,6 +114,8 @@ DEFAULT_MAXNREG = None
 @functools.cache
 def get_valid_eviction_policies(backend_name: str) -> tuple[str, ...]:
     if backend_name == "triton" and not supports_amd_cdna_tunables():
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            return ("",)
         return ("", "first", "last")
     return ("",)
 

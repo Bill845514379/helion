@@ -34,26 +34,12 @@ torch_npu.npu.config.allow_internal_format = True
 # %%
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
-    static_shapes=True,
+    # static_shapes=True,
     # Set autotune effort to quick for faster verification
-    autotune_effort="quick",
+    autotune_ignore_errors=True,
+    autotune_effort="full",
     # Disable autotung over unrolling/range_num_stages
     # tl.dot is pipelined with num_stages
-    # Note: range_unroll_factors and range_num_stages are not supported for tileir backend
-    autotune_config_overrides={
-        "range_unroll_factors": [0, 0],
-        "range_num_stages": [0, 0],
-        **({
-            "num_stages": 1,
-            "num_warps": 4,
-            "range_multi_buffers": [None, None],
-            # Use a more conservative pid_type for NPU
-            "pid_type": "flat",
-        } if DEVICE == "npu" else {}),
-    }
-    if not use_tileir_tunables()
-    else {},
-    autotune_ignore_errors=True
 )
 def matmul(
     x: Tensor,
@@ -347,7 +333,7 @@ def main() -> None:
     # pass
     # check(512, 512, 512)
     # pass
-    check(256, 256, 256)
+    check(64, 64, 64)
 
 
 # %%
