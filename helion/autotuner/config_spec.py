@@ -332,6 +332,11 @@ class ConfigSpec:
                 if changed:
                     config["reduction_loops"] = new_loops
 
+        # NPU UB overflow prevention: cap total tile numel so it fits in the
+        # Ascend Unified Buffer (192 KB with triple-buffering by bishengir).
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self._cap_npu_ub_tile_numel(config, _fix_invalid=_fix_invalid)
+
         # Disable range_* configs for static ranges
         static_range_block_ids = [
             block_id
@@ -532,6 +537,100 @@ class ConfigSpec:
             allowed_keys = allowed_keys | {"num_warps", "num_stages"}
         if invalid_keys := ({*config} - allowed_keys):
             raise InvalidConfig(f"Invalid config keys {sorted(invalid_keys)!r}")
+
+    def _cap_npu_ub_tile_numel(
+        self,
+        config: dict[str, object],
+        *,
+        _fix_invalid: bool = False,
+    ) -> None:
+        """Ensure the largest 2-D tile fits in the NPU Unified Buffer.
+
+        Ascend 910's UB is 192 KB.  The bishengir compiler typically applies
+        triple-buffering, so a single float32 tile can hold at most
+        ``192 KB / (4 B × 3) = 16 384`` elements.  We approximate the
+        largest tile as the product of the two largest dimension values
+        across *block_sizes* and *reduction_loops* — this matches the
+        actual tile shape for 1-D-output kernels (e.g. sum) and is a safe
+        upper bound for multi-dim kernels (e.g. matmul) where each tensor
+        tile uses a 2-D subset of those dimensions.
+
+        When *_fix_invalid* is True (autotuning), reduction loops are halved
+        (largest first) until the tile fits; block sizes are halved next
+        if reductions alone are not enough.  Otherwise ``InvalidConfig`` is
+        raised so the user gets a clear diagnostic.
+        """
+        NPU_UB_MAX_TILE = 16384  # 192 KB / (4 bytes × 3 buffers)
+
+        block_sizes = config.get("block_sizes")
+        if not isinstance(block_sizes, list) or not block_sizes:
+            return
+
+        reduction_loops = config.get("reduction_loops")
+        if not isinstance(reduction_loops, list):
+            reduction_loops = []
+
+        def _eff_rl(i: int) -> int:
+            if i >= len(reduction_loops):
+                return 1
+            val = reduction_loops[i]
+            if val is None and i < len(self.reduction_loops):
+                return next_power_of_2(self.reduction_loops[i].size_hint)
+            return val if isinstance(val, int) else 1
+
+        def _max_2d_tile() -> int:
+            dims = [bs for bs in block_sizes if isinstance(bs, int)]
+            for i in range(len(reduction_loops)):
+                dims.append(_eff_rl(i))
+            dims.sort(reverse=True)
+            if len(dims) >= 2:
+                return dims[0] * dims[1]
+            return dims[0] if dims else 1
+
+        if _max_2d_tile() <= NPU_UB_MAX_TILE:
+            return
+
+        if not _fix_invalid:
+            raise InvalidConfig(
+                f"NPU UB overflow: max 2-D tile {_max_2d_tile()} exceeds "
+                f"maximum {NPU_UB_MAX_TILE} "
+                f"(block_sizes={block_sizes}, reduction_loops={reduction_loops}). "
+                f"Reduce block_sizes or reduction_loops."
+            )
+
+        # Halve reduction loops (largest first) until the tile fits.
+        for _ in range(64):
+            if _max_2d_tile() <= NPU_UB_MAX_TILE:
+                break
+            best_i, best_v = -1, 0
+            for i in range(len(reduction_loops)):
+                v = _eff_rl(i)
+                if v > best_v and v > 8:
+                    best_v = v
+                    best_i = i
+            if best_i < 0:
+                break
+            if reduction_loops[best_i] is None:
+                reduction_loops[best_i] = (
+                    next_power_of_2(self.reduction_loops[best_i].size_hint) // 2
+                )
+            else:
+                reduction_loops[best_i] //= 2
+        config["reduction_loops"] = reduction_loops
+
+        # If still over budget, halve block sizes (largest first).
+        for _ in range(64):
+            if _max_2d_tile() <= NPU_UB_MAX_TILE:
+                break
+            best_i, best_v = -1, 0
+            for i, bs in enumerate(block_sizes):
+                if isinstance(bs, int) and bs > best_v and bs > 1:
+                    best_v = bs
+                    best_i = i
+            if best_i < 0:
+                break
+            block_sizes[best_i] //= 2
+        config["block_sizes"] = block_sizes
 
     def create_config_generation(
         self,
@@ -751,7 +850,7 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
             next_power_of_2(bounded_hint) if max_size is None else max_size
         )
         # Keep NPU autotuning search space conservative. Ascend backends can
-        # degrade or fail with very large block sizes, so clamp to <= 32.
+        # degrade or fail with very large block sizes, so clamp to <= 128.
         if hasattr(torch, "npu") and torch.npu.is_available():
             self.max_size = min(self.max_size, 128)
         if self.max_size < self.min_size:

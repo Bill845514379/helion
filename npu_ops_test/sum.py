@@ -113,10 +113,11 @@ def main() -> None:
     """
     Main entry point that runs the sum kernel verification with different tensor sizes.
     """
-    # check(128, 128)
-
-    check(2048, 2048)
-
+    check(5120, 5120)
+    check(10240, 10240)
 
 if __name__ == "__main__":
+    import time
+    time_st = time.time()
     main()
+    print(f"time cost: {time.time() - time_st}")
