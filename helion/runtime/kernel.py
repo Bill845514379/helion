@@ -638,24 +638,54 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
     @contextlib.contextmanager
     def _ephemeral_triton_cache(
         self,
-    ) -> Generator[None, None, None]:
+    ) -> Generator[str, None, None]:
         """Redirect Triton cache to a temporary dir during autotuning.
 
         All candidate compilations write to an ephemeral directory that is
         deleted on exit.  The winning config is recompiled afterward into the
         real cache by the caller.
+
+        Yields the ephemeral directory path so the caller can rescue files
+        (e.g. the best config's compiled binary) before cleanup.
         """
         saved = os.environ.get("TRITON_CACHE_DIR")
         with tempfile.TemporaryDirectory(prefix="helion_autotune_") as ephemeral:
             os.environ["TRITON_CACHE_DIR"] = ephemeral
             log.debug("Ephemeral Triton cache: %s", ephemeral)
             try:
-                yield
+                yield ephemeral
             finally:
                 if saved is not None:
                     os.environ["TRITON_CACHE_DIR"] = saved
                 else:
                     os.environ.pop("TRITON_CACHE_DIR", None)
+
+    @staticmethod
+    def _rescue_ephemeral_cache(ephemeral_dir: str, real_dir: str) -> None:
+        """Copy Triton cache artifacts from the ephemeral dir to the real cache.
+
+        On NPU/Ascend the Triton compiler can produce non-deterministic results
+        for the same input, so recompiling the best config after deleting the
+        ephemeral directory may fail (e.g. UB overflow).  Copying the artifacts
+        ensures the real ``TRITON_CACHE_DIR`` already contains the binary that
+        was validated during autotuning.
+        """
+        import shutil
+
+        try:
+            for entry in os.listdir(ephemeral_dir):
+                src = os.path.join(ephemeral_dir, entry)
+                dst = os.path.join(real_dir, entry)
+                if os.path.isdir(src):
+                    if os.path.exists(dst):
+                        shutil.copytree(src, dst, dirs_exist_ok=True)
+                    else:
+                        shutil.copytree(src, dst)
+                else:
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    shutil.copy2(src, dst)
+        except OSError:
+            log.debug("Failed to rescue ephemeral Triton cache", exc_info=True)
 
     def _clear_triton_jit_cache(self, config: Config) -> None:
         """Clear Triton's in-memory JIT cache for the compiled kernel.
@@ -703,19 +733,27 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
         Returns:
             Config: The best configuration found during autotuning.
         """
-        _is_npu = hasattr(torch, "npu") and torch.npu.is_available()
         use_ephemeral = (
             isinstance(self.env.backend, TritonBackend)
             and os.environ.get("HELION_KEEP_TRITON_CACHE", "") != "1"
-            and not _is_npu
         )
-        ctx = (
+        real_triton_dir = os.environ.get("TRITON_CACHE_DIR", "")
+        if use_ephemeral and not real_triton_dir:
+            from ..autotuner.local_cache import helion_triton_cache_dir
+
+            device_index = (
+                self._env.device.index if self._env.device.index is not None else 0
+            )
+            real_triton_dir = helion_triton_cache_dir(device_index)
+        ctx: contextlib.AbstractContextManager[object] = (
             self._ephemeral_triton_cache()
             if use_ephemeral
             else contextlib.nullcontext()
         )
-        with ctx:
+        with ctx as ephemeral_dir:
             config = self.env.backend.autotune(self, args, force=force, **kwargs)
+            if use_ephemeral and isinstance(ephemeral_dir, str) and real_triton_dir:
+                self._rescue_ephemeral_cache(ephemeral_dir, real_triton_dir)
         # Autotuning compiles many trial configs, each cached in PyCodeCache
         # as a separate module with its own Triton JIT function.  When the
         # best config is recompiled afterwards, PyCodeCache may return the
