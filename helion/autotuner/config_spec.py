@@ -155,6 +155,13 @@ class ConfigSpec:
         self.range_flattens: BlockIdSequence[RangeFlattenSpec] = BlockIdSequence()
         self.static_ranges: BlockIdSequence[StaticRangeSpec] = BlockIdSequence()
 
+        # NPU UB budget: populated by CompileEnvironment.finalize_config_spec().
+        # Each entry is a unique tile footprint: list of ("block", idx) or
+        # ("reduction", idx) or ("const", value) tuples describing how to
+        # compute the tile element count from config values.
+        self.npu_ub_tile_specs: list[list[tuple[str, int]]] | None = None
+        self.npu_min_element_bytes: int = 4  # smallest element size across kernel tensors
+
         # NPU backends can be sensitive to program-id strategies; keep conservative.
         if hasattr(torch, "npu") and torch.npu.is_available():
             self.allowed_pid_types = ("flat",)
@@ -544,23 +551,40 @@ class ConfigSpec:
         *,
         _fix_invalid: bool = False,
     ) -> None:
-        """Ensure the largest 2-D tile fits in the NPU Unified Buffer.
+        """Ensure the kernel's tile footprint fits in the NPU Unified Buffer.
 
-        Ascend 910's UB is 192 KB.  The bishengir compiler typically applies
-        triple-buffering, so a single float32 tile can hold at most
-        ``192 KB / (4 B × 3) = 16 384`` elements.  We approximate the
-        largest tile as the product of the two largest dimension values
-        across *block_sizes* and *reduction_loops* — this matches the
-        actual tile shape for 1-D-output kernels (e.g. sum) and is a safe
-        upper bound for multi-dim kernels (e.g. matmul) where each tensor
-        tile uses a 2-D subset of those dimensions.
+        Ascend 910's UB is 192 KB (196,608 bytes).  The bishop compiler
+        allocates UB space based on tile shapes and a pipelining strategy.
+        Empirically the total UB consumption equals::
 
-        When *_fix_invalid* is True (autotuning), reduction loops are halved
-        (largest first) until the tile fits; block sizes are halved next
-        if reductions alone are not enough.  Otherwise ``InvalidConfig`` is
-        raised so the user gets a clear diagnostic.
+            sum(unique_tile_bytes) × factor
+
+        where ``factor`` is determined by the number of tile shapes that
+        include a reduction dimension (``n_red``):
+
+        +---------+--------+------------------------------------------+
+        | n_red   | factor | Kernel type                              |
+        +=========+========+==========================================+
+        | 0       |  6.0   | Elementwise (add): 3 tensors ×           |
+        |         |        | 2-stage double-buffer                    |
+        +---------+--------+------------------------------------------+
+        | 1       |  3.0   | Single-read reduction (sum): 3 pipeline  |
+        |         |        | stages for 1 read tile                   |
+        +---------+--------+------------------------------------------+
+        | 2       |  1.5   | Dual-read reduction (matmul A×B): 3      |
+        |         |        | pipeline stages shared across 2 reads    |
+        +---------+--------+------------------------------------------+
+        | n≥3     | 3.0/n  | General: 3 stages divided across n reads |
+        |         | (≥1.5) |                                          |
+        +---------+--------+------------------------------------------+
+
+        When ``npu_ub_tile_specs`` has been populated by the compiler front-end
+        (after :meth:`CompileEnvironment.finalize_config_spec`) we compute the
+        precise formula above.  Otherwise we fall back to a conservative
+        heuristic (product of the two largest dimension values vs. a fixed
+        element cap).
         """
-        NPU_UB_MAX_TILE = 16384  # 192 KB / (4 bytes × 3 buffers)
+        NPU_UB_SIZE = 192 * 1024  # 196 608 bytes
 
         block_sizes = config.get("block_sizes")
         if not isinstance(block_sizes, list) or not block_sizes:
@@ -578,29 +602,71 @@ class ConfigSpec:
                 return next_power_of_2(self.reduction_loops[i].size_hint)
             return val if isinstance(val, int) else 1
 
-        def _max_2d_tile() -> int:
-            dims = [bs for bs in block_sizes if isinstance(bs, int)]
-            for i in range(len(reduction_loops)):
-                dims.append(_eff_rl(i))
-            dims.sort(reverse=True)
-            if len(dims) >= 2:
-                return dims[0] * dims[1]
-            return dims[0] if dims else 1
+        # ---- precise formula (preferred) --------------------------------
+        if self.npu_ub_tile_specs is not None:
+            elem_bytes = self.npu_min_element_bytes
 
-        if _max_2d_tile() <= NPU_UB_MAX_TILE:
+            # Count unique tile shapes that include at least one reduction dim.
+            # Empirically, bishop uses a 3-stage pipeline for reads inside the
+            # reduction loop, shared across all reduction-read tensors:
+            #   n_red=0 (elementwise): factor = 6.0  (3 tensors × double-buffer)
+            #   n_red=1 (sum):         factor = 3.0  (3 pipeline stages / 1 read)
+            #   n_red=2 (matmul A+B):  factor = 1.5  (3 pipeline stages / 2 reads)
+            n_reduction_tiles = sum(
+                1
+                for tile_dims in self.npu_ub_tile_specs
+                if any(kind == "reduction" for kind, _ in tile_dims)
+            )
+            factor = 6.0 if n_reduction_tiles == 0 else max(1.5, 3.0 / n_reduction_tiles)
+
+            def _ub_usage() -> float:
+                total_bytes = 0
+                for tile_dims in self.npu_ub_tile_specs:  # type: ignore[union-attr]
+                    tile = 1
+                    for kind, idx in tile_dims:
+                        if kind == "block":
+                            val = (
+                                block_sizes[idx]
+                                if idx < len(block_sizes)
+                                   and isinstance(block_sizes[idx], int)
+                                else 1
+                            )
+                            tile *= val
+                        elif kind == "reduction":
+                            tile *= _eff_rl(idx)
+                        elif kind == "const":
+                            tile *= idx
+                    total_bytes += tile * elem_bytes
+                return total_bytes * factor
+
+            ub_limit = float(NPU_UB_SIZE)
+        # ---- fallback: max-2D-tile heuristic ----------------------------
+        else:
+            def _ub_usage() -> float:
+                dims = [bs for bs in block_sizes if isinstance(bs, int)]
+                for i in range(len(reduction_loops)):
+                    dims.append(_eff_rl(i))
+                dims.sort(reverse=True)
+                if len(dims) >= 2:
+                    return float(dims[0] * dims[1])
+                return float(dims[0]) if dims else 1.0
+
+            ub_limit = 8192.0  # conservative fallback
+
+        if _ub_usage() <= ub_limit:
             return
 
         if not _fix_invalid:
             raise InvalidConfig(
-                f"NPU UB overflow: max 2-D tile {_max_2d_tile()} exceeds "
-                f"maximum {NPU_UB_MAX_TILE} "
+                f"NPU UB overflow: estimated {_ub_usage():.0f} bytes exceeds "
+                f"limit {ub_limit:.0f} "
                 f"(block_sizes={block_sizes}, reduction_loops={reduction_loops}). "
                 f"Reduce block_sizes or reduction_loops."
             )
 
-        # Halve reduction loops (largest first) until the tile fits.
+        # Halve reduction loops (largest first) until the usage fits.
         for _ in range(64):
-            if _max_2d_tile() <= NPU_UB_MAX_TILE:
+            if _ub_usage() <= ub_limit:
                 break
             best_i, best_v = -1, 0
             for i in range(len(reduction_loops)):
@@ -620,7 +686,7 @@ class ConfigSpec:
 
         # If still over budget, halve block sizes (largest first).
         for _ in range(64):
-            if _max_2d_tile() <= NPU_UB_MAX_TILE:
+            if _ub_usage() <= ub_limit:
                 break
             best_i, best_v = -1, 0
             for i, bs in enumerate(block_sizes):
@@ -850,9 +916,11 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
             next_power_of_2(bounded_hint) if max_size is None else max_size
         )
         # Keep NPU autotuning search space conservative. Ascend backends can
-        # degrade or fail with very large block sizes, so clamp to <= 128.
+        # degrade or fail with very large block sizes. We still allow some
+        # extra headroom here, but UB constraints will further cap invalid
+        # combinations.
         if hasattr(torch, "npu") and torch.npu.is_available():
-            self.max_size = min(self.max_size, 128)
+            self.max_size = min(self.max_size, 1024)
         if self.max_size < self.min_size:
             self.max_size = self.min_size
         assert self.min_size <= self.max_size

@@ -213,6 +213,60 @@ class CompileEnvironment:
             kernel_tensor_sizes=self.kernel_tensor_sizes,  # pyrefly: ignore[bad-argument-type]
             min_element_bits=self.kernel_min_element_bits,
         )
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self._build_npu_ub_tile_specs()
+
+    def _build_npu_ub_tile_specs(self) -> None:
+        """Map kernel tensor shapes to block-id-based tile specs for UB budgeting.
+
+        Each tensor dimension is resolved to a block_id (via the ``block_sizes``
+        list), then mapped to a ``("block", idx)`` or ``("reduction", idx)``
+        reference into the config arrays.  Tiles are deduplicated by their
+        block-id tuple so that tensors sharing the same tile footprint (e.g.
+        the accumulator and output in matmul) are counted only once.
+        """
+        from ..autotuner.config_spec import BlockSizeSpec
+        from ..autotuner.config_spec import ReductionLoopSpec
+
+        expr_to_bid: dict[sympy.Expr, tuple[int, bool]] = {}
+        for info in self.block_sizes:
+            if isinstance(info.size, (int, torch.SymInt)):
+                expr_to_bid[_to_sympy(info.size)] = (info.block_id, info.reduction)
+            expr_to_bid[_to_sympy(info.var)] = (info.block_id, info.reduction)
+
+        bid_to_config: dict[int, tuple[str, int]] = {}
+        for i, spec in enumerate(self.config_spec.block_sizes):
+            if isinstance(spec, BlockSizeSpec):
+                bid_to_config[spec.block_ids[0]] = ("block", i)
+        for i, spec in enumerate(self.config_spec.reduction_loops):
+            if isinstance(spec, ReductionLoopSpec):
+                bid_to_config[spec.block_ids[0]] = ("reduction", i)
+
+        seen: set[tuple[tuple[str, int], ...]] = set()
+        tile_specs: list[list[tuple[str, int]]] = []
+
+        for shape in self.kernel_tensor_sizes:
+            dims: list[tuple[str, int]] = []
+            for dim_expr in shape:
+                if dim_expr in expr_to_bid:
+                    bid, _is_red = expr_to_bid[dim_expr]
+                    if bid in bid_to_config:
+                        dims.append(bid_to_config[bid])
+                        continue
+                try:
+                    dims.append(("const", int(dim_expr)))
+                except (TypeError, ValueError):
+                    dims.append(("const", 1))
+
+            key = tuple(sorted(dims))
+            if key not in seen:
+                seen.add(key)
+                tile_specs.append(dims)
+
+        self.config_spec.npu_ub_tile_specs = tile_specs
+        self.config_spec.npu_min_element_bytes = max(
+            1, self.kernel_min_element_bits // 8
+        )
 
     def _disable_range_num_stages_for_aliasing(self) -> None:
         """
