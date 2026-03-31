@@ -767,6 +767,140 @@ class TritonBackend(Backend):
     def grid_barrier_stmt(self, sem_arg: str) -> str:
         return f"triton_helpers.x_grid_barrier({sem_arg})"
 
+
+    def adjust_block_size_constraints(
+        self,
+        block_specs: list[object],
+        ndim: int,
+        block_sizes: list[object] | None = None,
+        kernel_tensor_sizes: dict[tuple[object, ...], int] | None = None,
+        min_element_bits: int = 32,
+    ) -> None:
+        """Raise per-dimension min block sizes so the NPU flat grid fits hardware.
+
+        On NPU, Helion forces ``pid_type='flat'``; the launch grid product must
+        be below 65536.  ``BlockSizeSpec.min_size`` is increased as needed until
+        that holds (or the search space is exhausted).
+
+        ``ndim``, ``kernel_tensor_sizes``, and ``min_element_bits`` are accepted
+        for API compatibility with :meth:`Backend.adjust_block_size_constraints`
+        but are unused here.
+        """
+        if not (hasattr(torch, "npu") and torch.npu.is_available()):
+            return
+
+        from ..autotuner.config_spec import BlockSizeSpec
+        from .compile_environment import BlockSizeInfo
+
+        specs = [s for s in block_specs if isinstance(s, BlockSizeSpec)]
+        if not specs or block_sizes is None:
+            return
+
+        id_to_numel: dict[int, int] = {}
+        for info in block_sizes:
+            if not isinstance(info, BlockSizeInfo):
+                continue
+            if not isinstance(info.size, (int, torch.SymInt)):
+                continue
+            id_to_numel[info.block_id] = info.size_hint()
+
+        if any(s.block_ids[0] not in id_to_numel for s in specs):
+            return
+
+        max_flat = 65535
+
+        def grid_product() -> int:
+            p = 1
+            for spec in specs:
+                n = id_to_numel[spec.block_ids[0]]
+                m = spec.min_size
+                p *= (n + m - 1) // m
+                if p > max_flat:
+                    return p
+            return p
+
+        def cdiv(n: int, m: int) -> int:
+            return (n + m - 1) // m
+
+        def mins_snapshot() -> dict[int, int]:
+            return {s.block_ids[0]: s.min_size for s in specs}
+
+        def describe_block_bounds() -> str:
+            parts: list[str] = []
+            for spec in specs:
+                bid = spec.block_ids[0]
+                n = id_to_numel[bid]
+                parts.append(f"bid{bid}(n={n}):[{spec.min_size},{spec.max_size}]")
+            return (
+                f"{' | '.join(parts)}; grid_product(at_min)={grid_product()} "
+                f"(cap={max_flat})"
+            )
+
+        before_mins = mins_snapshot()
+        print(f"[helion NPU flat-grid] initial: {describe_block_bounds()}")
+
+        for _ in range(64):
+            if grid_product() <= max_flat:
+                if mins_snapshot() != before_mins:
+                    print(f"[helion NPU flat-grid] final: {describe_block_bounds()}")
+                return
+            candidates: list[tuple[BlockSizeSpec, int]] = []
+            for spec in specs:
+                bid = spec.block_ids[0]
+                n = id_to_numel[bid]
+                cur = spec.min_size
+                if cur >= spec.max_size:
+                    continue
+                nxt = min(spec.max_size, cur * 2)
+                if nxt <= cur:
+                    continue
+                o = cdiv(n, cur)
+                nu = cdiv(n, nxt)
+                if nu >= o:
+                    continue
+                candidates.append((spec, nxt))
+
+            if candidates:
+                # Balance across dimensions: among improving doublings, raise the
+                # lagging axis (smallest min_size) first; then prefer the larger
+                # grid factor; then stable tie-break by block id.
+                def pick_key(item: tuple[BlockSizeSpec, int]) -> tuple[int, int, int]:
+                    spec, _nxt = item
+                    bid = spec.block_ids[0]
+                    cur_m = spec.min_size
+                    return (cur_m, -cdiv(id_to_numel[bid], cur_m), bid)
+
+                best_spec, best_next = min(candidates, key=pick_key)
+                bid0 = best_spec.block_ids[0]
+                prev_min = best_spec.min_size
+                best_spec.update_min(best_next)
+                print(
+                    "[helion NPU flat-grid] step:",
+                    f"bid{bid0} min {prev_min} -> {best_spec.min_size};",
+                    describe_block_bounds(),
+                )
+                continue
+            largest = max(specs, key=lambda s: cdiv(id_to_numel[s.block_ids[0]], s.min_size))
+            if largest.min_size < largest.max_size:
+                bid0 = largest.block_ids[0]
+                prev_min = largest.min_size
+                largest.update_min(largest.max_size)
+                print(
+                    "[helion NPU flat-grid] step:",
+                    f"bid{bid0} min {prev_min} -> {largest.min_size} (max);",
+                    describe_block_bounds(),
+                )
+            else:
+                print(
+                    f"[helion NPU flat-grid] cannot satisfy grid < {max_flat + 1}:",
+                    describe_block_bounds(),
+                )
+                return
+        print(
+            "[helion NPU flat-grid] iteration limit reached:",
+            describe_block_bounds(),
+        )
+
     def build_launcher_args(
         self,
         args: list[str],
