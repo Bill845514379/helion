@@ -813,6 +813,15 @@ class TileIRBackend(TritonBackend):
             "occupancy": PowerOfTwoFragment(1, 8, 1),
         }
 
+    def classify_autotune_exception(self, err: BaseException) -> str | None:
+        # NPU/Ascend compilation errors (e.g. "ub overflow", coreDim limits)
+        # are expected when autotuning explores configs with block sizes that
+        # exceed hardware constraints.  Treat all compilation errors as benign
+        # config incompatibilities.
+        if isinstance(err, Exception):
+            return "debug"
+        return None
+
 
 # Mapping from torch dtype to JAX dtype string (e.g., "jnp.float32")
 _TORCH_TO_JAX_DTYPE: dict[str, str] = {

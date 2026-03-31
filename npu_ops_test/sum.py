@@ -34,7 +34,7 @@ torch_npu.npu.config.allow_internal_format = True
 # ----------
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(autotune_effort="full")
 def sum_kernel(x: torch.Tensor) -> torch.Tensor:
     """
     Sums a 2D tensor along the last dimension.
@@ -115,7 +115,7 @@ def main() -> None:
     """
     # check(128, 128)
 
-    check(2048, 2048)
+    check(20480, 20480)
 
 
 if __name__ == "__main__":

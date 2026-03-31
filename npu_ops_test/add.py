@@ -17,7 +17,7 @@ import torch_npu
 
 # Match matmul NPU setup: avoid internal-format tensors that can disagree with
 # Helion/Triton pointer loads and fault the Ascend vector core.
-torch_npu.npu.config.allow_internal_format = True
+# torch_npu.npu.config.allow_internal_format = True
 
 import helion
 # from helion._testing import DEVICE
@@ -31,8 +31,7 @@ import helion.language as hl
 
 
 # %%
-# @helion.kernel()
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="quick")
+@helion.kernel(autotune_effort="full")
 def add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Add two tensors element-wise with broadcasting support.
@@ -88,8 +87,9 @@ def main() -> None:
     """
     Main entry point that runs the add kernel verification with 1024x1024 tensors.
     """
-    check(1024, 1024)
-
+    # check(1024, 1024)
+    # check(64, 64)
+    check(2048, 2048)
 
 if __name__ == "__main__":
     import time
