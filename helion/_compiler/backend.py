@@ -571,6 +571,16 @@ class TritonBackend(Backend):
         
         return super().supports_config_key(key)
 
+    def classify_autotune_exception(self, err: BaseException) -> str | None:
+        # NPU/Ascend compilation errors (e.g. "ub overflow", coreDim limits)
+        # are expected when autotuning explores configs with block sizes that
+        # exceed hardware constraints.  Treat all compilation errors as benign
+        # config incompatibilities so they are silently skipped.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            if isinstance(err, Exception):
+                return "debug"
+        return None
+
     def tunable_fragments(self) -> dict[str, ConfigSpecFragment]:
         from .._compat import get_mtia_tunable_fragments
         from .._compat import is_hip
@@ -812,15 +822,6 @@ class TileIRBackend(TritonBackend):
             "num_ctas": PowerOfTwoFragment(1, 2, 1),
             "occupancy": PowerOfTwoFragment(1, 8, 1),
         }
-
-    def classify_autotune_exception(self, err: BaseException) -> str | None:
-        # NPU/Ascend compilation errors (e.g. "ub overflow", coreDim limits)
-        # are expected when autotuning explores configs with block sizes that
-        # exceed hardware constraints.  Treat all compilation errors as benign
-        # config incompatibilities.
-        if isinstance(err, Exception):
-            return "debug"
-        return None
 
 
 # Mapping from torch dtype to JAX dtype string (e.g., "jnp.float32")

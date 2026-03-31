@@ -703,9 +703,11 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
         Returns:
             Config: The best configuration found during autotuning.
         """
+        _is_npu = hasattr(torch, "npu") and torch.npu.is_available()
         use_ephemeral = (
             isinstance(self.env.backend, TritonBackend)
             and os.environ.get("HELION_KEEP_TRITON_CACHE", "") != "1"
+            and not _is_npu
         )
         ctx = (
             self._ephemeral_triton_cache()
