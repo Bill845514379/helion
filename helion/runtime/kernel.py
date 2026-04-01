@@ -71,6 +71,35 @@ log: logging.Logger = logging.getLogger(__name__)
 _R = TypeVar("_R")
 CompiledConfig = Callable[..., _R]
 
+
+def _rewrite_triton_cache_paths(
+    cache_dir: str, old_prefix: str, new_prefix: str
+) -> None:
+    """Rewrite absolute paths inside Triton ``__grp__*.json`` group files.
+
+    ``FileCacheManager.put_group`` records child artifact paths as absolute
+    paths.  When we copy an ephemeral cache tree into the real cache directory
+    the embedded paths still reference the (deleted) ephemeral directory.
+    This function walks *cache_dir* and replaces *old_prefix* with
+    *new_prefix* in every ``__grp__`` JSON file so Triton's cache lookup
+    succeeds.
+    """
+    for dirpath, _dirnames, filenames in os.walk(cache_dir):
+        for fname in filenames:
+            if not fname.startswith("__grp__"):
+                continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                raw = open(fpath).read()
+                if old_prefix not in raw:
+                    continue
+                rewritten = raw.replace(old_prefix, new_prefix)
+                with open(fpath, "w") as f:
+                    f.write(rewritten)
+            except OSError:
+                pass
+
+
 # Cache for GraphModule hashes
 _graph_module_hash_cache: WeakIdKeyDictionary = WeakIdKeyDictionary()
 
@@ -669,9 +698,17 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
         ephemeral directory may fail (e.g. UB overflow).  Copying the artifacts
         ensures the real ``TRITON_CACHE_DIR`` already contains the binary that
         was validated during autotuning.
+
+        Triton's ``FileCacheManager`` stores absolute paths inside
+        ``__grp__*.json`` files.  After copying we rewrite those paths so they
+        point into *real_dir* instead of the (soon-to-be-deleted) ephemeral dir.
         """
         import shutil
 
+        os.makedirs(real_dir, exist_ok=True)
+        log.debug(
+            "Rescuing ephemeral Triton cache: %s -> %s", ephemeral_dir, real_dir
+        )
         try:
             for entry in os.listdir(ephemeral_dir):
                 src = os.path.join(ephemeral_dir, entry)
@@ -682,10 +719,13 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
                     else:
                         shutil.copytree(src, dst)
                 else:
-                    os.makedirs(os.path.dirname(dst), exist_ok=True)
                     shutil.copy2(src, dst)
         except OSError:
-            log.debug("Failed to rescue ephemeral Triton cache", exc_info=True)
+            log.warning(
+                "Failed to rescue ephemeral Triton cache", exc_info=True
+            )
+            return
+        _rewrite_triton_cache_paths(real_dir, ephemeral_dir, real_dir)
 
     def _clear_triton_jit_cache(self, config: Config) -> None:
         """Clear Triton's in-memory JIT cache for the compiled kernel.
@@ -737,14 +777,18 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
             isinstance(self.env.backend, TritonBackend)
             and os.environ.get("HELION_KEEP_TRITON_CACHE", "") != "1"
         )
-        real_triton_dir = os.environ.get("TRITON_CACHE_DIR", "")
-        if use_ephemeral and not real_triton_dir:
-            from ..autotuner.local_cache import helion_triton_cache_dir
+        real_triton_dir: str | None = None
+        if use_ephemeral:
+            real_triton_dir = os.environ.get("TRITON_CACHE_DIR", "").strip() or None
+            if not real_triton_dir:
+                from ..autotuner.local_cache import helion_triton_cache_dir
 
-            device_index = (
-                self._env.device.index if self._env.device.index is not None else 0
-            )
-            real_triton_dir = helion_triton_cache_dir(device_index)
+                device_index = (
+                    self._env.device.index
+                    if self._env.device.index is not None
+                    else 0
+                )
+                real_triton_dir = helion_triton_cache_dir(device_index)
         ctx: contextlib.AbstractContextManager[object] = (
             self._ephemeral_triton_cache()
             if use_ephemeral
@@ -752,7 +796,7 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
         )
         with ctx as ephemeral_dir:
             config = self.env.backend.autotune(self, args, force=force, **kwargs)
-            if use_ephemeral and isinstance(ephemeral_dir, str) and real_triton_dir:
+            if isinstance(ephemeral_dir, str) and real_triton_dir:
                 self._rescue_ephemeral_cache(ephemeral_dir, real_triton_dir)
         # Autotuning compiles many trial configs, each cached in PyCodeCache
         # as a separate module with its own Triton JIT function.  When the
