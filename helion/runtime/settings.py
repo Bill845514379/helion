@@ -376,7 +376,7 @@ def _get_backend() -> BackendLiteral:
             "pallas": "pallas",
             "cute": "cute",
             "tileir": "tileir",
-            "npu": "npu",
+            "ascend": "ascend",
         },
     )
 
