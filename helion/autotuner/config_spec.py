@@ -602,10 +602,23 @@ class ConfigSpec:
                 return next_power_of_2(self.reduction_loops[i].size_hint)
             return val if isinstance(val, int) else 1
 
-        # ---- precise formula (preferred) --------------------------------
-        if self.npu_ub_tile_specs is not None:
-            elem_bytes = self.npu_min_element_bytes
+        elem_bytes = self.npu_min_element_bytes
 
+        def _sum_one_row_lower_bytes() -> float:
+            """Lower bound for row-sum style kernels: one block × one reduction chunk.
+
+            If traced tile specs mis-map the reduction axis (sympy identity mismatch),
+            the precise formula can under-count; bishop still loads ``block × rl``.
+            """
+            if len(self.block_sizes) != 1 or len(self.reduction_loops) != 1:
+                return 0.0
+            max_b = max((b for b in block_sizes if isinstance(b, int)), default=1)
+            return float(max_b * _eff_rl(0) * elem_bytes * 3.0)
+
+        # ---- precise formula (preferred) --------------------------------
+        # Empty list must not be used: it would make _ub_usage() == 0 and skip
+        # all capping (see npu_ops_test sum with rl=512 on NPU).
+        if self.npu_ub_tile_specs:
             # Count unique tile shapes that include at least one reduction dim.
             # Empirically, bishop uses a 3-stage pipeline for reads inside the
             # reduction loop, shared across all reduction-read tensors:
@@ -637,10 +650,11 @@ class ConfigSpec:
                         elif kind == "const":
                             tile *= idx
                     total_bytes += tile * elem_bytes
-                return total_bytes * factor
+                base = total_bytes * factor
+                return max(base, _sum_one_row_lower_bytes())
 
             ub_limit = float(NPU_UB_SIZE)
-        # ---- fallback: max-2D-tile heuristic ----------------------------
+        # ---- fallback: byte estimate from two largest tiled dimensions ----
         else:
             def _ub_usage() -> float:
                 dims = [bs for bs in block_sizes if isinstance(bs, int)]
@@ -648,10 +662,19 @@ class ConfigSpec:
                     dims.append(_eff_rl(i))
                 dims.sort(reverse=True)
                 if len(dims) >= 2:
-                    return float(dims[0] * dims[1])
-                return float(dims[0]) if dims else 1.0
+                    elems = dims[0] * dims[1]
+                elif dims:
+                    elems = dims[0]
+                else:
+                    elems = 1
+                if self.reduction_loops:
+                    factor_fb = max(1.5, 3.0 / len(self.reduction_loops))
+                else:
+                    factor_fb = 6.0
+                approx = float(elems * elem_bytes * factor_fb)
+                return max(approx, _sum_one_row_lower_bytes())
 
-            ub_limit = 8192.0  # conservative fallback
+            ub_limit = float(NPU_UB_SIZE)
 
         if _ub_usage() <= ub_limit:
             return
@@ -920,7 +943,7 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
         # extra headroom here, but UB constraints will further cap invalid
         # combinations.
         if hasattr(torch, "npu") and torch.npu.is_available():
-            self.max_size = min(self.max_size, 1024)
+            self.max_size = min(self.max_size, 128)
         if self.max_size < self.min_size:
             self.max_size = self.min_size
         assert self.min_size <= self.max_size

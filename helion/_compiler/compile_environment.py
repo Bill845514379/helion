@@ -245,14 +245,35 @@ class CompileEnvironment:
         seen: set[tuple[tuple[str, int], ...]] = set()
         tile_specs: list[list[tuple[str, int]]] = []
 
+        def _slot_for_dim(dim_expr: sympy.Expr) -> tuple[str, int] | None:
+            """Map a tensor axis sympy expr to a (block|reduction, config_idx) slot."""
+            if dim_expr in expr_to_bid:
+                bid, _ = expr_to_bid[dim_expr]
+                return bid_to_config.get(bid)
+            for k, (bid, _) in expr_to_bid.items():
+                try:
+                    if dim_expr.equals(k):
+                        slot = bid_to_config.get(bid)
+                        if slot is not None:
+                            return slot
+                except (TypeError, AttributeError, NotImplementedError):
+                    if dim_expr == k:
+                        slot = bid_to_config.get(bid)
+                        if slot is not None:
+                            return slot
+            if isinstance(dim_expr, sympy.Symbol):
+                bid = self.get_block_id(dim_expr)
+                if bid is not None:
+                    return bid_to_config.get(bid)
+            return None
+
         for shape in self.kernel_tensor_sizes:
             dims: list[tuple[str, int]] = []
             for dim_expr in shape:
-                if dim_expr in expr_to_bid:
-                    bid, _is_red = expr_to_bid[dim_expr]
-                    if bid in bid_to_config:
-                        dims.append(bid_to_config[bid])
-                        continue
+                slot = _slot_for_dim(dim_expr)
+                if slot is not None:
+                    dims.append(slot)
+                    continue
                 try:
                     dims.append(("const", int(dim_expr)))
                 except (TypeError, ValueError):
@@ -263,7 +284,10 @@ class CompileEnvironment:
                 seen.add(key)
                 tile_specs.append(dims)
 
-        self.config_spec.npu_ub_tile_specs = tile_specs
+        # Empty means we could not derive any tile footprint (e.g. no traced
+        # tensor sizes or sympy dim mismatch).  Use None so UB capping falls
+        # back to the max-2D heuristic instead of treating usage as 0.
+        self.config_spec.npu_ub_tile_specs = tile_specs if tile_specs else None
         self.config_spec.npu_min_element_bytes = max(
             1, self.kernel_min_element_bits // 8
         )
