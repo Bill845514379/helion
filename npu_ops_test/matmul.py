@@ -327,13 +327,11 @@ def main() -> None:
     """
     Main function to run autotuning (commented out) and correctness checks.
     """
-    # autotune(1024, 1024, 1024)
-    # No valid compile times found, keeping default timeout
-    # check(1024, 1024, 1024) 
+    check(1024, 1024, 1024) 
     # pass
     # check(512, 512, 512)
     # pass
-    check(64, 64, 64)
+    # check(64, 64, 64)
 
 
 # %%

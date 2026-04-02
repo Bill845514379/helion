@@ -155,6 +155,13 @@ class ConfigSpec:
         self.range_flattens: BlockIdSequence[RangeFlattenSpec] = BlockIdSequence()
         self.static_ranges: BlockIdSequence[StaticRangeSpec] = BlockIdSequence()
 
+        # NPU UB budget: populated by CompileEnvironment.finalize_config_spec().
+        # Each entry is a unique tile footprint: list of ("block", idx) or
+        # ("reduction", idx) or ("const", value) tuples describing how to
+        # compute the tile element count from config values.
+        self.npu_ub_tile_specs: list[list[tuple[str, int]]] | None = None
+        self.npu_min_element_bytes: int = 4  # smallest element size across kernel tensors
+
         # NPU backends can be sensitive to program-id strategies; keep conservative.
         if hasattr(torch, "npu") and torch.npu.is_available():
             self.allowed_pid_types = ("flat",)
@@ -331,6 +338,11 @@ class ConfigSpec:
                         changed = True
                 if changed:
                     config["reduction_loops"] = new_loops
+
+        # NPU UB overflow prevention: cap total tile numel so it fits in the
+        # Ascend Unified Buffer (192 KB with triple-buffering by bishengir).
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            self._cap_npu_ub_tile_numel(config, _fix_invalid=_fix_invalid)
 
         # Disable range_* configs for static ranges
         static_range_block_ids = [
@@ -532,6 +544,182 @@ class ConfigSpec:
             allowed_keys = allowed_keys | {"num_warps", "num_stages"}
         if invalid_keys := ({*config} - allowed_keys):
             raise InvalidConfig(f"Invalid config keys {sorted(invalid_keys)!r}")
+
+    def _cap_npu_ub_tile_numel(
+        self,
+        config: dict[str, object],
+        *,
+        _fix_invalid: bool = False,
+    ) -> None:
+        """Ensure the kernel's tile footprint fits in the NPU Unified Buffer.
+
+        Ascend 910's UB is 192 KB (196,608 bytes).  The bishop compiler
+        allocates UB space based on tile shapes and a pipelining strategy.
+        Empirically the total UB consumption equals::
+
+            sum(unique_tile_bytes) × factor
+
+        where ``factor`` is determined by the number of tile shapes that
+        include a reduction dimension (``n_red``):
+
+        +---------+--------+------------------------------------------+
+        | n_red   | factor | Kernel type                              |
+        +=========+========+==========================================+
+        | 0       |  6.0   | Elementwise (add): 3 tensors ×           |
+        |         |        | 2-stage double-buffer                    |
+        +---------+--------+------------------------------------------+
+        | 1       |  3.0   | Single-read reduction (sum): 3 pipeline  |
+        |         |        | stages for 1 read tile                   |
+        +---------+--------+------------------------------------------+
+        | 2       |  1.5   | Dual-read reduction (matmul A×B): 3      |
+        |         |        | pipeline stages shared across 2 reads    |
+        +---------+--------+------------------------------------------+
+        | n≥3     | 3.0/n  | General: 3 stages divided across n reads |
+        |         | (≥1.5) |                                          |
+        +---------+--------+------------------------------------------+
+
+        When ``npu_ub_tile_specs`` has been populated by the compiler front-end
+        (after :meth:`CompileEnvironment.finalize_config_spec`) we compute the
+        precise formula above.  Otherwise we fall back to a conservative
+        heuristic (product of the two largest dimension values vs. a fixed
+        element cap).
+        """
+        NPU_UB_SIZE = 192 * 1024  # 196 608 bytes
+
+        block_sizes = config.get("block_sizes")
+        if not isinstance(block_sizes, list) or not block_sizes:
+            return
+
+        reduction_loops = config.get("reduction_loops")
+        if not isinstance(reduction_loops, list):
+            reduction_loops = []
+
+        def _eff_rl(i: int) -> int:
+            if i >= len(reduction_loops):
+                return 1
+            val = reduction_loops[i]
+            if val is None and i < len(self.reduction_loops):
+                return next_power_of_2(self.reduction_loops[i].size_hint)
+            return val if isinstance(val, int) else 1
+
+        elem_bytes = self.npu_min_element_bytes
+
+        def _sum_one_row_lower_bytes() -> float:
+            """Lower bound for row-sum style kernels: one block × one reduction chunk.
+
+            If traced tile specs mis-map the reduction axis (sympy identity mismatch),
+            the precise formula can under-count; bishop still loads ``block × rl``.
+            """
+            if len(self.block_sizes) != 1 or len(self.reduction_loops) != 1:
+                return 0.0
+            max_b = max((b for b in block_sizes if isinstance(b, int)), default=1)
+            return float(max_b * _eff_rl(0) * elem_bytes * 3.0)
+
+        # ---- precise formula (preferred) --------------------------------
+        # Empty list must not be used: it would make _ub_usage() == 0 and skip
+        # all capping (see npu_ops_test sum with rl=512 on NPU).
+        if self.npu_ub_tile_specs:
+            # Count unique tile shapes that include at least one reduction dim.
+            # Empirically, bishop uses a 3-stage pipeline for reads inside the
+            # reduction loop, shared across all reduction-read tensors:
+            #   n_red=0 (elementwise): factor = 6.0  (3 tensors × double-buffer)
+            #   n_red=1 (sum):         factor = 3.0  (3 pipeline stages / 1 read)
+            #   n_red=2 (matmul A+B):  factor = 1.5  (3 pipeline stages / 2 reads)
+            n_reduction_tiles = sum(
+                1
+                for tile_dims in self.npu_ub_tile_specs
+                if any(kind == "reduction" for kind, _ in tile_dims)
+            )
+            factor = 6.0 if n_reduction_tiles == 0 else max(1.5, 3.0 / n_reduction_tiles)
+
+            def _ub_usage() -> float:
+                total_bytes = 0
+                for tile_dims in self.npu_ub_tile_specs:  # type: ignore[union-attr]
+                    tile = 1
+                    for kind, idx in tile_dims:
+                        if kind == "block":
+                            val = (
+                                block_sizes[idx]
+                                if idx < len(block_sizes)
+                                   and isinstance(block_sizes[idx], int)
+                                else 1
+                            )
+                            tile *= val
+                        elif kind == "reduction":
+                            tile *= _eff_rl(idx)
+                        elif kind == "const":
+                            tile *= idx
+                    total_bytes += tile * elem_bytes
+                base = total_bytes * factor
+                return max(base, _sum_one_row_lower_bytes())
+
+            ub_limit = float(NPU_UB_SIZE)
+        # ---- fallback: byte estimate from two largest tiled dimensions ----
+        else:
+            def _ub_usage() -> float:
+                dims = [bs for bs in block_sizes if isinstance(bs, int)]
+                for i in range(len(reduction_loops)):
+                    dims.append(_eff_rl(i))
+                dims.sort(reverse=True)
+                if len(dims) >= 2:
+                    elems = dims[0] * dims[1]
+                elif dims:
+                    elems = dims[0]
+                else:
+                    elems = 1
+                if self.reduction_loops:
+                    factor_fb = max(1.5, 3.0 / len(self.reduction_loops))
+                else:
+                    factor_fb = 6.0
+                approx = float(elems * elem_bytes * factor_fb)
+                return max(approx, _sum_one_row_lower_bytes())
+
+            ub_limit = float(NPU_UB_SIZE)
+
+        if _ub_usage() <= ub_limit:
+            return
+
+        if not _fix_invalid:
+            raise InvalidConfig(
+                f"NPU UB overflow: estimated {_ub_usage():.0f} bytes exceeds "
+                f"limit {ub_limit:.0f} "
+                f"(block_sizes={block_sizes}, reduction_loops={reduction_loops}). "
+                f"Reduce block_sizes or reduction_loops."
+            )
+
+        # Halve reduction loops (largest first) until the usage fits.
+        for _ in range(64):
+            if _ub_usage() <= ub_limit:
+                break
+            best_i, best_v = -1, 0
+            for i in range(len(reduction_loops)):
+                v = _eff_rl(i)
+                if v > best_v and v > 8:
+                    best_v = v
+                    best_i = i
+            if best_i < 0:
+                break
+            if reduction_loops[best_i] is None:
+                reduction_loops[best_i] = (
+                    next_power_of_2(self.reduction_loops[best_i].size_hint) // 2
+                )
+            else:
+                reduction_loops[best_i] //= 2
+        config["reduction_loops"] = reduction_loops
+
+        # If still over budget, halve block sizes (largest first).
+        for _ in range(64):
+            if _ub_usage() <= ub_limit:
+                break
+            best_i, best_v = -1, 0
+            for i, bs in enumerate(block_sizes):
+                if isinstance(bs, int) and bs > best_v and bs > 1:
+                    best_v = bs
+                    best_i = i
+            if best_i < 0:
+                break
+            block_sizes[best_i] //= 2
+        config["block_sizes"] = block_sizes
 
     def create_config_generation(
         self,
@@ -751,7 +939,9 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
             next_power_of_2(bounded_hint) if max_size is None else max_size
         )
         # Keep NPU autotuning search space conservative. Ascend backends can
-        # degrade or fail with very large block sizes, so clamp to <= 32.
+        # degrade or fail with very large block sizes. We still allow some
+        # extra headroom here, but UB constraints will further cap invalid
+        # combinations.
         if hasattr(torch, "npu") and torch.npu.is_available():
             self.max_size = min(self.max_size, 128)
         if self.max_size < self.min_size:
