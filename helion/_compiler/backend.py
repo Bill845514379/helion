@@ -1984,3 +1984,21 @@ class CuteBackend(Backend):
         **kwargs: object,
     ) -> Config:
         return bound_kernel.config_spec.default_config()
+
+class AscendBackend(TritonBackend):
+    @property
+    def library_imports(self) -> dict[str, str]:
+        return {
+            "math": "import math",
+            "torch": "import torch",
+            "helion": "import helion",
+            "hl": "import helion.language as hl",
+            "triton": "import triton",
+            "tl": "import triton.language as tl",
+            "triton_helpers": "from torch._inductor.runtime import triton_helpers",
+            "tl_math": "from torch_npu._inductor.npu_triton_helpers import math as tl_math",
+            "libdevice": "from torch_npu._inductor.npu_triton_helpers import libdevice",
+            "_default_launcher": "from helion.runtime import default_launcher as _default_launcher",
+            "fast_dividef": "from triton.language.extra.libdevice import fast_dividef",
+            "fast_expf": "from triton.language.extra.libdevice import fast_expf",
+        }
