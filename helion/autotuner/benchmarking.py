@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import inspect
 import math
+import os
 import statistics
 import time
+from collections.abc import Iterator
 from typing import Any
 from typing import Callable
 from typing import TypeVar
@@ -18,6 +21,51 @@ from helion import _compat
 from .progress_bar import iter_with_progress
 
 T = TypeVar("T")
+
+
+def _env_truthy(name: str) -> bool:
+    v = os.environ.get(name, "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
+@contextlib.contextmanager
+def _quiet_torch_npu_profiler_parse_info() -> Iterator[None]:
+    """Drop Ascend profiler parse INFO lines (``Start parsing…`` / ``All profiling…``).
+
+    Only runs when ``torch.npu.is_available()``; CUDA/CPU runs never apply this patch.
+
+    Upstream has no env switch for those ``print_info_msg`` lines. Helion suppresses
+    them here by default; set ``HELION_SHOW_NPU_PROFILER_LOGS=1`` to see them again.
+
+    For ``[WARNING] … export_type: None`` and other ``print_warn_msg`` spam, torch_npu
+    honors ``TORCH_NPU_DISABLED_WARNING=1`` (see ``torch_npu.utils._should_print_warning``).
+    Subprocess parsers may still print if they import torch_npu without this patch.
+    """
+    if _env_truthy("HELION_SHOW_NPU_PROFILER_LOGS"):
+        yield
+        return
+    if not (hasattr(torch, "npu") and torch.npu.is_available()):
+        yield
+        return
+    try:
+        import torch_npu.profiler.analysis._profiling_parser as _prof_parser
+        import torch_npu.profiler.analysis.prof_view.cann_parse._cann_export as _cann_export
+    except ImportError:
+        yield
+        return
+
+    def _noop(_message: str) -> None:
+        return None
+
+    prev_pp = _prof_parser.print_info_msg
+    prev_ce = _cann_export.print_info_msg
+    _prof_parser.print_info_msg = _noop  # type: ignore[assignment]
+    _cann_export.print_info_msg = _noop  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        _prof_parser.print_info_msg = prev_pp
+        _cann_export.print_info_msg = prev_ce
 
 
 def _bench_device_synchronize() -> None:
@@ -460,11 +508,12 @@ def do_bench_npu(
             x.grad = None
 
     # Ascend ``do_bench_npu`` is single-callable; some forks may wrap the result in a list.
-    result = triton_do_bench_npu(
-        fn,
-        warmup=warmup,
-        active=rep,
-    )
+    with _quiet_torch_npu_profiler_parse_info():
+        result = triton_do_bench_npu(
+            fn,
+            warmup=warmup,
+            active=rep,
+        )
 
     if isinstance(result, list):
         if not result:
@@ -584,11 +633,12 @@ def interleaved_bench_npu(
         enabled=desc is not None,
     )
     for j in iterator:
-        raw = triton_do_bench_npu(
-            fns[j],
-            warmup=warmup_n,
-            active=active_n,
-        )
+        with _quiet_torch_npu_profiler_parse_info():
+            raw = triton_do_bench_npu(
+                fns[j],
+                warmup=warmup_n,
+                active=active_n,
+            )
         # Some forks return a one-element list for a single fn; normalize.
         if isinstance(raw, list):
             if not raw:

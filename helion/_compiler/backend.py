@@ -2002,3 +2002,14 @@ class AscendBackend(TritonBackend):
             "fast_dividef": "from triton.language.extra.libdevice import fast_dividef",
             "fast_expf": "from triton.language.extra.libdevice import fast_expf",
         }
+
+    def classify_autotune_exception(self, err: BaseException) -> str | None:
+        # Ascend ``triton-adapter-opt`` can abort with BlockPtrAnalysis assertions;
+        # ``classify_triton_exception`` does not treat these as expected.  Map to
+        # ``debug`` so autotune skips the config (when ``autotune_ignore_errors``
+        # is false); baseline uses ``autotune_baseline_fn`` or default compile and
+        # does not call this hook.
+        msg = f"{type(err).__name__}: {err}"
+        if "BlockPtrAnalysis" in msg or "addptrRes.hasOneUse" in msg:
+            return "debug"
+        return super().classify_autotune_exception(err)
