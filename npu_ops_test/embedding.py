@@ -100,4 +100,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import time
+    time_st = time.time()
     main()
+    print(f"time cost: {time.time() - time_st}")

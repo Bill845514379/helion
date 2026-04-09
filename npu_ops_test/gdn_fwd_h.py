@@ -25,7 +25,7 @@ import helion.language as hl
 # %%
 # Helion Kernel Implementation
 # ----------------------------
-@helion.kernel()
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def helion_gdn_fwd_h(
     k: torch.Tensor, w: torch.Tensor, u: torch.Tensor, g: torch.Tensor, chunk_size: int
 ) -> torch.Tensor:
@@ -210,4 +210,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import time
+    time_st = time.time()
     main()
+    print(f"time cost: {time.time() - time_st}")

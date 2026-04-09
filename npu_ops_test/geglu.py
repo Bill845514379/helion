@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 
 # %%
-@helion.kernel()
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def geglu(a: Tensor, b: Tensor) -> Tensor:
     """
     Performs GEGLU operation: GELU(a) * b using tanh approximation for GELU.
@@ -106,7 +106,7 @@ def geglu(a: Tensor, b: Tensor) -> Tensor:
     return out
 
 
-@helion.kernel()
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def geglu_bwd(grad_out: Tensor, a: Tensor, b: Tensor) -> tuple[Tensor, Tensor]:
     grad_a = torch.empty_like(a)
     grad_b = torch.empty_like(b)
@@ -409,4 +409,7 @@ def main() -> None:
 
 # %%
 if __name__ == "__main__":
+    import time
+    time0 = time.time()
     main()
+    print(f"time cost: {time.time()-time0}")
