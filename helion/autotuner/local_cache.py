@@ -116,6 +116,38 @@ def autotune_fresh_triton_subdir_per_benchmark() -> bool:
     return v in ("1", "true", "yes", "on")
 
 
+def autotune_stable_triton_subdir_per_config() -> bool:
+    """Env ``HELION_AUTOTUNE_TRITON_SUBDIR_STABLE`` (use with *FRESH_TRITON_SUBDIR*).
+
+    Use ``TRITON_CACHE_DIR = <parent>/<sha256(config.config)>`` instead of a fresh temp dir per visit.
+    Different Helion configs never share one Triton cache tree (avoids cross-config confusion); the same
+    config reuses its tree so Triton can hit its own on-disk cache. Skip ``rmtree`` after each benchmark;
+    on NPU the parent still lives under the process volatile root removed at exit.
+    """
+    v = os.environ.get("HELION_AUTOTUNE_TRITON_SUBDIR_STABLE", "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
+def autotune_triton_candidate_parent_path() -> Path:
+    """Directory containing one subdirectory per autotune candidate (stable hash or temp name)."""
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        return Path(npu_volatile_triton_cache_dir()) / "autotune_candidates"
+    return Path(tempfile.gettempdir()) / "helion_autotune_candidates"
+
+
+def triton_cache_dir_for_autotune_candidate(config: Config, *, stable: bool) -> str:
+    """Return ``TRITON_CACHE_DIR`` for this candidate: isolated from other configs' trees."""
+    parent = autotune_triton_candidate_parent_path()
+    parent.mkdir(parents=True, exist_ok=True)
+    if stable:
+        payload = json.dumps(config.config, sort_keys=True, default=str).encode()
+        digest = hashlib.sha256(payload).hexdigest()[:48]
+        p = parent / digest
+        p.mkdir(parents=True, exist_ok=True)
+        return str(p)
+    return tempfile.mkdtemp(prefix="cfg_", dir=str(parent))
+
+
 @dataclasses.dataclass(frozen=True)
 class SavedBestConfig:
     """A parsed cache entry from a .best_config file."""

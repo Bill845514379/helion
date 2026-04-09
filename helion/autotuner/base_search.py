@@ -827,13 +827,17 @@ class BaseSearch(BaseAutotuner):
             callable, measured performance, status, and compilation time.
         """
         from .local_cache import autotune_fresh_triton_subdir_per_benchmark
+        from .local_cache import autotune_stable_triton_subdir_per_config
         from .local_cache import per_config_triton_cache_for_autotune
+        from .local_cache import triton_cache_dir_for_autotune_candidate
 
         fresh_subdir = autotune_fresh_triton_subdir_per_benchmark()
+        stable_subdir = fresh_subdir and autotune_stable_triton_subdir_per_config()
         fns: list[Callable[..., object]] = []
         if fresh_subdir:
             triton_bench_dirs = [
-                tempfile.mkdtemp(prefix="helion_autotune_cfg_") for _ in configs
+                triton_cache_dir_for_autotune_candidate(c, stable=stable_subdir)
+                for c in configs
             ]
             for config, bench_dir in zip(configs, triton_bench_dirs, strict=True):
                 with per_config_triton_cache_for_autotune(bench_dir):
@@ -942,7 +946,8 @@ class BaseSearch(BaseAutotuner):
                 )
             if bench_dir is not None:
                 self.kernel.invalidate_compile_cache_entry(config)
-                shutil.rmtree(bench_dir, ignore_errors=True)
+                if not stable_subdir:
+                    shutil.rmtree(bench_dir, ignore_errors=True)
         return results
 
     def autotune(self, *, skip_cache: bool = False) -> Config:
