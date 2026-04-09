@@ -35,5 +35,9 @@ from ._compiler._dynamo.variables import register_dynamo_variable  # noqa: E402
 
 register_dynamo_variable()
 if is_npu():
+    from torch_npu._inductor.codegen.ir_fx import _patch_npu_inductor_ir
+    from torch_npu._inductor.lowering_fx import _register_npu_inductor_fallbacks
     _compat_module.register_npu_backend()
     _compat_module._register_interface_for_device()
+    _patch_npu_inductor_ir()
+    _register_npu_inductor_fallbacks()
