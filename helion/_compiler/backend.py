@@ -1895,3 +1895,6 @@ class AscendBackend(TritonBackend):
         if "BlockPtrAnalysis" in msg or "addptrRes.hasOneUse" in msg:
             return "debug"
         return super().classify_autotune_exception(err)
+
+    def barrier_semaphore_dtype(self) -> torch.dtype:
+        return torch.int32

@@ -202,9 +202,10 @@ class ConfigSpec:
     def disallow_pid_type(self, pid_type: PidTypeLiteral) -> None:
         """Disallow a pid_type from being used in the config."""
 
-        self.allowed_pid_types = tuple(
-            [x for x in self.allowed_pid_types if x != pid_type]
-        )
+        if len(self.allowed_pid_types) > 1 and pid_type in self.allowed_pid_types:
+            self.allowed_pid_types = tuple(
+                [x for x in self.allowed_pid_types if x != pid_type]
+            )
         assert self.allowed_pid_types
 
     def supports_config_key(self, key: str) -> bool:
