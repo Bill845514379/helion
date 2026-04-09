@@ -912,7 +912,7 @@ class TestAutotuner(RefEagerTestDisabled, TestCase):
                     start_cm = patch.object(
                         search,
                         "create_precompile_future",
-                        side_effect=lambda config, fn: (
+                        side_effect=lambda config, fn, **kwargs: (
                             base_search_module.PrecompileFuture.skip(
                                 search, config, True
                             )
@@ -994,7 +994,7 @@ class TestAutotuner(RefEagerTestDisabled, TestCase):
                     start_cm = patch.object(
                         search,
                         "create_precompile_future",
-                        side_effect=lambda config, fn: (
+                        side_effect=lambda config, fn, **kwargs: (
                             base_search_module.PrecompileFuture.skip(
                                 search, config, True
                             )
@@ -1120,7 +1120,7 @@ class TestAutotuner(RefEagerTestDisabled, TestCase):
             with patch.object(
                 search,
                 "create_precompile_future",
-                side_effect=lambda config, fn: base_search_module.PrecompileFuture.skip(
+                side_effect=lambda config, fn, **kwargs: base_search_module.PrecompileFuture.skip(
                     search, config, True
                 ),
             ):
