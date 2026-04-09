@@ -8,7 +8,6 @@ import datetime
 import functools
 import inspect
 from itertools import count
-from itertools import starmap
 import logging
 import math
 from math import inf
@@ -20,6 +19,7 @@ import pickle
 import pprint
 import random
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -736,7 +736,11 @@ class BaseSearch(BaseAutotuner):
         )
 
     def create_precompile_future(
-        self, config: Config, fn: CompiledConfig
+        self,
+        config: Config,
+        fn: CompiledConfig,
+        *,
+        fork_triton_cache_dir: str | None = None,
     ) -> PrecompileFuture:
         """
         Run the kernel in a spawned subprocess to detect hangs during compilation or execution.
@@ -747,6 +751,7 @@ class BaseSearch(BaseAutotuner):
         Args:
             config: The config that generated fn.
             fn: The function to be precompiled.
+            fork_triton_cache_dir: Optional ``TRITON_CACHE_DIR`` for the precompile child.
 
         Returns:
             True if the compilation was successful, False if it hung.
@@ -804,6 +809,7 @@ class BaseSearch(BaseAutotuner):
             process=process,
             timeout=self.settings.autotune_compile_timeout,
             result_path=result_path,
+            fork_triton_cache_dir=fork_triton_cache_dir,
         )
 
     def parallel_benchmark(
@@ -820,18 +826,35 @@ class BaseSearch(BaseAutotuner):
             A list of BenchmarkResult entries containing the configuration, compiled
             callable, measured performance, status, and compilation time.
         """
+        from .local_cache import autotune_fresh_triton_subdir_per_benchmark
+        from .local_cache import per_config_triton_cache_for_autotune
+
+        fresh_subdir = autotune_fresh_triton_subdir_per_benchmark()
         fns: list[Callable[..., object]] = []
+        if fresh_subdir:
+            triton_bench_dirs = [
+                tempfile.mkdtemp(prefix="helion_autotune_cfg_") for _ in configs
+            ]
+            for config, bench_dir in zip(configs, triton_bench_dirs, strict=True):
+                with per_config_triton_cache_for_autotune(bench_dir):
+                    fn = self.kernel.compile_config(config, allow_print=False)
+                fns.append(fn)
+        else:
+            triton_bench_dirs = [None] * len(configs)
+            for config in configs:
+                fn = self.kernel.compile_config(config, allow_print=False)
+                fns.append(fn)
+
         futures: list[PrecompileFuture] | None = None
-        for config in configs:
-            fn = self.kernel.compile_config(config, allow_print=False)
-            fns.append(fn)
         if self.settings.autotune_precompile:
-            futures = list(
-                starmap(
-                    self.create_precompile_future,
-                    zip(configs, fns, strict=True),
+            futures = [
+                self.create_precompile_future(
+                    cfg,
+                    fn,
+                    fork_triton_cache_dir=bd,
                 )
-            )
+                for cfg, fn, bd in zip(configs, fns, triton_bench_dirs, strict=True)
+            ]
             precompile_desc = (
                 f"{desc} precompiling" if self.settings.autotune_progress_bar else None
             )
@@ -860,6 +883,7 @@ class BaseSearch(BaseAutotuner):
         )
         for index, (fn, is_working, reason) in iterator:
             config = configs[index]
+            bench_dir = triton_bench_dirs[index]
             if futures is not None:
                 future = futures[index]
                 compile_time = (
@@ -882,6 +906,8 @@ class BaseSearch(BaseAutotuner):
                     )
                 )
                 # benchmark one-by-one to avoid noisy results
+                if bench_dir is not None:
+                    os.environ["TRITON_CACHE_DIR"] = bench_dir
                 perf = self.benchmark_function(config, fn)
                 status = "ok" if math.isfinite(perf) else "error"
                 # Log completion after benchmarking
@@ -914,6 +940,9 @@ class BaseSearch(BaseAutotuner):
                         compile_time=compile_time,
                     )
                 )
+            if bench_dir is not None:
+                self.kernel.invalidate_compile_cache_entry(config)
+                shutil.rmtree(bench_dir, ignore_errors=True)
         return results
 
     def autotune(self, *, skip_cache: bool = False) -> Config:
@@ -1576,6 +1605,7 @@ class PrecompileFuture:
     remote_error: RemoteError | None = None
     _remote_error_handled: bool = False
     failure_reason: Literal["ok", "error", "timeout"] | None = None
+    fork_triton_cache_dir: str | None = None
 
     @property
     def elapsed(self) -> float:
@@ -1609,6 +1639,8 @@ class PrecompileFuture:
         """Start the underlying process and set the timer if not already started."""
         if self.process is None or self.started:
             return
+        if self.fork_triton_cache_dir is not None:
+            os.environ["TRITON_CACHE_DIR"] = self.fork_triton_cache_dir
         self.start_time = time.time()
         self.process.start()
 

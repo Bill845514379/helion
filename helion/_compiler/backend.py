@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import functools
 import operator
+import os
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
@@ -27,6 +28,17 @@ if TYPE_CHECKING:
     from .tile_strategy import TileStrategy
 
     InductorOpOverrides = OpsHandler[Any]
+
+
+def _fork_autotune_disabled_for_npu_default(device: torch.device) -> bool:
+    """Disable fork precompile on NPU unless ``HELION_AUTOTUNE_ASCEND_FORK_PRECOMPILE=1``.
+
+    Lowering often runs on first ``JITFunction.run()``, not isolated ``compile()`` in a child.
+    """
+    if device.type != "npu":
+        return False
+    v = os.environ.get("HELION_AUTOTUNE_ASCEND_FORK_PRECOMPILE", "").strip().lower()
+    return v not in ("1", "true", "yes", "on")
 
 
 class Backend(abc.ABC):
@@ -503,8 +515,12 @@ class Backend(abc.ABC):
         """
         force = force or bound_kernel.settings.force_autotune
 
+        supports_pc = self.supports_precompile()
+        npu_fork_disable = _fork_autotune_disabled_for_npu_default(bound_kernel.env.device)
         # Disable precompile for backends that don't support it
-        if not self.supports_precompile():
+        if not supports_pc:
+            bound_kernel.settings.autotune_precompile = None
+        elif npu_fork_disable:
             bound_kernel.settings.autotune_precompile = None
 
         if not force and bound_kernel.kernel.configs:
