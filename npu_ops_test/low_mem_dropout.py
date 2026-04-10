@@ -26,7 +26,7 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=False)
 def low_mem_dropout(p: float, x: torch.Tensor, seed: int) -> torch.Tensor:
     """
     Applies dropout on x using p
