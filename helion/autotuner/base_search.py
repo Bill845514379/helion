@@ -4,11 +4,12 @@ import abc
 import collections
 import contextlib
 import dataclasses
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import as_completed
 import datetime
 import functools
 import inspect
 from itertools import count
-from itertools import starmap
 import logging
 import math
 from math import inf
@@ -20,6 +21,7 @@ import pickle
 import pprint
 import random
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -51,6 +53,7 @@ from ..runtime.precompile_shim import make_precompiler
 from .benchmarking import _bench_device_synchronize
 from .benchmarking import default_do_bench
 from .benchmarking import default_interleaved_bench
+from .benchmarking import do_bench_generic
 from .benchmarking import sync_object
 from .logger import SUPPRESSED_TRITON_CODE_MSG
 from .logger import AutotuneLogEntry
@@ -231,6 +234,41 @@ def _chunked_assert_close(
         a_chunk = a_flat[i : i + chunk_size]
         e_chunk = e_flat[i : i + chunk_size]
         torch.testing.assert_close(a_chunk, e_chunk, atol=atol, rtol=rtol)
+
+
+def _autotune_outputs_match_baseline(
+    output: object,
+    args: Sequence[object],
+    *,
+    baseline_output: object,
+    baseline_post_args: Sequence[object] | None,
+    mutated_arg_indices: Sequence[int],
+    atol: float,
+    rtol: float,
+) -> None:
+    """Raise ``AssertionError`` if outputs or mutated args disagree with the baseline."""
+    _assert_close(output, baseline_output, atol=atol, rtol=rtol)
+    if len(mutated_arg_indices) > 0 and baseline_post_args is not None:
+        _assert_close(args, baseline_post_args, atol=atol, rtol=rtol)
+
+
+def _autotune_parallel_benchmark_workers_allowed() -> bool:
+    """Whether explore-phase benchmark subprocesses are safe to use in this process.
+
+    ``ProcessPoolExecutor`` + ``spawn`` under pytest (or Meta unit tests) often deadlocks
+    or hangs with CUDA/NPU runtimes. Parallel benchmarking is disabled there unless
+    ``HELION_AUTOTUNE_BENCHMARK_SUBPROCESS_IN_TEST=1`` is set.
+    """
+    v = os.environ.get(
+        "HELION_AUTOTUNE_BENCHMARK_SUBPROCESS_IN_TEST", ""
+    ).strip().lower()
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if torch._utils_internal.is_fb_unit_test():
+        return False
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return False
+    return True
 
 
 def _clone_args(
@@ -515,19 +553,15 @@ class BaseSearch(BaseAutotuner):
         self, config: Config, output: object, args: Sequence[object]
     ) -> bool:
         try:
-            _assert_close(
+            _autotune_outputs_match_baseline(
                 output,
-                self._baseline_output,
+                args,
+                baseline_output=self._baseline_output,
+                baseline_post_args=self._baseline_post_args,
+                mutated_arg_indices=self._mutated_arg_indices,
                 atol=self._effective_atol,
                 rtol=self._effective_rtol,
             )
-            if len(self._mutated_arg_indices) > 0:
-                _assert_close(
-                    args,
-                    self._baseline_post_args,
-                    atol=self._effective_atol,
-                    rtol=self._effective_rtol,
-                )
         except AssertionError as e:
             if not self.settings.autotune_ignore_errors:
                 self.log.warning(
@@ -552,6 +586,79 @@ class BaseSearch(BaseAutotuner):
         if self.create_precompile_future(config, fn)():
             return fn, self.benchmark_function(config, fn)
         return fn, inf
+
+    def _handle_autotune_benchmark_runtime_error(
+        self,
+        config: Config,
+        fn: CompiledConfig,
+        e: BaseException,
+        *,
+        captured_output: str | None = None,
+        classification_override: str | None = None,
+        force_unrecoverable: bool = False,
+    ) -> None:
+        """Log and classify a failed benchmark; may raise for fatal error policies."""
+        e.__traceback__ = None
+        maybe_dump_triton_failure(
+            self.kernel,
+            config,
+            e,
+            captured_output=captured_output,
+        )
+        if force_unrecoverable or match_unrecoverable_runtime_error(e):
+            self.kernel.maybe_log_repro(self.log.error, self.args, config)
+            raise exc.TritonUnrecoverableRuntimeError(
+                reason=str(e),
+                decorator=self.kernel.format_kernel_decorator(config, self.settings),
+                error=f"{type(e).__qualname__}: {e}",
+            ) from e
+        _backend = getattr(getattr(self, "config_spec", None), "backend", None)
+        action = classification_override or (
+            (
+                _backend.classify_autotune_exception(e)
+                if _backend is not None
+                else None
+            )
+            or classify_triton_exception(e)
+        )
+        if self.settings.autotune_ignore_errors:
+            pass
+        elif action == "raise":
+            decorator = self.kernel.format_kernel_decorator(config, self.settings)
+            log_generated_triton_code_debug(
+                self.log,
+                self.kernel,
+                config,
+                prefix=f"Generated Triton code for {decorator}:",
+            )
+            self.kernel.maybe_log_repro(self.log.error, self.args, config)
+            raise exc.TritonError(
+                error=f"{type(e).__qualname__}: {e}",
+                decorator=decorator,
+                code=SUPPRESSED_TRITON_CODE_MSG,
+            ) from e
+        elif action == "warn":
+            decorator = self.kernel.format_kernel_decorator(config, self.settings)
+            log_generated_triton_code_debug(
+                self.log,
+                self.kernel,
+                config,
+                prefix=f"Generated Triton code for {decorator}:",
+            )
+            self.log.warning(format_triton_compile_failure(config, e, self.kernel))
+            self.kernel.maybe_log_repro(self.log.warning, self.args, config)
+        else:
+            decorator = self.kernel.format_kernel_decorator(config, self.settings)
+            log_generated_triton_code_debug(
+                self.log,
+                self.kernel,
+                config,
+                prefix=f"Generated Triton code for {decorator}:",
+            )
+            self.log.debug(f"Benchmarking failed: {type(e).__name__}: {e}")
+            self.kernel.maybe_log_repro(self.log.debug, self.args, config)
+
+        self._autotune_metrics.num_compile_failures += 1
 
     def benchmark_function(self, config: Config, fn: CompiledConfig) -> float:
         """
@@ -618,66 +725,12 @@ class BaseSearch(BaseAutotuner):
             # e.__traceback__ holds references to all local variables in the call stack frames.
             # When a Triton kernel fails, the output tensors allocated by the Helion kernel function
             # were being held by the traceback, preventing them from being freed.
-            e.__traceback__ = None
-            maybe_dump_triton_failure(
-                self.kernel,
+            self._handle_autotune_benchmark_runtime_error(
                 config,
+                fn,
                 e,
                 captured_output=_captured_output[0] or None,
             )
-            if match_unrecoverable_runtime_error(e):
-                self.kernel.maybe_log_repro(self.log.error, self.args, config)
-                raise exc.TritonUnrecoverableRuntimeError(
-                    reason=str(e),
-                    decorator=self.kernel.format_kernel_decorator(
-                        config, self.settings
-                    ),
-                    error=f"{type(e).__qualname__}: {e}",
-                ) from e
-            _backend = getattr(getattr(self, "config_spec", None), "backend", None)
-            action = (
-                _backend.classify_autotune_exception(e)
-                if _backend is not None
-                else None
-            ) or classify_triton_exception(e)
-            if self.settings.autotune_ignore_errors:
-                pass
-            elif action == "raise":
-                decorator = self.kernel.format_kernel_decorator(config, self.settings)
-                log_generated_triton_code_debug(
-                    self.log,
-                    self.kernel,
-                    config,
-                    prefix=f"Generated Triton code for {decorator}:",
-                )
-                self.kernel.maybe_log_repro(self.log.error, self.args, config)
-                raise exc.TritonError(
-                    error=f"{type(e).__qualname__}: {e}",
-                    decorator=decorator,
-                    code=SUPPRESSED_TRITON_CODE_MSG,
-                ) from e
-            elif action == "warn":
-                decorator = self.kernel.format_kernel_decorator(config, self.settings)
-                log_generated_triton_code_debug(
-                    self.log,
-                    self.kernel,
-                    config,
-                    prefix=f"Generated Triton code for {decorator}:",
-                )
-                self.log.warning(format_triton_compile_failure(config, e, self.kernel))
-                self.kernel.maybe_log_repro(self.log.warning, self.args, config)
-            else:
-                decorator = self.kernel.format_kernel_decorator(config, self.settings)
-                log_generated_triton_code_debug(
-                    self.log,
-                    self.kernel,
-                    config,
-                    prefix=f"Generated Triton code for {decorator}:",
-                )
-                self.log.debug(f"Benchmarking failed: {type(e).__name__}: {e}")
-                self.kernel.maybe_log_repro(self.log.debug, self.args, config)
-
-            self._autotune_metrics.num_compile_failures += 1
             return inf
 
     def set_adaptive_compile_timeout(
@@ -736,7 +789,11 @@ class BaseSearch(BaseAutotuner):
         )
 
     def create_precompile_future(
-        self, config: Config, fn: CompiledConfig
+        self,
+        config: Config,
+        fn: CompiledConfig,
+        *,
+        fork_triton_cache_dir: str | None = None,
     ) -> PrecompileFuture:
         """
         Run the kernel in a spawned subprocess to detect hangs during compilation or execution.
@@ -747,6 +804,7 @@ class BaseSearch(BaseAutotuner):
         Args:
             config: The config that generated fn.
             fn: The function to be precompiled.
+            fork_triton_cache_dir: Optional ``TRITON_CACHE_DIR`` for the precompile child.
 
         Returns:
             True if the compilation was successful, False if it hung.
@@ -804,13 +862,74 @@ class BaseSearch(BaseAutotuner):
             process=process,
             timeout=self.settings.autotune_compile_timeout,
             result_path=result_path,
+            fork_triton_cache_dir=fork_triton_cache_dir,
         )
+
+    def _autotune_parallel_bench_kind(self) -> Literal["default", "generic"]:
+        _backend = getattr(getattr(self, "config_spec", None), "backend", None)
+        _custom = _backend.get_do_bench() if _backend is not None else None
+        if _custom is do_bench_generic:
+            return "generic"
+        return "default"
+
+    def _finish_subprocess_explore_benchmark(
+        self,
+        config: Config,
+        fn: CompiledConfig,
+        message_data: dict[str, object],
+    ) -> tuple[float, Literal["ok", "error"]]:
+        self._autotune_metrics.num_configs_tested += 1
+        status_raw = message_data.get("status")
+        if status_raw == "ok":
+            perf_ms = message_data.get("perf_ms")
+            if not isinstance(perf_ms, float):
+                raise TypeError(
+                    f"Unexpected perf_ms in subprocess benchmark result: {perf_ms!r}"
+                )
+            if perf_ms < self.best_perf_so_far:
+                self.best_perf_so_far = perf_ms
+            st: Literal["ok", "error"] = "ok" if math.isfinite(perf_ms) else "error"
+            return perf_ms, st
+        if status_raw == "accuracy_fail":
+            self._autotune_metrics.num_accuracy_failures += 1
+            return inf, "error"
+        exc_args_raw = message_data.get("exc_args", ())
+        if not isinstance(exc_args_raw, tuple):
+            exc_args_raw = (str(exc_args_raw),)
+        err = RemoteError(
+            exc_type=str(message_data.get("exc_type", "Exception")),
+            exc_module=(
+                str(m) if (m := message_data.get("exc_module")) is not None else None
+            ),
+            exc_args=cast(tuple[object, ...], exc_args_raw),
+            traceback=cast(str | None, message_data.get("traceback")),
+            classification=cast(str | None, message_data.get("classification")),
+            captured_output=cast(str | None, message_data.get("captured_output")),
+        )
+        e = err.to_exception()
+        self._handle_autotune_benchmark_runtime_error(
+            config,
+            fn,
+            e,
+            captured_output=err.captured_output,
+            classification_override=err.classification,
+            force_unrecoverable=bool(message_data.get("unrecoverable")),
+        )
+        return inf, "error"
 
     def parallel_benchmark(
         self, configs: list[Config], *, desc: str = "Benchmarking"
     ) -> list[BenchmarkResult]:
         """
         Benchmark multiple configurations in parallel.
+
+        Compilation (and optional precompile subprocesses) runs concurrently; timing
+        of successful builds is sequential by default. Set
+        ``HELION_AUTOTUNE_BENCHMARK_JOBS`` to an integer greater than ``1`` to run
+        the explore-phase ``benchmark_function`` work in up to that many spawned
+        worker processes (requires serializable compiled kernels). Under pytest or
+        Meta unit tests this pool is skipped (jobs treated as ``1``) to avoid hangs;
+        set ``HELION_AUTOTUNE_BENCHMARK_SUBPROCESS_IN_TEST=1`` to force it on.
 
         Args:
             configs: A list of configurations to benchmark.
@@ -820,18 +939,39 @@ class BaseSearch(BaseAutotuner):
             A list of BenchmarkResult entries containing the configuration, compiled
             callable, measured performance, status, and compilation time.
         """
+        from .local_cache import autotune_fresh_triton_subdir_per_benchmark
+        from .local_cache import autotune_stable_triton_subdir_per_config
+        from .local_cache import per_config_triton_cache_for_autotune
+        from .local_cache import triton_cache_dir_for_autotune_candidate
+
+        fresh_subdir = autotune_fresh_triton_subdir_per_benchmark()
+        stable_subdir = fresh_subdir and autotune_stable_triton_subdir_per_config()
         fns: list[Callable[..., object]] = []
+        if fresh_subdir:
+            triton_bench_dirs = [
+                triton_cache_dir_for_autotune_candidate(c, stable=stable_subdir)
+                for c in configs
+            ]
+            for config, bench_dir in zip(configs, triton_bench_dirs, strict=True):
+                with per_config_triton_cache_for_autotune(bench_dir):
+                    fn = self.kernel.compile_config(config, allow_print=False)
+                fns.append(fn)
+        else:
+            triton_bench_dirs = [None] * len(configs)
+            for config in configs:
+                fn = self.kernel.compile_config(config, allow_print=False)
+                fns.append(fn)
+
         futures: list[PrecompileFuture] | None = None
-        for config in configs:
-            fn = self.kernel.compile_config(config, allow_print=False)
-            fns.append(fn)
         if self.settings.autotune_precompile:
-            futures = list(
-                starmap(
-                    self.create_precompile_future,
-                    zip(configs, fns, strict=True),
+            futures = [
+                self.create_precompile_future(
+                    cfg,
+                    fn,
+                    fork_triton_cache_dir=bd,
                 )
-            )
+                for cfg, fn, bd in zip(configs, fns, triton_bench_dirs, strict=True)
+            ]
             precompile_desc = (
                 f"{desc} precompiling" if self.settings.autotune_progress_bar else None
             )
@@ -849,72 +989,279 @@ class BaseSearch(BaseAutotuner):
             is_workings = [True] * len(configs)
             precompile_status = ["ok"] * len(configs)
 
-        results: list[BenchmarkResult] = []
+        n = len(configs)
+        slot_results: list[BenchmarkResult | None] = [None] * n
 
-        # Render a progress bar only when the user requested it.
-        iterator = iter_with_progress(
-            enumerate(zip(fns, is_workings, precompile_status, strict=True)),
-            total=len(configs),
-            description=f"{desc} exploring neighbors",
-            enabled=self.settings.autotune_progress_bar,
-        )
-        for index, (fn, is_working, reason) in iterator:
+        def compile_time_at(index: int) -> float | None:
+            if futures is None:
+                return None
+            future = futures[index]
+            return (
+                future.elapsed
+                if future.process is not None and future.started
+                else None
+            )
+
+        def finalize_triton_cache_dir(index: int) -> None:
+            bench_dir = triton_bench_dirs[index]
+            if bench_dir is not None:
+                self.kernel.invalidate_compile_cache_entry(configs[index])
+                if not stable_subdir:
+                    shutil.rmtree(bench_dir, ignore_errors=True)
+
+        def explore_sequential(index: int) -> None:
             config = configs[index]
-            if futures is not None:
-                future = futures[index]
-                compile_time = (
-                    future.elapsed
-                    if future.process is not None and future.started
-                    else None
+            fn = fns[index]
+            bench_dir = triton_bench_dirs[index]
+            compile_time = compile_time_at(index)
+            self.log.record_autotune_entry(
+                AutotuneLogEntry(
+                    generation=self._autotune_metrics.num_generations,
+                    status="started",
+                    perf_ms=None,
+                    compile_time=compile_time,
+                    config=config,
                 )
+            )
+            if bench_dir is not None:
+                os.environ["TRITON_CACHE_DIR"] = bench_dir
+            perf = self.benchmark_function(config, fn)
+            status: Literal["ok", "error"] = "ok" if math.isfinite(perf) else "error"
+            self.log.record_autotune_entry(
+                AutotuneLogEntry(
+                    generation=self._autotune_metrics.num_generations,
+                    status=status,
+                    perf_ms=perf if math.isfinite(perf) else None,
+                    compile_time=compile_time,
+                    config=config,
+                )
+            )
+            slot_results[index] = BenchmarkResult(
+                config=config,
+                fn=fn,
+                perf=perf,
+                status=status,
+                compile_time=compile_time,
+            )
+            finalize_triton_cache_dir(index)
+
+        working_indices: list[int] = []
+        for index in range(n):
+            fn_i = fns[index]
+            is_working = is_workings[index]
+            reason = precompile_status[index]
+            compile_time = compile_time_at(index)
+            if not is_working:
+                status: Literal["ok", "error", "timeout"] = (
+                    "timeout" if reason == "timeout" else "error"
+                )
+                slot_results[index] = BenchmarkResult(
+                    config=configs[index],
+                    fn=fn_i,
+                    perf=inf,
+                    status=status,
+                    compile_time=compile_time,
+                )
+                finalize_triton_cache_dir(index)
             else:
-                compile_time = None
-            status: Literal["ok", "error", "timeout"]
-            if is_working:
-                # Log started before benchmarking to help identify hangs
-                self.log.record_autotune_entry(
-                    AutotuneLogEntry(
-                        generation=self._autotune_metrics.num_generations,
-                        status="started",
-                        perf_ms=None,
-                        compile_time=compile_time,
-                        config=config,
+                working_indices.append(index)
+
+        benchmark_jobs = self.settings.autotune_benchmark_jobs
+        effective_benchmark_jobs = benchmark_jobs
+        if (
+            effective_benchmark_jobs > 1
+            and not _autotune_parallel_benchmark_workers_allowed()
+        ):
+            effective_benchmark_jobs = 1
+        spawnable: list[tuple[int, SerializedCompiledFunction]] = []
+        if effective_benchmark_jobs > 1:
+            for index in working_indices:
+                try:
+                    spawnable.append(
+                        (
+                            index,
+                            _serialize_compiled_fn(
+                                cast("CompiledConfig", fns[index]),
+                            ),
+                        )
                     )
+                except RuntimeError:
+                    pass
+
+        use_pool = effective_benchmark_jobs > 1 and len(spawnable) > 0
+        if not use_pool:
+            iterator = iter_with_progress(
+                working_indices,
+                total=len(working_indices),
+                description=f"{desc} exploring neighbors",
+                enabled=self.settings.autotune_progress_bar,
+            )
+            for index in iterator:
+                explore_sequential(index)
+        else:
+            from rich.console import Console
+            from rich.progress import BarColumn
+            from rich.progress import MofNCompleteColumn
+            from rich.progress import Progress
+            from rich.progress import TextColumn
+
+            from .progress_bar import SpeedColumn
+
+            tmpdir = self._precompile_tmpdir
+            assert tmpdir is not None
+            bench_kind = self._autotune_parallel_bench_kind()
+            baseline_bundle_path: str | None = None
+            if self.settings.autotune_accuracy_check:
+                baseline_bundle_path = os.path.join(
+                    tmpdir.name, f"baseline_bench_{uuid.uuid4().hex}.pt"
                 )
-                # benchmark one-by-one to avoid noisy results
-                perf = self.benchmark_function(config, fn)
-                status = "ok" if math.isfinite(perf) else "error"
-                # Log completion after benchmarking
-                self.log.record_autotune_entry(
-                    AutotuneLogEntry(
-                        generation=self._autotune_metrics.num_generations,
-                        status=status,
-                        perf_ms=perf if math.isfinite(perf) else None,
-                        compile_time=compile_time,
-                        config=config,
+                torch.save(
+                    (self._baseline_output, self._baseline_post_args),
+                    baseline_bundle_path,
+                )
+
+            spawn_by_index = {i: spec for i, spec in spawnable}
+            not_spawnable = [i for i in working_indices if i not in spawn_by_index]
+            total_tasks = len(working_indices)
+            progress_console = Console(stderr=True)
+            use_rich_pb = (
+                self.settings.autotune_progress_bar
+                and not torch._utils_internal.is_fb_unit_test()
+                and (progress_console.is_interactive or progress_console.is_jupyter)
+            )
+
+            def run_parallel_spawn_phase(
+                advance: Callable[[], None] | None,
+            ) -> None:
+                max_workers = min(effective_benchmark_jobs, len(spawnable))
+                ctx = mp.get_context("spawn")
+                with ProcessPoolExecutor(
+                    max_workers=max_workers, mp_context=ctx
+                ) as executor:
+                    future_meta: dict[
+                        object,
+                        tuple[int, str, str, str],
+                    ] = {}
+                    for index, fn_spec in spawnable:
+                        config = configs[index]
+                        compile_time = compile_time_at(index)
+                        self.log.record_autotune_entry(
+                            AutotuneLogEntry(
+                                generation=self._autotune_metrics.num_generations,
+                                status="started",
+                                perf_ms=None,
+                                compile_time=compile_time,
+                                config=config,
+                            )
+                        )
+                        payload_path = os.path.join(
+                            tmpdir.name, f"bpay_{uuid.uuid4().hex}.pkl"
+                        )
+                        result_path = self._next_precompile_result_path()
+                        if len(self._mutated_arg_indices) > 0:
+                            working_args = _clone_args(
+                                self.args,
+                                idx_to_clone=self._mutated_arg_indices,
+                            )
+                        else:
+                            working_args = self.args
+                        args_path = os.path.join(
+                            tmpdir.name, f"bargs_{uuid.uuid4().hex}.pt"
+                        )
+                        torch.save(working_args, args_path)
+                        decorator = self.kernel.format_kernel_decorator(
+                            config, self.settings
+                        )
+                        payload = _AutotuneBenchSubprocessPayload(
+                            fn_spec=fn_spec,
+                            working_args_path=args_path,
+                            bench_dir=triton_bench_dirs[index],
+                            accuracy_check=self.settings.autotune_accuracy_check,
+                            baseline_bundle_path=baseline_bundle_path,
+                            atol=self._effective_atol,
+                            rtol=self._effective_rtol,
+                            mutated_arg_indices=tuple(self._mutated_arg_indices),
+                            bench_kind=bench_kind,
+                            decorator=decorator,
+                        )
+                        with open(payload_path, "wb") as pf:
+                            pickle.dump(
+                                payload, pf, protocol=pickle.HIGHEST_PROTOCOL
+                            )
+                        fut = executor.submit(
+                            _autotune_bench_subprocess_worker,
+                            payload_path,
+                            result_path,
+                        )
+                        future_meta[fut] = (index, payload_path, result_path, args_path)
+
+                    for fut in as_completed(future_meta):
+                        index, payload_path, result_path, args_path = future_meta[
+                            fut
+                        ]
+                        fut.result()
+                        with open(result_path, "rb") as rf:
+                            msg = pickle.load(rf)
+                        assert isinstance(msg, dict)
+                        for path in (payload_path, result_path, args_path):
+                            with contextlib.suppress(Exception):
+                                if os.path.exists(path):
+                                    os.remove(path)
+                        config = configs[index]
+                        fn = fns[index]
+                        compile_time = compile_time_at(index)
+                        perf, st = self._finish_subprocess_explore_benchmark(
+                            config, cast("CompiledConfig", fn), msg
+                        )
+                        self.log.record_autotune_entry(
+                            AutotuneLogEntry(
+                                generation=self._autotune_metrics.num_generations,
+                                status=st,
+                                perf_ms=perf if math.isfinite(perf) else None,
+                                compile_time=compile_time,
+                                config=config,
+                            )
+                        )
+                        slot_results[index] = BenchmarkResult(
+                            config=config,
+                            fn=fn,
+                            perf=perf,
+                            status=st,
+                            compile_time=compile_time,
+                        )
+                        finalize_triton_cache_dir(index)
+                        if advance is not None:
+                            advance()
+
+            if use_rich_pb:
+                with Progress(
+                    TextColumn("[progress.description]{task.description}"),
+                    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                    BarColumn(
+                        bar_width=None,
+                        complete_style="yellow",
+                        finished_style="green",
+                    ),
+                    MofNCompleteColumn(),
+                    SpeedColumn(),
+                    console=progress_console,
+                ) as progress:
+                    task_id = progress.add_task(
+                        f"{desc} exploring neighbors", total=total_tasks
                     )
-                )
-                results.append(
-                    BenchmarkResult(
-                        config=config,
-                        fn=fn,
-                        perf=perf,
-                        status=status,
-                        compile_time=compile_time,
+                    for index in sorted(not_spawnable):
+                        explore_sequential(index)
+                        progress.update(task_id, advance=1)
+                    run_parallel_spawn_phase(
+                        lambda: progress.update(task_id, advance=1),
                     )
-                )
             else:
-                status = "timeout" if reason == "timeout" else "error"
-                results.append(
-                    BenchmarkResult(
-                        config=config,
-                        fn=fn,
-                        perf=inf,
-                        status=status,
-                        compile_time=compile_time,
-                    )
-                )
-        return results
+                for index in sorted(not_spawnable):
+                    explore_sequential(index)
+                run_parallel_spawn_phase(None)
+
+        assert all(x is not None for x in slot_results)
+        return cast(list[BenchmarkResult], slot_results)
 
     def autotune(self, *, skip_cache: bool = False) -> Config:
         """
@@ -1576,6 +1923,7 @@ class PrecompileFuture:
     remote_error: RemoteError | None = None
     _remote_error_handled: bool = False
     failure_reason: Literal["ok", "error", "timeout"] | None = None
+    fork_triton_cache_dir: str | None = None
 
     @property
     def elapsed(self) -> float:
@@ -1609,6 +1957,8 @@ class PrecompileFuture:
         """Start the underlying process and set the timer if not already started."""
         if self.process is None or self.started:
             return
+        if self.fork_triton_cache_dir is not None:
+            os.environ["TRITON_CACHE_DIR"] = self.fork_triton_cache_dir
         self.start_time = time.time()
         self.process.start()
 
@@ -2117,6 +2467,20 @@ class SerializedCompiledFunction:
 
 
 @dataclasses.dataclass
+class _AutotuneBenchSubprocessPayload:
+    fn_spec: SerializedCompiledFunction
+    working_args_path: str
+    bench_dir: str | None
+    accuracy_check: bool
+    baseline_bundle_path: str | None
+    atol: float
+    rtol: float
+    mutated_arg_indices: tuple[int, ...]
+    bench_kind: Literal["default", "generic"]
+    decorator: str
+
+
+@dataclasses.dataclass
 class RemoteError:
     exc_type: str
     exc_module: str | None
@@ -2174,3 +2538,89 @@ def _load_compiled_fn(fn_spec: SerializedCompiledFunction) -> CompiledConfig:
             f"Unable to locate compiled kernel '{fn_spec.function_name}' in generated module"
         )
     return fn
+
+
+def _autotune_bench_subprocess_worker(payload_path: str, result_path: str) -> None:
+    """Run warmup, optional accuracy check, and timing in a spawned process."""
+    _captured_output: list[str] = [""]
+    payload: _AutotuneBenchSubprocessPayload | None = None
+    try:
+        with open(payload_path, "rb") as f:
+            payload = pickle.load(f)
+        if not isinstance(payload, _AutotuneBenchSubprocessPayload):
+            raise TypeError(
+                f"Expected _AutotuneBenchSubprocessPayload, got {type(payload)}"
+            )
+        if payload.bench_dir is not None:
+            os.environ["TRITON_CACHE_DIR"] = payload.bench_dir
+        fn = _load_compiled_fn(payload.fn_spec)
+        working_args = torch.load(payload.working_args_path)
+        assert isinstance(working_args, (list, tuple))
+        _bench_fn = (
+            do_bench_generic
+            if payload.bench_kind == "generic"
+            else default_do_bench()
+        )
+        _capture_ctx = (
+            capture_output()
+            if _get_failure_dump_dir()
+            else contextlib.nullcontext(_captured_output)
+        )
+        _bench_device_synchronize()
+        with _capture_ctx as _captured_output:
+            output = fn(*working_args)
+        _bench_device_synchronize()
+        if payload.accuracy_check:
+            if payload.baseline_bundle_path is None:
+                raise RuntimeError("accuracy_check set but baseline_bundle_path is None")
+            baseline_output, baseline_post_args = torch.load(
+                payload.baseline_bundle_path
+            )
+            try:
+                _autotune_outputs_match_baseline(
+                    output,
+                    working_args,
+                    baseline_output=baseline_output,
+                    baseline_post_args=baseline_post_args,
+                    mutated_arg_indices=payload.mutated_arg_indices,
+                    atol=payload.atol,
+                    rtol=payload.rtol,
+                )
+            except AssertionError:
+                _write_result_file(result_path, {"status": "accuracy_fail"})
+                return
+        res = _bench_fn(
+            functools.partial(fn, *working_args),
+            return_mode="median",
+            warmup=1,
+            rep=50,
+        )
+        res = sync_object(res)
+        assert isinstance(res, float)
+        _write_result_file(result_path, {"status": "ok", "perf_ms": res})
+    except Exception as exc:
+        decorator = payload.decorator if payload is not None else "<unknown>"
+        with contextlib.suppress(Exception):
+            try:
+                exc_args = tuple(exc.args)
+            except Exception:
+                exc_args = (str(exc),)
+            try:
+                classification = classify_triton_exception(exc)
+            except Exception:
+                classification = None
+            unrecoverable = match_unrecoverable_runtime_error(exc)
+            _write_result_file(
+                result_path,
+                {
+                    "status": "error",
+                    "traceback": traceback.format_exc(),
+                    "decorator": decorator,
+                    "exc_type": type(exc).__name__,
+                    "exc_module": type(exc).__module__,
+                    "exc_args": exc_args,
+                    "classification": classification,
+                    "captured_output": _captured_output[0] or None,
+                    "unrecoverable": unrecoverable,
+                },
+            )

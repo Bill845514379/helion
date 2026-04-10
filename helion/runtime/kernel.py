@@ -561,18 +561,33 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
             )
         if (rv := self._compile_cache.get(config)) is not None:
             return rv
-        if (
-            isinstance(self.env.backend, TritonBackend)
-            and "TRITON_CACHE_DIR" not in os.environ
-        ):
+        if isinstance(self.env.backend, TritonBackend):
+            from ..autotuner.local_cache import get_per_config_triton_cache_override
             from ..autotuner.local_cache import helion_triton_cache_dir
+            from ..autotuner.local_cache import npu_volatile_triton_cache_dir
+            from ..autotuner.local_cache import should_force_npu_volatile_triton_cache
 
             device_index = (
                 self._env.device.index if self._env.device.index is not None else 0
             )
-            triton_dir = helion_triton_cache_dir(device_index)
-            os.environ["TRITON_CACHE_DIR"] = triton_dir
-            log.debug("Set TRITON_CACHE_DIR=%s", triton_dir)
+            override = get_per_config_triton_cache_override()
+            if override is not None:
+                os.environ["TRITON_CACHE_DIR"] = override
+                log.debug(
+                    "Set TRITON_CACHE_DIR=%s (per-config autotune benchmark)",
+                    override,
+                )
+            # NPU: override any pre-existing TRITON_CACHE_DIR (e.g. TorchInductor's
+            # torchinductor_root/...) so we do not read stale binaries under helion/triton.
+            # Skip while BoundKernel._ephemeral_triton_cache() owns TRITON_CACHE_DIR.
+            elif should_force_npu_volatile_triton_cache(self._env.device):
+                triton_dir = npu_volatile_triton_cache_dir()
+                os.environ["TRITON_CACHE_DIR"] = triton_dir
+                log.debug("Set TRITON_CACHE_DIR=%s (NPU volatile)", triton_dir)
+            elif "TRITON_CACHE_DIR" not in os.environ:
+                triton_dir = helion_triton_cache_dir(device_index)
+                os.environ["TRITON_CACHE_DIR"] = triton_dir
+                log.debug("Set TRITON_CACHE_DIR=%s", triton_dir)
         try:
             triton_code = self.to_triton_code(
                 config, emit_repro_caller=self.settings.print_output_code
@@ -603,6 +618,16 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
         self._compile_cache[config] = rv
         self._cache_path_map[config] = module.__file__
         return rv
+
+    def invalidate_compile_cache_entry(self, config: ConfigLike) -> None:
+        """Drop *config* from the in-process compile cache."""
+        if not isinstance(config, Config):
+            config = Config(
+                # pyrefly: ignore [bad-argument-type]
+                **config
+            )
+        self._compile_cache.pop(config, None)
+        self._cache_path_map.pop(config, None)
 
     def get_cached_path(self, config: ConfigLike | None = None) -> str | None:
         """
