@@ -692,8 +692,15 @@ class ReductionLowering(InductorLowering):
             # `inputs[0]` is the original input tensor to var_mean
             repr_input = inputs[0]
         else:
+            repr_input = None
+            for inp in inputs:
+                if hasattr(inp, "ndim") and inp.ndim > 0:
+                    repr_input = inp
+                    break
+            if repr_input is None:
+                repr_input = inputs[0]
             # TODO(jansel): combine multiple inputs into a single fake value
-            raise NotImplementedError("reductions with >1 input")
+            #raise NotImplementedError("reductions with >1 input")
 
         dims = self._get_reduction_dims(node.meta["orig_node"], repr_input)
         if len(dims) != 1:
