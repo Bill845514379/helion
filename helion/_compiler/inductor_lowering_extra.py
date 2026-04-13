@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import functools
+import math
 from typing import Any
 from typing import Callable
 from typing import Generator
@@ -9,8 +10,9 @@ from typing import Generator
 import torch
 from torch._inductor.ir import TensorBox
 from torch._inductor.lowering import lowerings as original_lowerings
+from torch._inductor.lowering import make_pointwise
 from torch._inductor.lowering import to_dtype
-
+from torch._inductor.virtualized import ops as vops
 inductor_lowering_dispatch: dict[Callable[..., Any] | str, Callable[..., Any]] = {}
 
 
@@ -173,3 +175,85 @@ def var_mean(
         keepdim=keepdim,
         return_mean=True,
     )
+
+aten = torch.ops.aten
+
+@register_inductor_lowering(aten.exp2.default, lowering_dict=inductor_lowering_dispatch)
+def exp2_lowering(x):
+    """
+    Custom lowering implementation for aten.exp2 operation.
+    Computes 2^x for each element in the input tensor.
+
+    Implementation: exp2(x) = exp(x * ln(2))
+
+    Args:
+        x: Input tensor
+
+    Returns:
+        ComputedBuffer representing 2^x
+    """
+    log2_val = math.log(2)  # Natural logarithm of 2
+    dtype = x.get_dtype()  # Get data type outside the inner function
+
+    def exp2_fn(x):
+        # Compute exp2(x) as exp(x * ln(2))
+        return vops.exp(vops.mul(x, vops.constant(log2_val, dtype)))
+
+    return make_pointwise(exp2_fn)(x)
+
+
+@register_inductor_lowering(aten._log_softmax.default, lowering_dict=inductor_lowering_dispatch)
+def log_softmax_lowering(x, dim, half_to_float=False):
+    """
+    Numerically stable implementation of log-softmax.
+
+    Computes: log_softmax(x) = x - log(∑exp(x - max(x)))
+
+    The standard formula for numerical stability:
+    1. x_max = max(x, dim=dim, keepdim=True)
+    2. shifted = x - x_max
+    3. exp_shifted = exp(shifted)
+    4. sum_exp = sum(exp_shifted, dim=dim, keepdim=True)
+    5. log_sum_exp = log(sum_exp)
+    6. result = shifted - log_sum_exp
+
+    Args:
+        x: Input tensor
+        dim: Dimension along which to compute log-softmax
+        half_to_float: If True, converts half-precision (float16/bfloat16) to float32
+
+    Returns:
+        ComputedBuffer representing log_softmax(x)
+    """
+
+    dtype = x.get_dtype()  # Get input tensor data type
+    ndim = len(x.get_size())  # Get number of dimensions
+
+    # Handle negative dimension indices
+    if dim < 0:
+        dim = ndim + dim
+
+    # 1. Compute max value along the specified dimension for numerical stability
+    x_max = original_lowerings[aten.amax.default](x, axis=[dim], keepdims=True)
+
+    # 2. Shift values by subtracting the maximum (prevents overflow in exp)
+    shifted = original_lowerings[aten.sub.Tensor](x, x_max)
+
+    # 3. Compute exp(shifted)
+    exp_shifted = original_lowerings[aten.exp.default](shifted)
+
+    # 4. Sum of exponentials along the specified dimension
+    # Keep dimensions to maintain shape for broadcasting
+    sum_exp = original_lowerings[aten.sum.dim_IntList](exp_shifted, axis=[dim], keepdims=True, dtype=dtype)
+
+    # 5. Compute log of the sum of exponentials
+    log_sum_exp = original_lowerings[aten.log.default](sum_exp)
+
+    # 6. Final result: shifted values minus log of sum of exponentials
+    result = original_lowerings[aten.sub.Tensor](shifted, log_sum_exp)
+
+    # Handle half-precision to float32 conversion if requested
+    if half_to_float and dtype in (torch.float16, torch.bfloat16):
+        result = to_dtype(result, torch.float32)
+
+    return result
