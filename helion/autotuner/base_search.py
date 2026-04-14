@@ -157,7 +157,21 @@ def _npu_trace_autotune_candidate(
     if _kernel_autotune_device_type(kernel) != "npu":
         return
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    line = f"[helion autotune] {phase} {ts} config={config!r}\n"
+    config_repr: str
+    env = getattr(kernel, "env", None)
+    spec = getattr(env, "config_spec", None) if env is not None else None
+    if spec is not None:
+        from ..runtime.config import Config as HelionConfig
+
+        if isinstance(config, HelionConfig):
+            dbg = dict(config.config)
+            spec.coerce_npu_tl_range_tunables(dbg)
+            config_repr = repr(HelionConfig(**dbg))
+        else:
+            config_repr = repr(config)
+    else:
+        config_repr = repr(config)
+    line = f"[helion autotune] {phase} {ts} config={config_repr}\n"
     try:
         sys.stderr.write(line)
         sys.stderr.flush()

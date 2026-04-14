@@ -28,16 +28,16 @@ import helion.language as hl
 
 
 # %%
-# @helion.kernel(    
-#     autotune_ignore_errors=True,
-#     autotune_effort="full"
-# )
-@helion.kernel(
-    config=helion.Config(block_sizes=[8, 2, 32], indexing=['pointer', 'pointer', 'pointer', 'pointer'], load_eviction_policies=['', '', ''], num_stages=None, 
-num_warps=None, pid_type='flat', range_flattens=[None, False, False], range_multi_buffers=[None, None, True], range_num_stages=[0, 4, 0], range_unroll_factors=[0, 3, 2], range_warp_specializes=[]),
+@helion.kernel(    
     autotune_ignore_errors=True,
-    autotune_effort="none"
+    autotune_effort="full"
 )
+# @helion.kernel(
+#     config=helion.Config(block_sizes=[8, 2, 32], indexing=['pointer', 'pointer', 'pointer', 'pointer'], load_eviction_policies=['', '', ''], num_stages=None, num_warps=None, pid_type='flat', 
+# range_flattens=[None, False, False], range_multi_buffers=[True, True, True], range_num_stages=[4, 4, 4], range_unroll_factors=[0, 0, 0], range_warp_specializes=[]),
+#     autotune_ignore_errors=True,
+#     autotune_effort="none"
+# )
 def jagged_sum_kernel(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,

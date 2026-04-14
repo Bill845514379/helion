@@ -148,6 +148,7 @@ class CompileEnvironment:
         self.debug_shape_renames: dict[sympy.Expr, sympy.Expr] = {}
         self.config_spec = ConfigSpec(
             backend=self.backend,
+            compile_device=self.device,
         )
         self.kernel_tensor_sizes: dict[tuple[sympy.Expr, ...], int] = (
             collections.Counter()
