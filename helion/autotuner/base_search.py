@@ -142,10 +142,19 @@ _NPU_AUTOTUNE_LAST_CONFIG_PATH = os.path.join(
 )
 
 
+def _autotune_stderr_debug_enabled(kernel: object) -> bool:
+    """True when :attr:`~helion.runtime.settings.Settings.autotune_debug_stderr` is set."""
+    st = getattr(kernel, "settings", None)
+    return bool(getattr(st, "autotune_debug_stderr", False))
+
+
 def _npu_trace_autotune_candidate(
     kernel: object, config: object, phase: str, *, persist: bool = False
 ) -> None:
-    """On NPU, log which autotune *config* is active.
+    """On NPU, optionally log which autotune *config* is active.
+
+    Stderr lines are emitted only when ``Settings.autotune_debug_stderr`` is true
+    (``HELION_AUTOTUNE_DEBUG_STDERR=1`` or ``@helion.kernel(autotune_debug_stderr=True)``).
 
     ``parallel_benchmark`` compiles a batch of configs before timing them; writing
     the same file during that compile loop would leave the **last in the batch**,
@@ -172,11 +181,12 @@ def _npu_trace_autotune_candidate(
     else:
         config_repr = repr(config)
     line = f"[helion autotune] {phase} {ts} config={config_repr}\n"
-    try:
-        sys.stderr.write(line)
-        sys.stderr.flush()
-    except OSError:
-        pass
+    if _autotune_stderr_debug_enabled(kernel):
+        try:
+            sys.stderr.write(line)
+            sys.stderr.flush()
+        except OSError:
+            pass
     if not persist:
         return
     try:
@@ -650,12 +660,13 @@ class BaseSearch(BaseAutotuner):
         try:
             fn = self.kernel.compile_config(config, allow_print=False)
         except BaseException as compile_err:
-            print(
-                f"[helion autotune] COMPILE FAILED for config={config!r}: "
-                f"{type(compile_err).__name__}: {compile_err}",
-                file=sys.stderr,
-                flush=True,
-            )
+            if _autotune_stderr_debug_enabled(self.kernel):
+                print(
+                    f"[helion autotune] COMPILE FAILED for config={config!r}: "
+                    f"{type(compile_err).__name__}: {compile_err}",
+                    file=sys.stderr,
+                    flush=True,
+                )
             raise
         if self.create_precompile_future(config, fn)():
             return fn, self.benchmark_function(config, fn)
@@ -673,12 +684,13 @@ class BaseSearch(BaseAutotuner):
     ) -> None:
         """Log and classify a failed benchmark; may raise for fatal error policies."""
         e.__traceback__ = None
-        print(
-            f"[helion autotune] BENCHMARK FAILED for config={config!r}: "
-            f"{type(e).__name__}: {e}",
-            file=sys.stderr,
-            flush=True,
-        )
+        if _autotune_stderr_debug_enabled(self.kernel):
+            print(
+                f"[helion autotune] BENCHMARK FAILED for config={config!r}: "
+                f"{type(e).__name__}: {e}",
+                file=sys.stderr,
+                flush=True,
+            )
         maybe_dump_triton_failure(
             self.kernel,
             config,
