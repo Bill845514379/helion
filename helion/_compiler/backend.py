@@ -1871,6 +1871,15 @@ class CuteBackend(Backend):
         return bound_kernel.config_spec.default_config()
 
 class AscendBackend(TritonBackend):
+
+    @property
+    def name(self) -> str:
+        return "ascend"
+
+    @property
+    def codegen_name(self) -> str:
+        return "triton"
+
     @property
     def library_imports(self) -> dict[str, str]:
         return {
@@ -1901,3 +1910,8 @@ class AscendBackend(TritonBackend):
 
     def barrier_semaphore_dtype(self) -> torch.dtype:
         return torch.int32
+
+    def sympy_printer_expr(self, expr: sympy.Expr) -> str:
+        from .device_function import ascend_texpr
+
+        return ascend_texpr(expr)
