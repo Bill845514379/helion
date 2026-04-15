@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 
-BackendLiteral = Literal["triton", "pallas", "cute", "tileir", "npu"]
+BackendLiteral = Literal["triton", "pallas", "cute", "tileir", "ascend"]
 DotPrecision = Literal["tf32", "tf32x3", "ieee", "hf32"]
 PrecompileMode = Literal["spawn", "fork"] | None
 _TRUE_LITERALS = frozenset({"1", "true", "yes", "on"})
