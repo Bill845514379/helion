@@ -748,6 +748,9 @@ class TritonBackend(Backend):
         # Build args list.
         #
         # In NPU mode we intentionally set `num_warps/num_stages` to `None`.
+        # Per-loop ``tl.range``: on NPU, only ``range_unroll_factors`` is forced to
+        # zeros in ``ConfigSpec.coerce_npu_tl_range_tunables`` and
+        # ``TileStrategy.get_tl_range_kwargs``.
         # Some launcher wrappers expect these keyword-only arguments to be
         # present (even if the value is None), so we emit them whenever they
         # exist in `config`.

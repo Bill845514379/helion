@@ -28,35 +28,33 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(    
+@helion.kernel(
     autotune_ignore_errors=True,
     autotune_effort="full"
 )
-# @helion.kernel(
-#     config=helion.Config(block_sizes=[8, 2, 32], indexing=['pointer', 'pointer', 'pointer', 'pointer'], load_eviction_policies=['', '', ''], num_stages=None, num_warps=None, pid_type='flat', 
-# range_flattens=[None, False, False], range_multi_buffers=[True, True, True], range_num_stages=[4, 4, 4], range_unroll_factors=[0, 0, 0], range_warp_specializes=[]),
-#     autotune_ignore_errors=True,
-#     autotune_effort="none"
-# )
-def jagged_sum_kernel(
+def jagged_mean_kernel(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
+    x_feature_counts: torch.Tensor,  # [num_rows] - number of features per row
+    max_M: int,  # Maximum number of features
 ) -> torch.Tensor:
     """
     Compute the mean of each row in a jagged tensor with variable features per row.
 
     Args:
-        x_data: 2-D tensor of shape (total_elements, M) holding all elements
+        x_data: 2-D tensor of shape (total_elements, max_M) holding all elements
         x_offsets: (num_rows + 1) tensor. Row i is the slice
                    x_data[x_offsets[i] : x_offsets[i+1], :]
+        x_feature_counts: (num_rows) tensor. Number of valid features for each row
+        max_M: Maximum number of features
 
     Returns:
-        2-D tensor of shape (num_rows, M) containing the sum of jagged dimension.
+        2-D tensor of shape (num_rows, max_M) containing the mean of each row.
+        Invalid features (beyond x_feature_counts[i]) are set to 0.
     """
-    M = x_data.shape[1]
     num_rows = x_offsets.size(0) - 1
 
-    out = torch.zeros([num_rows, M], dtype=x_data.dtype, device=x_data.device)
+    out = torch.zeros([num_rows, max_M], dtype=x_data.dtype, device=x_data.device)
 
     # Flatten x_data for easier indexing
     x_flat = x_data.view(-1)
@@ -68,8 +66,14 @@ def jagged_sum_kernel(
         nnz = ends - starts
         max_nnz = nnz.amax()
 
+        # Get feature counts for this tile of rows
+        feature_counts = x_feature_counts[tile_b]
+
         # Process features in tiles
-        for tile_m in hl.tile(M):
+        for tile_m in hl.tile(max_M):
+            # Create mask for valid features
+            feature_valid = tile_m.index < feature_counts[:, None]
+
             # Initialize accumulator
             row_sums = hl.zeros([tile_b, tile_m], dtype=x_data.dtype)
 
@@ -78,12 +82,12 @@ def jagged_sum_kernel(
                 # Compute flattened indices
                 base_indices = starts[:, None] + tile_k.index[None, :]
                 flat_indices = (
-                    base_indices[:, :, None] * M + tile_m.index[None, None, :]
+                    base_indices[:, :, None] * max_M + tile_m.index[None, None, :]
                 )
 
                 # Combined mask: valid row element AND valid feature
                 row_mask = tile_k.index[None, :] < nnz[:, None]
-                combined_mask = row_mask[:, :, None]
+                combined_mask = row_mask[:, :, None] & feature_valid[:, None, :]
 
                 x_slice = hl.load(
                     x_flat,
@@ -93,8 +97,15 @@ def jagged_sum_kernel(
                 # Accumulate - sum across the k dimension (dim=1)
                 row_sums = row_sums + x_slice.sum(dim=1)
 
+            # Compute mean
+            nnz_float = nnz.to(x_data.dtype)
+            nnz_expanded = nnz_float[:, None]
+
+            # Compute result with feature masking
+            result = torch.where(nnz_expanded > 0, row_sums / nnz_expanded, 0.0)
+
             # Apply feature mask to output
-            out[tile_b, tile_m] = row_sums
+            out[tile_b, tile_m] = torch.where(feature_valid, result, 0.0)
 
     return out
 
@@ -105,9 +116,11 @@ def jagged_sum_kernel(
 
 
 # %%
-def reference_jagged_sum_kernel_pytorch(
+def reference_jagged_mean_kernel_pytorch(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
+    x_feature_counts: torch.Tensor,
+    max_M: int,
 ) -> torch.Tensor:
     """
     PyTorch reference implementation for jagged mean with variable features.
@@ -115,18 +128,20 @@ def reference_jagged_sum_kernel_pytorch(
     Args:
         x_data: 2-D tensor holding all elements
         x_offsets: Offsets tensor for row indexing
+        x_feature_counts: Number of valid features per row
+        max_M: Maximum number of features
 
     Returns:
         Tensor containing the mean of each row
     """
     num_rows = x_offsets.numel() - 1
-    M = x_data.size(1)
-    out = torch.zeros((num_rows, M), dtype=x_data.dtype, device=x_data.device)
+    out = torch.zeros((num_rows, max_M), dtype=x_data.dtype, device=x_data.device)
     for i in range(num_rows):
         start = int(x_offsets[i])
         end = int(x_offsets[i + 1])
-        if end > start:
-            out[i, :] = x_data[start:end, :].sum(dim=0)
+        num_features = int(x_feature_counts[i])
+        if end > start and num_features > 0:
+            out[i, :num_features] = x_data[start:end, :num_features].mean(dim=0)
     return out
 
 
@@ -136,7 +151,7 @@ def reference_jagged_sum_kernel_pytorch(
 
 
 # %%
-def jagged_sum_tritonbench(
+def jagged_mean_tritonbench(
     tb_op: object, x: torch.Tensor, B: int, M: int, seqlen: int, sparsity: float
 ) -> Callable[[], torch.Tensor]:
     """
@@ -157,40 +172,14 @@ def jagged_sum_tritonbench(
     # pyrefly: ignore [missing-attribute]
     x_offsets = x._offsets
 
-    return lambda: jagged_sum_kernel(x_values, x_offsets)
-
-
-# %%
-# Helper function to create test data
-# -----------------------------------
-
-
-# %%
-def create_test_jagged_tensor(
-    B: int,
-    M: int,
-    max_seqlen: int,
-    device: torch.device | str = "cuda",
-    dtype: torch.dtype = torch.float32,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Create test jagged tensor data."""
-
-    # Generate random sequence lengths
-    seq_lengths = torch.randint(1, max_seqlen + 1, (B,), device=device)
-
-    # Create offsets
-    x_offsets = torch.cat(
-        [
-            torch.zeros(1, dtype=torch.long, device=device),
-            torch.cumsum(seq_lengths, dim=0),
-        ]
+    feature_counts = torch.full(
+        (B,),
+        M,
+        dtype=torch.int32,
+        # pyrefly: ignore [missing-attribute]
+        device=x_values.device,
     )
-
-    # Create values
-    nnz = int(x_offsets[-1])
-    x_data = torch.randn(nnz, M, dtype=dtype, device=device)
-
-    return x_data, x_offsets
+    return lambda: jagged_mean_kernel(x_values, x_offsets, feature_counts, M)
 
 
 # %%
@@ -206,22 +195,29 @@ def main() -> None:
     Creates test data with random jagged tensors and feature counts, then compares
     the kernel implementation against the PyTorch reference implementation.
     """
-    B, M, max_seqlen = 8, 128, 64
+    num_rows, max_cols = 32, 64
     device = DEVICE
 
-    x_data, x_offsets = create_test_jagged_tensor(
-        B, M, max_seqlen, device, dtype=torch.float32
+    lengths = torch.randint(1, max_cols + 1, (num_rows,), device=device)
+    x_offsets = torch.cat(
+        [torch.zeros(1, dtype=torch.long, device=device), torch.cumsum(lengths, dim=0)]
+    )
+    nnz = int(x_offsets[-1])
+    M = 8  # number of features
+    x_data = torch.randn(nnz, M, dtype=torch.float32, device=device)
+    feature_counts = torch.randint(
+        1, M + 1, (num_rows,), dtype=torch.int32, device=device
     )
 
     run_example(
-        lambda x, o: jagged_sum_kernel(x, o),
-        lambda x, o: reference_jagged_sum_kernel_pytorch(x, o),
-        (x_data, x_offsets),
+        lambda x, o, fc, m: jagged_mean_kernel(x, o, fc, m),
+        lambda x, o, fc, m: reference_jagged_mean_kernel_pytorch(x, o, fc, m),
+        (x_data, x_offsets, feature_counts, M),
     )
 
 
 if __name__ == "__main__":
     import time
-    time_st = time.time()
+    time0 = time.time()
     main()
-    print(f"time cost: {time.time() - time_st}")
+    print(f"time cost: {time.time()-time0}")

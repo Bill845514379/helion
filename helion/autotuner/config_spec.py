@@ -126,9 +126,11 @@ class ConfigSpec:
         *,
         backend: Backend,
         user_defined_tunables: Mapping[str, ConfigSpecFragment] | None = None,
+        compile_device: torch.device | None = None,
     ) -> None:
         self.backend = backend
         self.backend_name = backend.name
+        self._compile_device = compile_device
         self.max_reduction_threads = backend.max_reduction_threads()
         self.user_defined_tunables = (
             {} if user_defined_tunables is None else dict(user_defined_tunables)
@@ -523,6 +525,10 @@ class ConfigSpec:
 
         if self.supports_config_key("range_warp_specializes"):
             config["range_warp_specializes"] = range_warp_specializes
+
+        # Triton-ascend: force ``range_unroll_factors`` off on NPU (see coerce_npu_tl_range_tunables).
+        self.coerce_npu_tl_range_tunables(config)
+
         # Allow tunable parameter keys in addition to backend-supported keys.
         allowed_keys = self.supported_config_keys() | {
             *self.user_defined_tunables.keys()
@@ -533,6 +539,19 @@ class ConfigSpec:
             allowed_keys = allowed_keys | {"num_warps", "num_stages"}
         if invalid_keys := ({*config} - allowed_keys):
             raise InvalidConfig(f"Invalid config keys {sorted(invalid_keys)!r}")
+
+    def coerce_npu_tl_range_tunables(self, config: dict[str, object]) -> None:
+        """If compiling for NPU, normalize selected ``tl.range`` tunables (in place).
+
+        Force ``range_unroll_factors`` to all zeros so ``tl.range`` does not receive
+        ``loop_unroll_factor``. ``range_num_stages`` and ``range_multi_buffers`` are
+        left to the caller for experimentation.
+        """
+        if self._compile_device is None or self._compile_device.type != "npu":
+            return
+        rub = config.get("range_unroll_factors")
+        if isinstance(rub, list) and rub:
+            config["range_unroll_factors"] = [0] * len(rub)
 
     def create_config_generation(
         self,

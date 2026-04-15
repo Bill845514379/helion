@@ -480,6 +480,11 @@ class _Settings:
             _env_get_bool, "HELION_AUTOTUNE_IGNORE_ERRORS", False
         )
     )
+    autotune_debug_stderr: bool = dataclasses.field(
+        default_factory=functools.partial(
+            _env_get_bool, "HELION_AUTOTUNE_DEBUG_STDERR", False
+        )
+    )
     autotune_adaptive_timeout: bool = dataclasses.field(
         default_factory=functools.partial(
             _env_get_bool, "HELION_AUTOTUNE_ADAPTIVE_TIMEOUT", True
@@ -607,6 +612,11 @@ class Settings(_Settings):
         "autotune_ignore_errors": (
             "If True, skip logging and raising autotune errors. "
             "Set HELION_AUTOTUNE_IGNORE_ERRORS=1 to enable globally."
+        ),
+        "autotune_debug_stderr": (
+            "If True, print NPU autotune candidate traces and compile/benchmark failure "
+            "lines to stderr. Default False. Set HELION_AUTOTUNE_DEBUG_STDERR=1 or pass "
+            "autotune_debug_stderr=True to helion.kernel()."
         ),
         "autotune_adaptive_timeout": (
             "If True, set the compile timeout threshold to be smaller for Triton compilation,"
