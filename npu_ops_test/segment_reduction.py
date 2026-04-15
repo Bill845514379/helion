@@ -84,12 +84,9 @@ def segmented_reduction_helion(
         )
         tuple_in = (vals, idxs.float().unsqueeze(1).expand_as(vals))
         out_vals, _ = hl.associative_scan(combine_fn_helion, tuple_in, dim=0)
-        is_segment_boundary = idxs != idxs_next
-        tmep = tile_e.index % tile_e.block_size == tile_e.block_size - 1
-        #mask = (idxs != idxs_next) | (
-        #    tile_e.index % tile_e.block_size == tile_e.block_size - 1
-        #)
-        mask = is_segment_boundary | tmep
+        mask = (idxs != idxs_next) | (
+            tile_e.index % tile_e.block_size == tile_e.block_size - 1
+        )
         segment_vals = torch.where(mask.unsqueeze(1), out_vals, 0.0)
         hl.atomic_add(output, [idxs, tile_f], segment_vals)
     return output

@@ -292,13 +292,29 @@ def log2_scalar_lowering(x):
 
 @register_inductor_lowering(aten.remainder.Scalar, lowering_dict=npu_only_lowering_dispatch)
 def remainder_scalar_lowering(x, divisor):
-    if divisor is None:
-        divisor = 32
+    """
+    Custom lowering for aten.remainder.Scalar.
+    """
+    # if divisor is None:
+    #     divisor = 32
 
-    def remainder_fn(x):
-        return vops.mod(x, divisor)
+    if hasattr(divisor, 'get_dtype'):
+        x_size = x.get_size()
 
-    return make_pointwise(remainder_fn)(x)
+        if hasattr(divisor, 'get_size'):
+            d_size = divisor.get_size()
+            if len(d_size) == 0:
+                divisor = original_lowerings[aten.expand.default](divisor, x_size)
+
+        def remainder_fn(x, d):
+            return vops.mod(x, d)
+
+        return make_pointwise(remainder_fn)(x, divisor)
+    else:
+        def remainder_fn(x):
+            return vops.mod(x, divisor)
+
+        return make_pointwise(remainder_fn)(x)
 
 @register_inductor_lowering(aten.bitwise_or.Tensor, lowering_dict=npu_only_lowering_dispatch)
 def bitwise_or_tensor_lowering(x, y):
