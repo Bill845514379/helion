@@ -38,6 +38,9 @@ import helion.language as hl
     autotune_ignore_errors=True,
     autotune_effort="full",
 )
+# @helion.kernel(config=helion.Config(block_sizes=[1, 16, 16], indexing=['pointer', 'pointer', 'pointer', 'pointer'], l2_groupings=[1], load_eviction_policies=['', '', ''], loop_orders=[[0, 1]], num_stages=None, num_warps=None, pid_type='flat', range_flattens=[None, None], range_multi_buffers=[None, None], range_num_stages=[0, 0], range_unroll_factors=[0, 0], range_warp_specializes=[]), static_shapes=True)
+# @helion.kernel(config=helion.Config(block_sizes=[1, 16, 64], indexing=['pointer', 'pointer', 'pointer', 'pointer'], l2_groupings=[32], load_eviction_policies=['', '', ''], loop_orders=[[1, 0]], num_stages=None, num_warps=None, pid_type='flat', range_flattens=[None, False], range_multi_buffers=[None, None], range_num_stages=[0, 3], range_unroll_factors=[0, 0], range_warp_specializes=[]))
+# @helion.kernel(config=helion.Config(block_sizes=[1, 32, 32], indexing=['pointer', 'pointer', 'pointer', 'pointer'], l2_groupings=[64], load_eviction_policies=['', '', ''], loop_orders=[[1, 0]], num_stages=None, num_warps=None, pid_type='flat', range_flattens=[None, True], range_multi_buffers=[None, None], range_num_stages=[0, 0], range_unroll_factors=[0, 0], range_warp_specializes=[]))
 def attention(
     q_in: torch.Tensor,
     k_in: torch.Tensor,
@@ -63,8 +66,15 @@ def attention(
     assert head_dim == k_in.size(-1) == v_in.size(-1)
     q_view = q_in.reshape([-1, m_dim, head_dim])
     v_view = v_in.reshape([-1, n_dim, head_dim])
-    k_view = k_in.reshape([-1, n_dim, head_dim]).transpose(1, 2)
-    out = torch.empty_like(q_view)
+    # Contiguous K^T view: transposed (zh, n, d) -> (zh, d, n) can stride (..., 1, n)
+    # on NPU; Ascend Triton has faulted on that layout (ADDR_MISALIGN). Materialize
+    # contiguous (zh, d, n) so loads stride 1 along the reduced dim.
+    k_view = k_in.reshape([-1, n_dim, head_dim]).transpose(1, 2).contiguous()
+    out = torch.empty(
+        (q_view.size(0), m_dim, head_dim),
+        dtype=q_view.dtype,
+        device=q_view.device,
+    )
     sm_scale = 1.0 / math.sqrt(head_dim)
     qk_scale = sm_scale * 1.44269504  # 1/log(2)
     for tile_b, tile_m in hl.tile([q_view.size(0), m_dim]):
@@ -147,14 +157,18 @@ def test(
         p = torch.softmax(p.float(), dim=-1).to(dtype)
         return torch.matmul(p, v)
 
-    flex_compiled = cast(
-        "Callable[..., torch.Tensor]", torch.compile(flex_attention, fullgraph=True)
-    )
-    baselines = {
+    dev = device if isinstance(device, torch.device) else torch.device(device)
+    baselines: dict[str, Callable[..., torch.Tensor]] = {
         "torch": torch.nn.functional.scaled_dot_product_attention,
-        "flex": flex_compiled,
         "ref": ref_attention,
     }
+    # torch.compile(flex_attention) + Dynamo pulls torch_npu inductor has_triton(),
+    # which can raise (e.g. NPUDeviceProperties.is_available) on Ascend; not Helion-related.
+    if dev.type != "npu":
+        baselines["flex"] = cast(
+            "Callable[..., torch.Tensor]",
+            torch.compile(flex_attention, fullgraph=True),
+        )
 
     run_example(attention, baselines, (q, k, v))
 
@@ -171,6 +185,7 @@ def main() -> None:
     Tests with batch size 2, 32 heads, 1024 sequence length, and 64-dimensional heads using float16.
     """
     test(2, 32, 1024, 64, HALF_DTYPE, device=DEVICE)
+    # test(2, 16, 256, 16, HALF_DTYPE, device=DEVICE)
 
 
 if __name__ == "__main__":
