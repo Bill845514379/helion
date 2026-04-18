@@ -614,6 +614,6 @@ def register_npu_backend():
 
 def _register_interface_for_device():
     from torch._dynamo.device_interface import register_interface_for_device
-    from torch_npu._inductor.runtime import NPUDeviceProperties
+    from torch_npu.utils._dynamo_device import NpuInterface
 
-    register_interface_for_device("npu", NPUDeviceProperties)
+    register_interface_for_device("npu", NpuInterface)
