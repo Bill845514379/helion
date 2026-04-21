@@ -29,21 +29,34 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="quick")
 def matmul_layernorm(
-    x: torch.Tensor, y: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor
+    x: torch.Tensor,
+    y: torch.Tensor,
+    weight: torch.Tensor,
+    bias: torch.Tensor,
+    n_chunk_max: hl.constexpr = 256,  # type: ignore[valid-type]
 ) -> torch.Tensor:
     """
     Performs matrix multiplication followed by layer normalization.
+
+    The N dimension is tiled (at most ``n_chunk_max`` columns per tile) so Ascend UB is
+    not dominated by a single ``[tile_m, N]`` accumulator. Statistics use
+    ``E[x^2] - E[x]^2`` (equivalent to ``layer_norm`` population variance over N).
+
+    Matmul over ``K`` is evaluated twice per ``tile_m`` (once for sums, once for output);
+    lower ``n_chunk_max`` further reduces UB at the cost of more outer iterations.
 
     Args:
         x: First input tensor of shape [M, K]
         y: Second input tensor of shape [K, N]
         weight: Layer normalization weight parameter of shape [N]
         bias: Layer normalization bias parameter of shape [N]
+        n_chunk_max: Upper bound on N columns per tile (constexpr); try 128 if UB overflow.
 
     Returns:
-        Output tensor of shape [M, N] containing the result of matrix multiplication followed by layer normalization
+        Output tensor of shape [M, N] containing the result of matrix multiplication
+        followed by layer normalization
     """
     m, k = x.size()
     k2 = y.size(0)
@@ -54,19 +67,32 @@ def matmul_layernorm(
     out = torch.empty(
         [m, n], dtype=torch.promote_types(x.dtype, y.dtype), device=x.device
     )
+    eps = 1e-5
     for tile_m in hl.tile(m):
-        acc = hl.zeros([tile_m, n], dtype=torch.float32)
-        for tile_k in hl.tile(k):
-            mm = torch.matmul(x[tile_m, tile_k], y[tile_k, :])
-            acc = acc + mm
-        eps = 1e-5
-        sum_vals = acc.sum(dim=-1, keepdim=True)
-        mean = sum_vals / n
-        centered = acc - mean
-        var = (centered * centered).sum(dim=-1, keepdim=True) / n
-        normalized = centered * torch.rsqrt(var + eps)
-        acc = normalized * (weight[:].to(torch.float32)) + (bias[:].to(torch.float32))
-        out[tile_m, :] = acc
+        sum_x = hl.zeros([tile_m], dtype=torch.float32)
+        sum_x2 = hl.zeros([tile_m], dtype=torch.float32)
+        for tile_n in hl.tile(n, block_size=n_chunk_max):
+            acc_c = hl.zeros([tile_m, tile_n], dtype=torch.float32)
+            for tile_k in hl.tile(k):
+                mm = torch.matmul(x[tile_m, tile_k], y[tile_k, tile_n])
+                acc_c = acc_c + mm
+            sum_x = sum_x + acc_c.sum(dim=-1)
+            sum_x2 = sum_x2 + (acc_c * acc_c).sum(dim=-1)
+        mean = sum_x / n
+        var = sum_x2 / n - mean * mean
+        inv_std = torch.rsqrt(torch.clamp(var, min=0.0) + eps)
+
+        for tile_n in hl.tile(n, block_size=n_chunk_max):
+            acc_c = hl.zeros([tile_m, tile_n], dtype=torch.float32)
+            for tile_k in hl.tile(k):
+                mm = torch.matmul(x[tile_m, tile_k], y[tile_k, tile_n])
+                acc_c = acc_c + mm
+            centered = acc_c - mean[:, None]
+            normalized = centered * inv_std[:, None]
+            acc_ln = normalized * (weight[tile_n].to(torch.float32)) + (
+                bias[tile_n].to(torch.float32)
+            )
+            out[tile_m, tile_n] = acc_ln
     return out
 
 
