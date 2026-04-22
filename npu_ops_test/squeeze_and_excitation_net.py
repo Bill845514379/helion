@@ -3,36 +3,167 @@ Helion squeeze and excitation net Example
 ============================
 This example demonstrates a Helion kernel implementation of squeeze and excitation
 net as those used in https://arxiv.org/abs/1709.01507.
+
+All example tensors use ``torch.float32`` on ``DEVICE`` (see ``_TENSOR_DTYPE``).
 """
 
 # %%
 from __future__ import annotations
+
+import os
+import sys
 
 import torch
 from torch import Tensor
 
 import helion
 from helion._testing import DEVICE
-from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
+
+# Example runs end-to-end in float32 (inputs, weights, outputs, saved backward tensors).
+_TENSOR_DTYPE = torch.float32
+
+# Baseline tolerances for fp32 matmul+fused ops vs PyTorch eager (also used for autotune).
+_AUTOTUNE_BASELINE_RTOL = 1e-2
+_AUTOTUNE_BASELINE_ATOL = 1e-2
+
+
+def _max_diff(a: torch.Tensor, b: torch.Tensor) -> tuple[float, float, tuple[int, ...]]:
+    """Return (max_abs, max_rel, argmax_abs_index) for two same-shape tensors."""
+    a32 = a.detach().to(torch.float32)
+    b32 = b.detach().to(torch.float32)
+    diff = (a32 - b32).abs()
+    flat = diff.reshape(-1)
+    flat_idx = int(flat.argmax().item())
+    max_abs = float(flat[flat_idx].item())
+    denom = b32.abs().clamp_min(1e-12).reshape(-1)[flat_idx]
+    max_rel = float((max_abs / float(denom.item())))
+
+    idx = flat_idx
+    shape = diff.shape
+    unraveled: list[int] = []
+    for dim in reversed(shape):
+        unraveled.append(idx % dim)
+        idx //= dim
+    return max_abs, max_rel, tuple(reversed(unraveled))
+
+
+def _report_close(
+    name: str,
+    got: torch.Tensor,
+    ref: torch.Tensor,
+    *,
+    atol: float,
+    rtol: float,
+) -> None:
+    got32 = got.detach().to(torch.float32)
+    ref32 = ref.detach().to(torch.float32)
+    diff = (got32 - ref32).abs()
+    tol = atol + rtol * ref32.abs()
+    mism = int((diff > tol).sum().item())
+    max_abs, max_rel, where = _max_diff(got, ref)
+    print(
+        f"[se debug] {name}: mismatched={mism}/{got.numel()} "
+        f"max_abs={max_abs:.6g} max_rel={max_rel:.6g} at {where} "
+        f"(atol={atol}, rtol={rtol})",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+def squeeze_and_excitation_net_fwd_reference(
+    x: Tensor, a: Tensor, b: Tensor
+) -> tuple[Tensor, Tensor, Tensor]:
+    """PyTorch reference for :func:`squeeze_and_excitation_net_fwd` (autotune baseline)."""
+    c = torch.relu(torch.matmul(x.to(torch.float32), a.to(torch.float32)))
+    d = torch.sigmoid(torch.matmul(c, b.to(torch.float32)))
+    out = x.to(torch.float32) * d
+    dt = x.dtype
+    # Keep intermediates in fp32 so backward uses stable masks/derivatives.
+    return out.to(dt), c, d
+
+
+def squeeze_and_excitation_net_bwd_dx_reference(
+    grad_out: Tensor,
+    x: Tensor,
+    a: Tensor,
+    b: Tensor,
+    c: Tensor,
+    d: Tensor,
+) -> Tensor:
+    """PyTorch reference matching ``squeeze_and_excitation_net_bwd_dx``."""
+    g = grad_out.to(torch.float32)
+    xf = x.to(torch.float32)
+    grad_to_d = g * xf * d.to(torch.float32) * (1.0 - d.to(torch.float32))
+    grad_to_c = torch.matmul(grad_to_d, b.transpose(0, 1).to(torch.float32))
+    grad_c = grad_to_c * (c.to(torch.float32) > 0)
+    return (g * d.to(torch.float32) + torch.matmul(grad_c, a.transpose(0, 1).to(torch.float32))).to(
+        x.dtype
+    )
+
+
+def squeeze_and_excitation_net_bwd_da_reference(
+    grad_out: Tensor,
+    x: Tensor,
+    b: Tensor,
+    c: Tensor,
+    d: Tensor,
+) -> Tensor:
+    """PyTorch reference matching ``squeeze_and_excitation_net_bwd_da``."""
+    grad_to_cb = (
+        grad_out.to(torch.float32)
+        * x.to(torch.float32)
+        * d.to(torch.float32)
+        * (1.0 - d.to(torch.float32))
+    )
+    grad_to_c = torch.matmul(grad_to_cb, b.transpose(0, 1).to(torch.float32)) * (
+        c.to(torch.float32) > 0
+    )
+    return torch.matmul(x.transpose(0, 1).to(torch.float32), grad_to_c).to(x.dtype)
+
+
+def squeeze_and_excitation_net_bwd_db_reference(
+    grad_out: Tensor,
+    x: Tensor,
+    d: Tensor,
+    c: Tensor,
+) -> Tensor:
+    """PyTorch reference matching ``squeeze_and_excitation_net_bwd_db``."""
+    grad_d = (
+        grad_out.to(torch.float32)
+        * x.to(torch.float32)
+        * d.to(torch.float32)
+        * (1.0 - d.to(torch.float32))
+    )
+    return torch.matmul(c.transpose(0, 1).to(torch.float32), grad_d).to(grad_out.dtype)
 
 
 # %%
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
     static_shapes=True,
-    autotune_ignore_errors=True, autotune_effort="full"
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+    autotune_baseline_fn=squeeze_and_excitation_net_fwd_reference,
+    autotune_baseline_rtol=_AUTOTUNE_BASELINE_RTOL,
+    autotune_baseline_atol=_AUTOTUNE_BASELINE_ATOL,
 )
 def squeeze_and_excitation_net_fwd(
-    x: Tensor, a: Tensor, b: Tensor
+    x: Tensor,
+    a: Tensor,
+    b: Tensor,
 ) -> tuple[Tensor, Tensor, Tensor]:
     """
     Performs torch.mul(x, torch.sigmoid(torch.relu((x @ a)) @ b))
+
+    Tile extents are chosen by autotuning (no fixed ``block_size`` on ``hl.tile``).
+
     Args:
         x: 2D tensor of shape [m, n].
         a: 2D tensor of shape [n, k].
         b: 2D tensor of shape [k, n].
+
     Returns:
         out: Resulting matrix of shape [m, n].
         c = torch.relu(x @ a) of shape [m, k].
@@ -41,17 +172,17 @@ def squeeze_and_excitation_net_fwd(
     m, n = x.size()
     k = a.size(1)
 
-    out = torch.empty([m, n], dtype=x.dtype, device=x.device)
-    c = torch.empty([m, k], dtype=x.dtype, device=x.device)
-    d = torch.empty([m, n], dtype=x.dtype, device=x.device)
+    out = torch.empty([m, n], dtype=torch.float32, device=x.device)
+    c = torch.empty([m, k], dtype=torch.float32, device=x.device)
+    d = torch.empty([m, n], dtype=torch.float32, device=x.device)
 
     for tile_m in hl.tile(m):
-        # Compute c = relu(x @ a) for this tile_m
         for tile_k in hl.tile(k):
-            partial_xa = x[tile_m, :] @ a[:, tile_k]
-            c[tile_m, tile_k] = torch.relu(partial_xa)
+            acc_k = hl.zeros([tile_m, tile_k], dtype=torch.float32)
+            for tile_n in hl.tile(n):
+                acc_k = acc_k + torch.matmul(x[tile_m, tile_n], a[tile_n, tile_k])
+            c[tile_m, tile_k] = torch.relu(acc_k)
 
-        # Compute d = sigmoid(c @ b) and out = x * d for this tile_m
         for tile_n in hl.tile(n):
             acc = hl.zeros([tile_m, tile_n], dtype=torch.float32)
             for tile_k in hl.tile(k):
@@ -63,48 +194,48 @@ def squeeze_and_excitation_net_fwd(
 
 
 # %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+    autotune_baseline_fn=squeeze_and_excitation_net_bwd_dx_reference,
+    autotune_baseline_rtol=_AUTOTUNE_BASELINE_RTOL,
+    autotune_baseline_atol=_AUTOTUNE_BASELINE_ATOL,
+)
 def squeeze_and_excitation_net_bwd_dx(
-    grad_out: Tensor, x: Tensor, a: Tensor, b: Tensor, c: Tensor, d: Tensor
+    grad_out: Tensor,
+    x: Tensor,
+    a: Tensor,
+    b: Tensor,
+    c: Tensor,
+    d: Tensor,
 ) -> Tensor:
     """
     Compute grad_x for the squeeze and excitation network.
     grad_x = grad_out * d + (grad_out * x * d * (1-d) @ b.T * (c>0)) @ a.T
 
-    The computation is structured to properly accumulate over the k dimension:
-    1. First term: grad_out * d (element-wise, no reduction)
-    2. Second term: chain rule through d->c->x path
-       - For each output position (m, n), accumulate over k dimension
-       - grad_c[m,k] = (grad_out * x * d * (1-d))[m,:] @ b[k,:].T * (c[m,k] > 0)
-       - grad_x[m,n] += grad_c[m,k] @ a[n,k].T
+    The reduction over ``n`` for ``grad_to_d @ b.T`` uses an inner ``tile_nj`` loop.
     """
     m, n = x.size()
     k = a.size(1)
 
     grad_x = torch.empty([m, n], dtype=x.dtype, device=x.device)
 
-    # Compute grad_x: grad_out * d + second_term where second_term accumulates over k
     for tile_m, tile_n in hl.tile([m, n]):
-        # First term: grad_out * d (element-wise)
         acc = hl.zeros([tile_m, tile_n], dtype=torch.float32)
         acc += grad_out[tile_m, tile_n] * d[tile_m, tile_n]
 
-        # Second term: accumulate gradient chain over k dimension
         for tile_k in hl.tile(k):
-            # Compute grad_to_d for the full row: shape [tile_m, n]
-            grad_to_d = (
-                grad_out[tile_m, :] * x[tile_m, :] * d[tile_m, :] * (1.0 - d[tile_m, :])
-            )
-
-            # Backprop through (c @ b): grad_c = grad_to_d @ b.T
-            # [tile_m, n] @ [n, tile_k] = [tile_m, tile_k]
-            grad_to_c = grad_to_d @ b[tile_k, :].T
-
-            # Apply ReLU mask: shape [tile_m, tile_k]
+            grad_to_c = hl.zeros([tile_m, tile_k], dtype=torch.float32)
+            for tile_nj in hl.tile(n):
+                g = (
+                    grad_out[tile_m, tile_nj]
+                    * x[tile_m, tile_nj]
+                    * d[tile_m, tile_nj]
+                    * (1.0 - d[tile_m, tile_nj])
+                )
+                grad_to_c = grad_to_c + g @ b[tile_k, tile_nj].T
             grad_c_masked = grad_to_c * (c[tile_m, tile_k] > 0)
-
-            # Backprop through (x @ a): grad_x_contribution = grad_c_masked @ a.T
-            # [tile_m, tile_k] @ [tile_k, tile_n] = [tile_m, tile_n]
             acc = torch.addmm(acc, grad_c_masked, a[tile_n, tile_k].T)
 
         grad_x[tile_m, tile_n] = acc
@@ -113,31 +244,45 @@ def squeeze_and_excitation_net_bwd_dx(
 
 
 # %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+    autotune_baseline_fn=squeeze_and_excitation_net_bwd_da_reference,
+    autotune_baseline_rtol=_AUTOTUNE_BASELINE_RTOL,
+    autotune_baseline_atol=_AUTOTUNE_BASELINE_ATOL,
+)
 def squeeze_and_excitation_net_bwd_da(
-    grad_out: Tensor, x: Tensor, b: Tensor, c: Tensor, d: Tensor
+    grad_out: Tensor,
+    x: Tensor,
+    b: Tensor,
+    c: Tensor,
+    d: Tensor,
 ) -> Tensor:
     """
     Compute grad_a for the squeeze and excitation network.
     grad_a = x.T @ (grad_out * x * d * (1-d) @ b.T * (c>0))
+
+    ``grad_to_cb @ b[tile_k].T`` is accumulated along ``n`` in an inner loop.
     """
     m, n = x.size()
     k = c.size(1)
 
     grad_a = torch.empty([n, k], dtype=x.dtype, device=x.device)
 
-    # Compute grad_a: x.T @ grad_c
     for tile_n, tile_k in hl.tile([n, k]):
         acc_a = hl.zeros([tile_n, tile_k], dtype=torch.float32)
         for tile_m in hl.tile(m):
-            # Backprop through sigmoid: need full row for matmul with b.T
-            grad_to_d = grad_out[tile_m, :] * x[tile_m, :]
-            grad_to_cb = grad_to_d * d[tile_m, :] * (1.0 - d[tile_m, :])
-            # Backprop through c @ b: [tile_m, n] @ [n, tile_k] = [tile_m, tile_k]
-            grad_to_c = grad_to_cb @ b[tile_k, :].T
-            # Backprop through relu
+            grad_to_c = hl.zeros([tile_m, tile_k], dtype=torch.float32)
+            for tile_nj in hl.tile(n):
+                grad_to_cb = (
+                    grad_out[tile_m, tile_nj]
+                    * x[tile_m, tile_nj]
+                    * d[tile_m, tile_nj]
+                    * (1.0 - d[tile_m, tile_nj])
+                )
+                grad_to_c = grad_to_c + grad_to_cb @ b[tile_k, tile_nj].T
             grad_through_relu = grad_to_c * (c[tile_m, tile_k] > 0)
-            # Accumulate x.T @ grad_c: [tile_n, tile_m] @ [tile_m, tile_k] = [tile_n, tile_k]
             acc_a = torch.addmm(acc_a, x[tile_m, tile_n].T, grad_through_relu)
         grad_a[tile_n, tile_k] = acc_a
 
@@ -145,20 +290,33 @@ def squeeze_and_excitation_net_bwd_da(
 
 
 # %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+    autotune_baseline_fn=squeeze_and_excitation_net_bwd_db_reference,
+    autotune_baseline_rtol=_AUTOTUNE_BASELINE_RTOL,
+    autotune_baseline_atol=_AUTOTUNE_BASELINE_ATOL,
+)
 def squeeze_and_excitation_net_bwd_db(
-    grad_out: Tensor, x: Tensor, d: Tensor, c: Tensor
+    grad_out: Tensor,
+    x: Tensor,
+    d: Tensor,
+    c: Tensor,
 ) -> Tensor:
     """
-    Compute grad_b by fusing grad_d computation inline.
-    grad_b = c.T @ (grad_out * x * d * (1 - d))
+    ``grad_b = c.T @ (grad_out * x * d * (1 - d))`` with ``c = relu(x @ a)``.
+
+    Helion requires at least one ``hl.tile``/``hl.grid``; accumulation over ``m`` is
+    split across ``tile_m`` (same math as one ``matmul``, possibly different fp32 order).
     """
     m, n = grad_out.size()
     k = c.size(1)
+
     grad_b = torch.empty([k, n], dtype=grad_out.dtype, device=grad_out.device)
 
     for tile_k, tile_n in hl.tile([k, n]):
-        acc = hl.zeros([tile_k, tile_n], dtype=torch.float32)
+        acc_b = hl.zeros([tile_k, tile_n], dtype=torch.float32)
         for tile_m in hl.tile(m):
             grad_d = (
                 grad_out[tile_m, tile_n]
@@ -166,8 +324,12 @@ def squeeze_and_excitation_net_bwd_db(
                 * d[tile_m, tile_n]
                 * (1.0 - d[tile_m, tile_n])
             )
-            acc = torch.addmm(acc, c[tile_m, tile_k].T, grad_d)
-        grad_b[tile_k, tile_n] = acc
+            acc_b = torch.addmm(
+                acc_b,
+                c[tile_m, tile_k].transpose(0, 1),
+                grad_d,
+            )
+        grad_b[tile_k, tile_n] = acc_b
 
     return grad_b
 
@@ -245,15 +407,18 @@ def check(m: int, k: int, n: int) -> None:
         n (int): Number of columns in matrix x.
         k (int): Number of columns in matrix a.
     """
-    x = torch.randn([m, n], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
-    a = torch.randn([n, k], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
-    b = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE, requires_grad=True)
+    x = torch.randn([m, n], device=DEVICE, dtype=_TENSOR_DTYPE, requires_grad=True)
+    a = torch.randn([n, k], device=DEVICE, dtype=_TENSOR_DTYPE, requires_grad=True)
+    b = torch.randn([k, n], device=DEVICE, dtype=_TENSOR_DTYPE, requires_grad=True)
+
     for bwd in [True, False]:
         run_example(
             squeeze_and_excitation_net,
             squeeze_and_excitation_net_pytorch,
             (x, a, b),
             bwd=bwd,
+            rtol=_AUTOTUNE_BASELINE_RTOL,
+            atol=_AUTOTUNE_BASELINE_ATOL,
         )
 
 
