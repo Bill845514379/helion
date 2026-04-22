@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import inspect
+import logging
 import math
 import os
 import statistics
@@ -21,6 +22,8 @@ from helion import _compat
 from .progress_bar import iter_with_progress
 
 T = TypeVar("T")
+
+_logger = logging.getLogger(__name__)
 
 
 def _env_truthy(name: str) -> bool:
@@ -612,18 +615,28 @@ def interleaved_bench_npu(
     try:
         from triton.testing import do_bench_npu as triton_do_bench_npu
     except ImportError:
-        return [
-            cast(
-                "float",
-                _do_bench_npu_fallback(
-                    cast("Callable[[], Any]", fn),
-                    warmup=warmup_n,
-                    rep=active_n,
-                    return_mode="median",
-                ),
-            )
-            for fn in fns
-        ]
+        times_fb: list[float] = []
+        for fn in fns:
+            try:
+                times_fb.append(
+                    cast(
+                        "float",
+                        _do_bench_npu_fallback(
+                            cast("Callable[[], Any]", fn),
+                            warmup=warmup_n,
+                            rep=active_n,
+                            return_mode="median",
+                        ),
+                    )
+                )
+            except Exception as e:
+                _logger.debug(
+                    "interleaved_bench_npu fallback: callable failed (%s): %s",
+                    type(e).__qualname__,
+                    e,
+                )
+                times_fb.append(float("inf"))
+        return times_fb
 
     times: list[float] = []
     iterator = iter_with_progress(
@@ -633,12 +646,24 @@ def interleaved_bench_npu(
         enabled=desc is not None,
     )
     for j in iterator:
-        with _quiet_torch_npu_profiler_parse_info():
-            raw = triton_do_bench_npu(
-                fns[j],
-                warmup=warmup_n,
-                active=active_n,
+        try:
+            with _quiet_torch_npu_profiler_parse_info():
+                raw = triton_do_bench_npu(
+                    fns[j],
+                    warmup=warmup_n,
+                    active=active_n,
+                )
+        except Exception as e:
+            # Match main autotune benchmark behavior: failures become non-finite perf so
+            # autotune can discard the config instead of aborting verify/rebenchmark.
+            _logger.debug(
+                "interleaved_bench_npu: callable %s failed (%s): %s",
+                j,
+                type(e).__qualname__,
+                e,
             )
+            times.append(float("inf"))
+            continue
         # Some forks return a one-element list for a single fn; normalize.
         if isinstance(raw, list):
             if not raw:

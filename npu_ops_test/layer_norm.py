@@ -2,8 +2,10 @@
 Helion Layer Normalization Forward and Backward Example
 =======================================================
 This example demonstrates a Helion kernel implementation of 1D layer normalization
-with both forward and backward passes using FP16 inputs and compares it against
-PyTorch's built-in layer_norm function.
+with both forward and backward passes using FP16 inputs. Forward correctness is
+checked against :func:`torch.nn.functional.layer_norm`. Backward checks use an
+analytic FP32-upcast baseline because PyTorch's native FP16 ``layer_norm``
+backward can diverge from that closed form (same situation as ``rms_norm.py``).
 """
 
 # %%
@@ -13,12 +15,48 @@ from typing import Any
 from typing import Callable
 
 import torch
+import torch.nn.functional as F
 
 import helion
 from helion._testing import DEVICE
 from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
+from helion.language.constexpr import ConstExpr
+
+
+def layer_norm_bwd_reference(
+    grad_out: torch.Tensor,
+    x: torch.Tensor,
+    mean: torch.Tensor,
+    rstd: torch.Tensor,
+    weight: torch.Tensor,
+    compute_bias_grad: bool | ConstExpr,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
+    """PyTorch reference for :func:`layer_norm_bwd` (used as autotune baseline, not Triton)."""
+    if isinstance(compute_bias_grad, ConstExpr):
+        compute_bias_grad = bool(compute_bias_grad.value)
+
+    n = x.shape[1]
+    x_f = x.to(torch.float32)
+    dy_f = grad_out.to(torch.float32)
+    mean_f = mean.to(torch.float32).unsqueeze(-1)
+    rstd_f = rstd.to(torch.float32).unsqueeze(-1)
+    w_f = weight.to(torch.float32)
+
+    x_hat = (x_f - mean_f) * rstd_f
+    grad_weight = (dy_f * x_hat).sum(dim=0).to(weight.dtype)
+
+    wdy = w_f * dy_f
+    c1 = (x_hat * wdy).sum(dim=-1) / n
+    c2 = wdy.sum(dim=-1) / n
+    grad_x = (wdy - (x_hat * c1.unsqueeze(-1) + c2.unsqueeze(-1))) * rstd_f
+    grad_x = grad_x.to(dtype=x.dtype)
+
+    if compute_bias_grad:
+        grad_bias = dy_f.sum(dim=0).to(weight.dtype)
+        return grad_x, grad_weight, grad_bias
+    return grad_x, grad_weight, None
 
 
 # %%
@@ -83,7 +121,11 @@ def layer_norm_fwd(
 
 
 # %%
-@helion.kernel
+@helion.kernel(
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+    autotune_baseline_fn=layer_norm_bwd_reference,
+)
 def layer_norm_bwd(
     grad_out: torch.Tensor,
     x: torch.Tensor,
@@ -91,12 +133,16 @@ def layer_norm_bwd(
     rstd: torch.Tensor,
     weight: torch.Tensor,
     compute_bias_grad: hl.constexpr = True,  # type: ignore[valid-type]
+    n_chunk_max: hl.constexpr = 1024,  # type: ignore[valid-type]
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
     """
     Compute gradients for weight (dW) and optionally bias (dB) parameters.
 
     This kernel performs reduction across the batch dimension (M) to accumulate
     gradients for each feature dimension's weight and bias parameters.
+
+    The feature dimension ``N`` is tiled in chunks of at most ``n_chunk_max`` so
+    on-chip buffers stay small (same idea as :func:`rms_norm_bwd` on Ascend UB).
 
     Args:
         grad_out: Gradient w.r.t layer norm output [M, N]
@@ -105,6 +151,7 @@ def layer_norm_bwd(
         rstd: Per-sample reciprocal standard deviation from forward pass [M]
         weight: Weight parameter (used only for dtype/device info) [N]
         compute_bias_grad: Whether to compute bias gradient (default: True)
+        n_chunk_max: Max feature elements per N-tile (constexpr; lower if UB overflow).
 
     Returns:
         (grad_x, grad_weight, grad_bias): Gradients for input, weight, and bias (if computed)
@@ -116,36 +163,40 @@ def layer_norm_bwd(
 
     grad_x = torch.empty_like(x)
     num_blocks = (x.size(0) + m_block - 1) // m_block
-    grad_weight_blocks = x.new_empty([num_blocks, n], dtype=torch.float32)
-    grad_bias_blocks = x.new_empty([num_blocks, n], dtype=torch.float32)
+    grad_weight_blocks = x.new_zeros([num_blocks, n], dtype=torch.float32)
+    if compute_bias_grad:
+        grad_bias_blocks = x.new_zeros([num_blocks, n], dtype=torch.float32)
 
     for mb_cta in hl.tile(x.size(0), block_size=m_block):
-        grad_w_acc = weight.new_zeros(n, dtype=torch.float32)
-        if compute_bias_grad:
-            grad_b_acc = weight.new_zeros(n, dtype=torch.float32)
-        weight_cta = weight[None, :].to(torch.float32)
         for mb in hl.tile(mb_cta.begin, mb_cta.end):
-            x_mb = x[mb, :].to(torch.float32)
-            dy_mb = grad_out[mb, :].to(torch.float32)
             mean_mb = mean[mb].to(torch.float32)
             rstd_mb = rstd[mb].to(torch.float32)
 
-            x_hat = (x_mb - mean_mb[:, None]) * rstd_mb[:, None]
+            s1 = torch.zeros_like(x[mb, 0], dtype=torch.float32)
+            s2 = torch.zeros_like(x[mb, 0], dtype=torch.float32)
+            for tn in hl.tile(n, block_size=n_chunk_max):
+                x_a = x[mb, tn].to(torch.float32)
+                dy_a = grad_out[mb, tn].to(torch.float32)
+                w_a = weight[None, tn].to(torch.float32)
+                x_hat_a = (x_a - mean_mb[:, None]) * rstd_mb[:, None]
+                wdy_a = w_a * dy_a
+                s1 += (x_hat_a * wdy_a).sum(-1)
+                s2 += wdy_a.sum(-1)
 
-            grad_w_acc += torch.sum(dy_mb * x_hat, dim=0)
-            if compute_bias_grad:
-                # pyrefly: ignore [unbound-name]
-                grad_b_acc += torch.sum(dy_mb, dim=0)
+            c1 = s1 / n
+            c2 = s2 / n
 
-            wdy = weight_cta * dy_mb
-            c1 = torch.sum(x_hat * wdy, dim=-1) / n
-            c2 = torch.sum(wdy, dim=-1) / n
-            dx = (wdy - (x_hat * c1[:, None] + c2[:, None])) * rstd_mb[:, None]
-            grad_x[mb, :] = dx.to(x.dtype)
-
-        grad_weight_blocks[mb_cta.id, :] = grad_w_acc
-        if compute_bias_grad:
-            grad_bias_blocks[mb_cta.id, :] = grad_b_acc  # type: ignore[index]
+            for tile_n in hl.tile(n, block_size=n_chunk_max):
+                x_m = x[mb, tile_n].to(torch.float32)
+                dy_m = grad_out[mb, tile_n].to(torch.float32)
+                w_m = weight[None, tile_n].to(torch.float32)
+                x_hat = (x_m - mean_mb[:, None]) * rstd_mb[:, None]
+                wdy = w_m * dy_m
+                grad_weight_blocks[mb_cta.id, tile_n] += (dy_m * x_hat).sum(0)
+                if compute_bias_grad:
+                    grad_bias_blocks[mb_cta.id, tile_n] += dy_m.sum(0)
+                dx = (wdy - (x_hat * c1[:, None] + c2[:, None])) * rstd_mb[:, None]
+                grad_x[mb, tile_n] = dx.to(x.dtype)
 
     grad_weight = grad_weight_blocks.sum(0).to(weight.dtype)
     if compute_bias_grad:
@@ -202,6 +253,54 @@ def layer_norm(
 ) -> torch.Tensor:
     """Layer normalization with forward + backward support."""
     return LayerNormFunction.apply(x, normalized_shape, weight, bias, eps)  # type: ignore[no-any-return]
+
+
+# %%
+class _LayerNormAnalyticRef(torch.autograd.Function):
+    """Forward matches ``F.layer_norm``; backward uses :func:`layer_norm_bwd_reference`."""
+
+    @staticmethod
+    def forward(  # pyrefly: ignore [bad-override]
+        ctx: Any,  # noqa: ANN401
+        x: torch.Tensor,
+        normalized_shape: list[int],
+        weight: torch.Tensor,
+        bias: torch.Tensor | None,
+        eps: float,
+    ) -> torch.Tensor:
+        ctx.save_for_backward(x, weight, bias)
+        ctx.eps = eps  # type: ignore[attr-defined]
+        ctx.normalized_shape = normalized_shape  # type: ignore[attr-defined]
+        return F.layer_norm(x, normalized_shape, weight, bias, eps=eps)
+
+    @staticmethod
+    def backward(  # type: ignore[override]
+        ctx: Any,  # noqa: ANN401
+        grad_output: torch.Tensor,
+    ) -> tuple[
+        torch.Tensor | None, None, torch.Tensor | None, torch.Tensor | None, None
+    ]:
+        x, weight, bias = ctx.saved_tensors  # type: ignore[attr-defined]
+        eps = ctx.eps  # type: ignore[attr-defined]
+        xf = x.to(torch.float32)
+        mean = xf.mean(-1)
+        rstd = torch.rsqrt(xf.var(-1, unbiased=False) + eps)
+        compute_bias_grad = bias is not None
+        gx, gw, gb = layer_norm_bwd_reference(
+            grad_output, x, mean, rstd, weight, compute_bias_grad
+        )
+        return gx, None, gw, gb, None
+
+
+def layer_norm_pytorch_analytic(
+    x: torch.Tensor,
+    normalized_shape: list[int],
+    weight: torch.Tensor,
+    bias: torch.Tensor | None = None,
+    eps: float = 1e-5,
+) -> torch.Tensor:
+    """Test baseline: ``F.layer_norm`` forward, analytic FP32-upcast backward."""
+    return _LayerNormAnalyticRef.apply(x, normalized_shape, weight, bias, eps)  # type: ignore[no-any-return]
 
 
 # %%
@@ -275,8 +374,10 @@ def main() -> None:
     for b in [bias_grad, None]:
         run_example(
             layer_norm,
-            torch.nn.functional.layer_norm,
+            layer_norm_pytorch_analytic,
             (x_grad, [dim], weight_grad, b, eps),
+            kernel_name="helion",
+            baseline_name="analytic_fp32_bwd",
             rtol=1e-3,
             atol=1e-3,
             bwd=True,
