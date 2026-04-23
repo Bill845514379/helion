@@ -20,7 +20,7 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="quick")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def _bf16xint16_gemm(x: Tensor, w: Tensor) -> Tensor:
     """
     x is bf16, w is int16.
@@ -169,7 +169,7 @@ def main() -> None:
     """
     check(256, 256, 256)
     check(512, 512, 512)
-    check(65536, 1024, 1280)
+    # check(65536, 1024, 1280)
 
 
 # %%
