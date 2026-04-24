@@ -167,9 +167,9 @@ def main() -> None:
     """
     Main entry point that runs the bf16xint16 kernel verification with different tensor sizes.
     """
-    check(256, 256, 256)
-    check(512, 512, 512)
-    # check(65536, 1024, 1280)
+    # check(256, 256, 256)
+    # check(512, 512, 512)
+    check(65536, 1024, 1280)
 
 
 # %%
