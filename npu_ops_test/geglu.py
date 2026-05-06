@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="quick")
 def geglu(a: Tensor, b: Tensor) -> Tensor:
     """
     Performs GEGLU operation: GELU(a) * b using tanh approximation for GELU.

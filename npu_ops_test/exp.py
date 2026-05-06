@@ -1,10 +1,3 @@
-"""
-Exponential Function Example
-============================
-
-This example demonstrates how to implement an element-wise exponential function using Helion.
-"""
-
 # %%
 # Imports
 # -------
@@ -23,7 +16,12 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+    # For NPU: use larger block sizes to reduce launch overhead
+    # Element-wise ops benefit from maximizing tile size
+)
 def exp_fwd(x: torch.Tensor) -> torch.Tensor:
     """
     Computes the exponential of all elements in the input tensor.
@@ -35,13 +33,18 @@ def exp_fwd(x: torch.Tensor) -> torch.Tensor:
         Output tensor with the exponential of each element in the input
     """
     out = torch.empty_like(x)
-    for tile in hl.tile(x.size()):
+    # Use a larger block size hint for NPU to reduce kernel launch overhead
+    block_size = hl.register_block_size(512, min(x.numel(), 4096))
+    for tile in hl.tile(x.numel(), block_size=block_size):
         out[tile] = torch.exp(x[tile])
     return out
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+)
 def exp_bwd(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:
     """
     Computes the gradient of the exponential function with respect to the input tensor.
@@ -54,7 +57,9 @@ def exp_bwd(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:
         Gradient of the input tensor
     """
     dx = torch.empty_like(exp_x)
-    for tile in hl.tile(exp_x.size()):
+    # Use larger block size for NPU
+    block_size = hl.register_block_size(512, min(exp_x.numel(), 4096))
+    for tile in hl.tile(exp_x.numel(), block_size=block_size):
         dx[tile] = dy[tile] * exp_x[tile]
     return dx
 
