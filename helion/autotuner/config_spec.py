@@ -817,7 +817,34 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
         reduction_numel = _product(
             [next_power_of_2(spec.size_hint) for spec in base.reduction_loops]
         )
-        if total_ndim <= 2 and reduction_numel <= 128:
+        # NPU UB memory is limited (~192KB = 1572864 bits = 196608 bytes).
+        # Multi-tile kernels with reductions (matmul, bmm, attention) need smaller defaults to avoid UB overflow.
+        # 1D element-wise tiles can safely use larger blocks.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            if total_ndim == 1 and reduction_numel <= 1:
+                # Pure 1D element-wise: launch overhead dominates, use large blocks.
+                # But still cap at 256 to avoid UB overflow on very large tensors
+                default = min(self.size_hint, 256)
+                default = 1 << max(default.bit_length() - 1, 0)
+                default = max(self.min_size, min(default, self.max_size, 256))
+            else:
+                # Multi-dim tile (2D matmul, 3D bmm, etc.): per-block UB usage
+                # grows with the product of block sizes. Target a safe starting
+                # point for NPU UB constraints (~192KB).
+                # The dominant factor is block_size product × 4 bytes (fp32 acc)
+                # For 2D: 32x32 = 1024 elements × 4 bytes × 3 (x, y, out) = 12KB - safe
+                # For 3D: 8x32x32 = 8192 elements × 4 bytes × 3 = 96KB - safe but tight
+                if total_ndim >= 3:
+                    # 3D+ tile (e.g. bmm): very tight UB budget.
+                    # Use smaller blocks: 8x16x16 = 2048 elements
+                    per_dim = 16
+                else:
+                    # 2D tile (e.g. matmul, softmax): moderate budget.
+                    # 32x32 = 1024 elements is safe
+                    per_dim = 32
+                floor_pow2 = 1 << max(per_dim.bit_length() - 1, 0)
+                default = max(self.min_size, min(floor_pow2, self.max_size))
+        elif total_ndim <= 2 and reduction_numel <= 128:
             default = 32
         elif total_ndim >= 3 and reduction_numel > 1:
             # With 3+ tiled dimensions and a non-trivial reduction/full-slice
