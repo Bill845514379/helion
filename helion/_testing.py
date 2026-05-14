@@ -69,8 +69,13 @@ if _get_backend() == "pallas":
     from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
 elif is_npu():
     from .autotuner.benchmarking import compute_repeat as compute_repeat
-    from .autotuner.benchmarking import do_bench_npu as do_bench
-    from .autotuner.benchmarking import interleaved_bench_npu as interleaved_bench
+    # Use wall-clock timing for run_example to correctly measure total execution time
+    # (including functions with Python loops that trigger multiple kernels)
+    from .autotuner.benchmarking import do_bench_generic as do_bench
+    from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
+    # Keep NPU-specific functions available for other uses (e.g., autotuning)
+    from .autotuner.benchmarking import do_bench_npu
+    from .autotuner.benchmarking import interleaved_bench_npu
 else:
     from .autotuner.benchmarking import compute_repeat
     from .autotuner.benchmarking import do_bench as do_bench
@@ -1083,12 +1088,10 @@ def run_example(
         print(f"\n{'=' * 65}\nBenchmark Results\n{'=' * 65}", file=sys.stderr)
         time_header = "Time (ms)"
         if hasattr(torch, "npu") and torch.npu.is_available():
-            from .autotuner.benchmarking import npu_benchmark_results_timing_caption
-
-            cap = npu_benchmark_results_timing_caption()
-            if cap:
-                print(cap, file=sys.stderr)
-            time_header = "Time (ms, NPU prof.)"
+            # NPU now uses wall-clock timing (interleaved_bench_generic) for correct
+            # total execution time measurement, not profiler Avg Time
+            print("Timing: wall-clock with torch.npu.synchronize()", file=sys.stderr)
+            time_header = "Time (ms, wall-clock)"
         time_w = max(len(time_header), 12)
         sep = "-" * (20 + time_w + 15 + 2)
         print(
