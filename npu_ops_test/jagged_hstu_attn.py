@@ -269,6 +269,7 @@ def test(
         lambda *args: ragged_attention_tritonbench(None, *args)(),
         baselines,
         (q, k, v, seq_offsets, None, max_seq_len),
+        use_wall_clock=True
     )
 
 

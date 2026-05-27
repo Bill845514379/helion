@@ -217,6 +217,7 @@ def main() -> None:
         lambda x, o: jagged_sum_kernel(x, o),
         lambda x, o: reference_jagged_sum_kernel_pytorch(x, o),
         (x_data, x_offsets),
+        use_wall_clock=True
     )
 
 

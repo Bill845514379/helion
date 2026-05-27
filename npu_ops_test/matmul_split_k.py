@@ -66,7 +66,7 @@ def matmul_split_k(
         acc = hl.zeros([tile_m, tile_n], dtype=torch.float32)
 
         for tile_k in hl.tile(k, block_size=k_block):
-            acc = torch.addmm(acc, x[tile_m, tile_k], y[tile_k, tile_n])
+            acc = hl.dot(x[tile_m, tile_k], y[tile_k, tile_n], acc=acc)
 
         hl.atomic_add(out, [tile_m, tile_n], acc)
     return out

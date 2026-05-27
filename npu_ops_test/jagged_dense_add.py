@@ -176,7 +176,7 @@ def main() -> None:
     y = torch.randn([rows, cols], device=DEVICE)
 
     run_example(
-        jagged_dense_add_2d, jagged_dense_add_2d_reference, (x_data, x_offsets, y)
+        jagged_dense_add_2d, jagged_dense_add_2d_reference, (x_data, x_offsets, y), use_wall_clock=True
     )
 
 

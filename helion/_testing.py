@@ -69,13 +69,15 @@ if _get_backend() == "pallas":
     from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
 elif is_npu():
     from .autotuner.benchmarking import compute_repeat as compute_repeat
-    # Use wall-clock timing for run_example to correctly measure total execution time
-    # (including functions with Python loops that trigger multiple kernels)
-    from .autotuner.benchmarking import do_bench_generic as do_bench
-    from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
-    # Keep NPU-specific functions available for other uses (e.g., autotuning)
+    # Default to profiler-based timing for simple kernels (faster)
+    # Use wall-clock timing optionally for jagged/dynamic kernels
+    from .autotuner.benchmarking import do_bench_npu as do_bench
+    from .autotuner.benchmarking import interleaved_bench_npu as interleaved_bench
+    # Keep both versions available
     from .autotuner.benchmarking import do_bench_npu
     from .autotuner.benchmarking import interleaved_bench_npu
+    from .autotuner.benchmarking import do_bench_generic
+    from .autotuner.benchmarking import interleaved_bench_generic
 else:
     from .autotuner.benchmarking import compute_repeat
     from .autotuner.benchmarking import do_bench as do_bench
@@ -936,6 +938,7 @@ def run_example(
     rtol: float = 1e-2,
     atol: float = 1e-1,
     bwd: bool = False,
+    use_wall_clock: bool = False,
 ) -> None:
     """Run complete example: correctness check + benchmark.
 
@@ -948,6 +951,8 @@ def run_example(
         rtol: Relative tolerance for correctness check (default: 1e-2)
         atol: Absolute tolerance for correctness check (default: 1e-1)
         bwd: Whether to also test backward pass (default: False)
+        use_wall_clock: If True, use wall-clock timing (slower but accurate for jagged/dynamic kernels)
+            If False, use profiler-based timing (faster, best for simple kernels) (default: False)
     """
     try:
         torch.backends.cuda.matmul.fp32_precision = "tf32"
@@ -1078,20 +1083,30 @@ def run_example(
     if dist.is_initialized():
         repeat = sync_object(repeat)
 
+    # Select appropriate benchmark function
+    bench_func = interleaved_bench
+    time_header = "Time (ms)"
+    timing_note = None
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        if use_wall_clock:
+            from .autotuner.benchmarking import interleaved_bench_generic
+            bench_func = interleaved_bench_generic
+            time_header = "Time (ms, wall-clock)"
+            timing_note = "wall-clock with torch.npu.synchronize()"
+        else:
+            time_header = "Time (ms, profiler)"
+            timing_note = "profiler-based (use_wall_clock=False)"
+
     # pyrefly: ignore [bad-argument-type]
-    timings = interleaved_bench(bench_fns, repeat=repeat, desc="Benchmarking")
+    timings = bench_func(bench_fns, repeat=repeat, desc="Benchmarking")
     all_times = dict(zip(all_benchmarks.keys(), timings, strict=True))
     best_baseline_time = min(all_times[name] for name in baselines)
 
     if not dist.is_initialized() or dist.get_rank() == 0:
         # Print results (on rank 0)
         print(f"\n{'=' * 65}\nBenchmark Results\n{'=' * 65}", file=sys.stderr)
-        time_header = "Time (ms)"
-        if hasattr(torch, "npu") and torch.npu.is_available():
-            # NPU now uses wall-clock timing (interleaved_bench_generic) for correct
-            # total execution time measurement, not profiler Avg Time
-            print("Timing: wall-clock with torch.npu.synchronize()", file=sys.stderr)
-            time_header = "Time (ms, wall-clock)"
+        if timing_note:
+            print(f"Timing: {timing_note}", file=sys.stderr)
         time_w = max(len(time_header), 12)
         sep = "-" * (20 + time_w + 15 + 2)
         print(

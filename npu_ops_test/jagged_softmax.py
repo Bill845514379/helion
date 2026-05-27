@@ -199,6 +199,7 @@ def main() -> None:
         lambda x, o: jagged_softmax_kernel(x, o),
         lambda x, o: reference_jagged_softmax_pytorch(x, o),
         (x_data, x_offsets),
+        use_wall_clock=True
     )
 
 

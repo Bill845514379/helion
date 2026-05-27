@@ -213,6 +213,7 @@ def main() -> None:
         lambda x, o, fc, m: jagged_mean_kernel(x, o, fc, m),
         lambda x, o, fc, m: reference_jagged_mean_kernel_pytorch(x, o, fc, m),
         (x_data, x_offsets, feature_counts, M),
+        use_wall_clock=True
     )
 
 

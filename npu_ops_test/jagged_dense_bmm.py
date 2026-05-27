@@ -171,7 +171,7 @@ def main() -> None:
         D=34, K=24, batch_size=23, max_seq_len=37, dtype=torch.float32
     )
     run_example(
-        jagged_dense_bmm, jagged_dense_bmm_reference, (seq_offsets, jagged, dense, bias)
+        jagged_dense_bmm, jagged_dense_bmm_reference, (seq_offsets, jagged, dense, bias), use_wall_clock=True
     )
 
 

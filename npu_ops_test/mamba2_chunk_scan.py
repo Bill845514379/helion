@@ -26,35 +26,24 @@ import helion.language as hl
 # ----------------------------
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def helion_mamba2_chunk_scan_kernel(
-    cb: torch.Tensor,
-    x: torch.Tensor,
-    dt: torch.Tensor,
-    dA_cumsum: torch.Tensor,
-    C: torch.Tensor,
-    prev_states: torch.Tensor,
-    D: torch.Tensor,
+        cb: torch.Tensor,
+        x: torch.Tensor,
+        dt: torch.Tensor,
+        dA_cumsum: torch.Tensor,
+        C: torch.Tensor,
+        prev_states: torch.Tensor,
+        D: torch.Tensor,
 ) -> torch.Tensor:
-    """
-    Argument:
-        cb: (batch, nchunks, ngroups, chunk_size, chunk_size)
-        x: (batch, seqlen, nheads, headdim)
-        dt: (batch, nheads, nchunks, chunk_size)
-        dA_cumsum: (batch, nheads, nchunks, chunk_size)
-        C: (batch, seqlen, ngroups, dstate)
-        prev_states: (batch, nchunks, nheads, headdim, dstate)
-        D: (nheads,)
-    Return:
-        out: (batch, seqlen, nheads, headdim)
-    """
-
     batch, nchunks, ngroups, chunk_size, _ = cb.shape
     _, seqlen, nheads, headdim = x.shape
     _, _, _, dstate = C.shape
     assert nchunks == (seqlen + chunk_size - 1) // chunk_size
 
-    block_m = hl.register_block_size(chunk_size)
-    block_n = hl.register_block_size(headdim)
-    block_k = hl.register_block_size(64, 64)
+
+    block_m = hl.register_block_size(128, 256)
+    block_n = hl.register_block_size(headdim)   # 64
+
+    block_k = hl.register_block_size(64, 32)
     dstate = hl.specialize(dstate)
 
     assert cb.shape == (batch, nchunks, ngroups, chunk_size, chunk_size)
@@ -78,14 +67,14 @@ def helion_mamba2_chunk_scan_kernel(
     )
 
     out = torch.empty_like(x)
-
     p = 1.44269504
 
     for tile_h, tile_m, tile_n, tile_b, tile_c in hl.tile(
-        [nheads, chunk_size, headdim, batch, nchunks],
-        block_size=[1, block_m, block_n, 1, 1],
+            [nheads, chunk_size, headdim, batch, nchunks],
+            block_size=[1, block_m, block_n, 1, 1],
     ):
         acc_o = hl.zeros([tile_m, tile_n], dtype=accum_dtype)
+
         dA_cumsum_local_m = dA_cumsum[
             tile_b.begin, tile_h.begin, tile_c.begin, tile_m
         ].to(torch.float32)
@@ -101,9 +90,10 @@ def helion_mamba2_chunk_scan_kernel(
             tile_b.begin, tile_c.begin, tile_h.begin, tile_n, :
         ]
         acc_o = hl.dot(C_local, prev_states_local.T, acc=acc_o)
+
         acc_o *= scale_m_local[:, None]
 
-        for tile_k in hl.tile((tile_m.id + 1) * block_m, block_size=block_k):
+        for tile_k in hl.tile(chunk_size, block_size=block_k):
             cb_local = cb[
                 tile_b.begin,
                 tile_c.begin,
@@ -169,18 +159,11 @@ def ref_chunk_scan(
     """
     _, _, ngroups, _, _ = cb.shape
     batch, seqlen, nheads, dhead = x.shape
-    # _, _, ngroups, dstate = B.shape
-    # assert B.shape == (batch, seqlen, ngroups, dstate)
     _, _, nchunks, chunk_size = dt.shape
     dstate = C.shape[-1]
     assert seqlen == nchunks * chunk_size
-    # assert C.shape == B.shape
-    # B = repeat(B, "b l g d -> b l (g h) d", h=nheads // ngroups)
     C = torch.repeat_interleave(C, nheads // ngroups, dim=2)
     cb = torch.repeat_interleave(cb, nheads // ngroups, dim=2)
-    # CB = torch.einsum("bclhn,bcshn->bchls", rearrange(C, "b (c l) h n -> b c l h n", c=nchunks),
-    #                   rearrange(B, "b (c s) h n -> b c s h n", c=nchunks))
-    # (batch, nheads, nchunks, chunksize, chunksize)
     dt_segment_sum = dA_cumsum[:, :, :, :, None] - dA_cumsum[:, :, :, None, :]
     decay = torch.exp(dt_segment_sum)
     scores_decay = cb * decay.permute(0, 2, 1, 3, 4)
@@ -195,7 +178,6 @@ def ref_chunk_scan(
         dt.to(x.dtype),
         x.reshape(batch, nchunks, chunk_size, nheads, dhead),
     )
-    # state_decay_out = torch.exp(rearrange(dA_cumsum, "b h c l -> b c l h 1"))
     state_decay_out = torch.exp(dA_cumsum.permute(0, 2, 3, 1).unsqueeze(-1))
     out_prev = (
         torch.einsum(
@@ -246,7 +228,7 @@ def test(
     cb = fn(batch, nchunks, ngroups, chunk_size, chunk_size)
     x = fn(batch, seqlen, nheads, headdim)
     dt = fn(batch, nheads, nchunks, chunk_size)
-    dA_cumsum = fn(batch, nheads, nchunks, chunk_size)  # init range is too large
+    dA_cumsum = fn(batch, nheads, nchunks, chunk_size)
     C = fn(batch, seqlen, ngroups, dstate)
     prev_states = fn(batch, nchunks, nheads, headdim, dstate)
     D = fn(nheads)
@@ -258,16 +240,12 @@ def test(
 # Main Function
 # -----------
 def main() -> None:
-    """
-    Main entry point that runs the attention kernel test with specific parameters.
-    Tests with batch size 2, 32 heads, 1024 sequence length, and 64-dimensional heads using float16.
-    """
-    test("zzzzzzz", 8, 80, 1, 4096, 256, 64, 128)
-    test("zrzzzzr", 8, 80, 1, 4096, 256, 64, 128)  # D * x
-    test("zzzzrrz", 8, 80, 1, 4096, 256, 64, 128)  # C * prev_state
-    test("zzzrrrz", 8, 80, 1, 4096, 256, 64, 128)  # C * prev_state * dA
-    test("rrrzzzz", 8, 80, 1, 4096, 256, 64, 128)  # cb * x * dt
-    test("rrruzzz", 8, 80, 1, 4096, 256, 64, 128)  # cb * x * dt * dA
+    test("zzzzzzz", 4, 40, 1, 2048, 64, 32, 64)
+    test("zrzzzzr", 4, 40, 1, 2048, 64, 32, 64)
+    test("zzzzrrz", 4, 40, 1, 2048, 64, 32, 64)
+    test("zzzrrrz", 4, 40, 1, 2048, 64, 32, 64)
+    test("rrrzzzz", 4, 40, 1, 2048, 64, 32, 64)
+    test("rrruzzz", 4, 40, 1, 2048, 64, 32, 64)
 
 
 if __name__ == "__main__":

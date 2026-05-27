@@ -219,55 +219,40 @@ def exp2_lowering(x):
 @register_inductor_lowering(aten._log_softmax.default, lowering_dict=npu_only_lowering_dispatch)
 def log_softmax_lowering(x, dim, half_to_float=False):
     """
-    Numerically stable implementation of log-softmax.
+    Numerically stable implementation of log-softmax with fp32 upcast.
 
-    Computes: log_softmax(x) = x - log(∑exp(x - max(x)))
+    Computes: log_softmax(x) = x - log(sum(exp(x - max(x))))
 
-    The standard formula for numerical stability:
-    1. x_max = max(x, dim=dim, keepdim=True)
-    2. shifted = x - x_max
-    3. exp_shifted = exp(shifted)
-    4. sum_exp = sum(exp_shifted, dim=dim, keepdim=True)
-    5. log_sum_exp = log(sum_exp)
-    6. result = shifted - log_sum_exp
-
-    Args:
-        x: Input tensor
-        dim: Dimension along which to compute log-softmax
-        half_to_float: If True, converts half-precision (float16/bfloat16) to float32
-
-    Returns:
-        ComputedBuffer representing log_softmax(x)
+    For fp16/bf16 inputs, upcasts to fp32 once at the start and computes
+    all 6 decomposition steps in fp32, then casts back once. This avoids
+    the 12 nested fp16↔fp32 round-trips that occur when each step
+    independently triggers FP32_FALLBACK_OPS_UNARY for exp/log.
     """
 
-    dtype = x.get_dtype()  # Get input tensor data type
-    ndim = len(x.get_size())  # Get number of dimensions
-
-    # Handle negative dimension indices
+    dtype = x.get_dtype()
+    ndim = len(x.get_size())
     if dim < 0:
         dim = ndim + dim
 
-    # 1. Compute max value along the specified dimension for numerical stability
+    # Upcast once at the start if input is sub-fp32
+    needs_upcast = dtype in (torch.float16, torch.bfloat16)
+    if needs_upcast:
+        x = to_dtype(x, torch.float32)
+
+    # All 6 steps in fp32
     x_max = original_lowerings[aten.amax.default](x, axis=[dim], keepdims=True)
-
-    # 2. Shift values by subtracting the maximum (prevents overflow in exp)
     shifted = original_lowerings[aten.sub.Tensor](x, x_max)
-
-    # 3. Compute exp(shifted)
     exp_shifted = original_lowerings[aten.exp.default](shifted)
-
-    # 4. Sum of exponentials along the specified dimension
-    # Keep dimensions to maintain shape for broadcasting
-    sum_exp = original_lowerings[aten.sum.dim_IntList](exp_shifted, axis=[dim], keepdims=True, dtype=dtype)
-
-    # 5. Compute log of the sum of exponentials
+    sum_exp = original_lowerings[aten.sum.dim_IntList](
+        exp_shifted, axis=[dim], keepdims=True
+    )
     log_sum_exp = original_lowerings[aten.log.default](sum_exp)
-
-    # 6. Final result: shifted values minus log of sum of exponentials
     result = original_lowerings[aten.sub.Tensor](shifted, log_sum_exp)
 
-    # Handle half-precision to float32 conversion if requested
-    if half_to_float and dtype in (torch.float16, torch.bfloat16):
+    # Cast back once at the end
+    if needs_upcast and not half_to_float:
+        result = to_dtype(result, dtype)
+    elif half_to_float and dtype in (torch.float16, torch.bfloat16):
         result = to_dtype(result, torch.float32)
 
     return result
