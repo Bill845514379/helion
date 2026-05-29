@@ -196,7 +196,7 @@ def test(
         dim=1,
     )
     args = (k, w, u, g, chunk_size)
-    run_example(helion_gdn_fwd_h, ref_gdn_fwd_h, args)
+    run_example(helion_gdn_fwd_h, ref_gdn_fwd_h, args, use_wall_clock=True)
 
 
 # %%

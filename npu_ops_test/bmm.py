@@ -46,12 +46,18 @@ def bmm(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
     out = torch.empty(
         [b, m, n], device=A.device, dtype=torch.promote_types(A.dtype, B.dtype)
     )
+
+    # Tile over batch, M, and N dimensions
     for tile_b, tile_m, tile_n in hl.tile([b, m, n]):
+        # Use float32 for accumulation to maintain precision
         acc = hl.zeros([tile_b, tile_m, tile_n], dtype=torch.float32)
+
+        # Tile over K dimension
         for tile_k in hl.tile(k):
-            acc = torch.baddbmm(
-                acc, A[tile_b, tile_m, tile_k], B[tile_b, tile_k, tile_n]
-            )
+            # Use the @ operator instead of torch.baddbmm to ensure
+            # Helion generates optimal tl.dot with Tensor Cores (avoids input_precision='ieee')
+            acc += A[tile_b, tile_m, tile_k] @ B[tile_b, tile_k, tile_n]
+
         out[tile_b, tile_m, tile_n] = acc
     return out
 

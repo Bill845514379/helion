@@ -34,12 +34,14 @@ torch_npu.npu.config.allow_internal_format = True
 # %%
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
-    # static_shapes=True,
-    # Set autotune effort to quick for faster verification
+    static_shapes=True,
     autotune_ignore_errors=True,
     autotune_effort="full",
-    # Disable autotung over unrolling/range_num_stages
-    # tl.dot is pipelined with num_stages
+    # Expand search space for NPU optimizations
+    autotune_config_overrides={
+        "range_num_stages": [2, 3, 4, 5],
+        "loop_orders": [[0, 1], [1, 0]],
+    },
 )
 def matmul(
     x: Tensor,
@@ -62,9 +64,16 @@ def matmul(
     out = torch.empty(
         [m, n], dtype=torch.promote_types(x.dtype, y.dtype), device=x.device
     )
-    for tile_m, tile_n in hl.tile([m, n]):
+    # Register block sizes for autotuner to find optimal tiling
+    block_m = hl.register_block_size(64, 256)
+    block_n = hl.register_block_size(64, 256)
+    block_k = hl.register_block_size(32, 128)
+    for tile_m, tile_n in hl.tile(
+        [m, n],
+        block_size=[block_m, block_n],
+    ):
         acc = hl.zeros([tile_m, tile_n], dtype=torch.float32)
-        for tile_k in hl.tile(k):
+        for tile_k in hl.tile(k, block_size=block_k):
             acc = torch.addmm(acc, x[tile_m, tile_k], y[tile_k, tile_n])
         out[tile_m, tile_n] = epilogue(acc, (tile_m, tile_n))
     return out
@@ -270,6 +279,7 @@ def check(m: int, k: int, n: int) -> None:
         kernel_name="helion_addmm_autograd",
         baseline_name="torch",
         bwd=True,
+        use_wall_clock=True
     )
 
     # Test addmm forward + backward with different alpha/beta values
@@ -283,6 +293,7 @@ def check(m: int, k: int, n: int) -> None:
         kernel_name="helion_addmm_autograd_scaled",
         baseline_name="torch",
         bwd=True,
+        use_wall_clock=True
     )
 
 
@@ -327,7 +338,7 @@ def main() -> None:
     """
     Main function to run autotuning (commented out) and correctness checks.
     """
-    check(1024, 1024, 1024) 
+    check(1024, 1024, 1024)
     # pass
     # check(512, 512, 512)
     # pass

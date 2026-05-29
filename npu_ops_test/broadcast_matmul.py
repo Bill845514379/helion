@@ -32,7 +32,11 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+)
 def broadcast_matmul(x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     """
     Batch matrix multiplication with broadcasting.
@@ -55,7 +59,8 @@ def broadcast_matmul(x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     for tile_bm, tile_n in hl.tile([b * m, n]):
         acc = hl.zeros([tile_bm, tile_n], dtype=torch.float32)
         for tile_k in hl.tile(k):
-            acc = torch.addmm(acc, x_2d[tile_bm, tile_k], w[tile_k, tile_n])
+            # Use hl.dot directly for better code generation
+            acc = hl.dot(x_2d[tile_bm, tile_k], w[tile_k, tile_n], acc=acc, out_dtype=torch.float32)
         out_2d[tile_bm, tile_n] = acc
     return out_2d.view(b, m, n)
 

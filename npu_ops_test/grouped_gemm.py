@@ -49,7 +49,7 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def grouped_gemm_jagged(
     A_packed: torch.Tensor,  # [total_M, K], where total_M == sum(M_i)
     B: torch.Tensor,  # [K, N] shared across all groups
@@ -110,7 +110,7 @@ def grouped_gemm_jagged(
 
 
 # %%
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def grouped_gemm_jagged_persistent(
     A_packed: torch.Tensor,  # [total_M, K]
     B: torch.Tensor,  # [K, N]
@@ -371,6 +371,7 @@ def main() -> None:
         (group_A, group_B),
         rtol=1e-2,
         atol=1e-2,
+        use_wall_clock=True
     )
     print("✓ Non-persistent kernel passed")
 
@@ -380,6 +381,7 @@ def main() -> None:
         (group_A, group_B),
         rtol=1e-2,
         atol=1e-2,
+        use_wall_clock=True
     )
     print("✓ Persistent kernel passed")
 

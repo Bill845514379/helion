@@ -24,7 +24,7 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax(x: torch.Tensor) -> torch.Tensor:
     """
     Simple Helion kernel wrapping PyTorch's softmax function.
@@ -41,7 +41,7 @@ def softmax(x: torch.Tensor) -> torch.Tensor:
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax_decomposed(x: torch.Tensor) -> torch.Tensor:
     """
     Helion kernel implementing softmax by decomposing into max, exp, and normalization steps.
@@ -63,7 +63,7 @@ def softmax_decomposed(x: torch.Tensor) -> torch.Tensor:
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax_two_pass(x: torch.Tensor) -> torch.Tensor:
     """
     Numerically optimized Helion kernel performing softmax in two passes.
@@ -94,7 +94,7 @@ def softmax_two_pass(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax_bwd(
     grad_output: torch.Tensor, softmax_output: torch.Tensor
 ) -> torch.Tensor:

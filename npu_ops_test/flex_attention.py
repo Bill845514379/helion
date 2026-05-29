@@ -323,7 +323,7 @@ def test(
         "reference": baseline_fn,
     }
 
-    run_example(helion_fn, baselines, (q, k, v))  # pyright: ignore[reportArgumentType]
+    run_example(helion_fn, baselines, (q, k, v), use_wall_clock=True)  # pyright: ignore[reportArgumentType]
 
 
 # %%

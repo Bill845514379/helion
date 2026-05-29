@@ -17,6 +17,7 @@ from .._utils import next_power_of_2
 from .ast_extension import expr_from_string
 from .compile_environment import CompileEnvironment
 from .device_function import DeviceFunction
+from .device_function import StaticShape
 from .dtype_utils import cast_ast
 from .host_function import HostFunction
 from .tile_strategy import DeviceLoopState
@@ -1014,8 +1015,13 @@ class SubscriptIndexing(NamedTuple):
         index_expr = []
         for i, idx in enumerate(index_values):
             if not _is_size_one(fake_value.size(i)):
-                stride = state.device_function.tensor_stride(fake_value, i).name
-                index_expr.append(f"{idx} * {stride}")
+                stride_arg = state.device_function.tensor_stride(fake_value, i)
+                # Optimization: skip * 1 for statically known stride=1
+                stride_val = fake_value.stride(i)
+                if isinstance(stride_val, int) and stride_val == 1:
+                    index_expr.append(idx)
+                else:
+                    index_expr.append(f"{idx} * {stride_arg.name}")
         if not index_expr:
             shape_str = tile_strategy.shape_str(output_size)
             index_expr.append(f"tl.zeros({shape_str}, {dtype})")

@@ -98,6 +98,9 @@ def _get_custom_decomp_table() -> dict[torch._ops.OpOverload, Callable[..., obje
     # figure out the right Triton implementation for aten.cat. As a workaround, we disable
     # the decomp for aten.stack and implement aten.stack in Triton (codegen_stack) instead.
     decomp_table.pop(torch.ops.aten.stack.default, None)
+    # Disable clamp decomposition so we can generate tl.clamp directly
+    # instead of triton_helpers.maximum/minimum
+    decomp_table.pop(torch.ops.aten.clamp.default, None)
     # Override lerp.Scalar to avoid data-dependent guard on the weight parameter.
     decomp_table[torch.ops.aten.lerp.Scalar] = _lerp_scalar_decomp
     return decomp_table

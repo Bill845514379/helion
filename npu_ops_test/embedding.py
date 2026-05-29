@@ -21,12 +21,18 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
+
 # %%
 # Embedding Kernel
 # ----------------
 
+
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full"
+)
 def embedding(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     """
     Performs embedding lookup for input indices.
@@ -41,16 +47,12 @@ def embedding(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
         Output tensor of shape [*x.shape, embedding_dim] containing the embedding vectors
     """
     x_flat = x.reshape(-1)  # collapse x into a single dimension
-    vocab_size, embedding_dim = weight.size()
+    _, embedding_dim = weight.size()
     out = torch.empty(
         [x_flat.size(0), embedding_dim], dtype=weight.dtype, device=weight.device
     )
     for tile_b, tile_e in hl.tile([x_flat.size(0), embedding_dim]):
-        # Ascend may still form MTE addresses for masked lanes in indirect tl.load.
-        # Clamping keeps row*stride inside the embedding table; masked lanes use load
-        # padding / masked stores, matching F.embedding for in-range indices.
-        row = torch.clamp(x_flat[tile_b], min=0, max=vocab_size - 1)
-        out[tile_b, tile_e] = weight[row, tile_e]
+        out[tile_b, tile_e] = weight[x_flat[tile_b], tile_e]
     # restore the original shape
     return out.view(*x.size(), embedding_dim)
 
@@ -100,7 +102,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    import time
-    time_st = time.time()
     main()
-    print(f"time cost: {time.time() - time_st}")

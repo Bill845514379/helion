@@ -45,16 +45,20 @@ def concat2d_dim1(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     assert x.size(0) == y.size(0)
     m = x.size(0)
     n1 = x.size(1)
+    n2 = y.size(1)
     out = torch.empty(
-        [m, n1 + y.size(1)], dtype=x.dtype, device=x.device
+        [m, n1 + n2], dtype=x.dtype, device=x.device
     )
-    # Tile x and y columns separately instead of one pass over out with extra_mask /
-    # (tile1.index - n1). Ascend MTE can fault on masked loads when lane indices are
-    # out of bounds or negative in the same vector op as the example in examples/concatenate.py.
-    for tile0 in hl.tile(m):
-        for tile1 in hl.tile(n1):
+
+    block_m = hl.register_block_size(128)
+    block_n1 = hl.register_block_size(128)
+    block_n2 = hl.register_block_size(128)
+
+    # Tile x and y columns separately to avoid MTE faults
+    for tile0 in hl.tile(m, block_size=block_m):
+        for tile1 in hl.tile(n1, block_size=block_n1):
             out[tile0, tile1] = x[tile0, tile1]
-        for tile1 in hl.tile(y.size(1)):
+        for tile1 in hl.tile(n2, block_size=block_n2):
             out[tile0, tile1 + n1] = y[tile0, tile1]
     return out
 

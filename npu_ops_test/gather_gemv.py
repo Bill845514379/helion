@@ -39,41 +39,46 @@ if TYPE_CHECKING:
 
 # %%
 @helion.kernel(ignore_warnings=[helion.exc.TensorOperationInWrapper], autotune_ignore_errors=True, autotune_effort="full")
-def gather_gemv(w: Tensor, idx: Tensor, x: Tensor) -> Tensor:
-    B, S1, S2 = w.size()
-    N = idx.size(0)
-    S = x.size(0)
-    assert S1 == S2
-    assert S == S1
+def _gemv_kernel(w_gathered: Tensor, x: Tensor) -> Tensor:
+    """Batched GEMV: w_gathered[N,S,S] @ x[S] -> [N,S] using Helion kernel.
 
-    w_view = w.contiguous().view(B * S, S).to(x.dtype)  # [B*S, S]
-    x = x.view(S, 1)  # [S, 1]
-    out = torch.empty([N * S, 1], dtype=x.dtype, device=x.device)
+    Tiled reduction: for each (n, m) tile, sum w[n,m,k]*x[k] over k tiles.
+    """
+    N, S, _ = w_gathered.size()
+    out_dtype = x.dtype
+    out = torch.empty([N, S], dtype=out_dtype, device=w_gathered.device)
 
-    for tile_n_s in hl.tile(N * S):
-        acc = hl.zeros([tile_n_s, 1], dtype=torch.float32)
-
-        n_idx = tile_n_s.index
-        which_idx = (n_idx / S).to(torch.int32)
-
-        idx_gather = idx[which_idx]  # [tile_n_s]
-
-        row_offset = idx_gather * S + (n_idx % S)  # [tile_n_s]
-
+    for tile_n, tile_s in hl.tile([N, S]):
+        acc = hl.zeros([tile_n, tile_s], dtype=torch.float32)
         for tile_k in hl.tile(S):
-            # gathered: [tile_n_s, tile_k] -
-            gathered = w_view[row_offset, tile_k]  # [tile_n_s, tile_k]
+            # w_gathered[tile_n, tile_s, tile_k]: [tile_n, tile_s, tile_k]
+            # x[tile_k]: [tile_k]
+            # Broadcast multiply then sum over k dim
+            w_block = w_gathered[tile_n, tile_s, tile_k]
+            x_block = x[tile_k]
+            products = w_block * x_block[None, None, :]
+            acc += torch.sum(products, dim=-1)
+        out[tile_n, tile_s] = acc.to(out_dtype)
 
-            # x_val: [tile_k, 1] -
-            x_val = x[tile_k, :]  # [tile_k, 1]
+    return out
 
-            # [tile_n_s, tile_k] @ [tile_k, 1] = [tile_n_s, 1]
-            #  sum replace dot
-            acc += (gathered.to(torch.float32) * x_val.to(torch.float32).T).sum(dim=1, keepdim=True)
 
-        out[tile_n_s, :] = acc.to(x.dtype)
+def gather_gemv(w: Tensor, idx: Tensor, x: Tensor) -> Tensor:
+    """
+    Performs a gather operation on w using idx, then matrix-vector multiplication with x.
 
-    return out.contiguous().view(N, S)
+    Args:
+        w (Tensor): Weight matrix of shape [B, S, S] where B is batch size, S is sequence length.
+        idx (Tensor): Index tensor of shape [N] containing indices to gather from dimension 0 of w.
+        x (Tensor): Vector of shape [S] to multiply with the gathered matrices.
+
+    Returns:
+        Tensor: Result of shape [N, S] where each row i is w[idx[i]] @ x.
+    """
+    # Gather w[idx] -> [N, S, S], cast to x's dtype
+    w_gathered = w[idx.long()].to(x.dtype)
+    # GEMV via Helion kernel
+    return _gemv_kernel(w_gathered, x)
 
 
 # %%
@@ -103,7 +108,7 @@ def check(B: int, S: int, N: int) -> None:
             outputs.append(w[idx_val].to(x.dtype) @ x)
         return torch.stack(outputs, dim=0)
 
-    run_example(gather_gemv, baseline_gather_gemv, (w, idx, x))
+    run_example(gather_gemv, baseline_gather_gemv, (w, idx, x), use_wall_clock=True)
 
 
 # %%
@@ -142,7 +147,7 @@ def main() -> None:
     """
     # Test with sizes from tritonbench
     B = 8  # Batch size, could be number of experts in MoE
-    N = 2  # Number of indices, experts selected
+    N = 64  # Number of indices, experts selected
     for i in range(11, 15):
         S = 2**i
         print(f"Testing with B={B}, S={S}, N={N}")

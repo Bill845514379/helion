@@ -148,7 +148,7 @@ def check(m: int, k: int, n: int) -> None:
     y = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE)
     weight = torch.randn([n], device=DEVICE, dtype=HALF_DTYPE)
     bias = torch.randn([n], device=DEVICE, dtype=HALF_DTYPE)
-    run_example(matmul_layernorm, matmul_layernorm_pytorch, (x, y, weight, bias))
+    run_example(matmul_layernorm, matmul_layernorm_pytorch, (x, y, weight, bias), use_wall_clock=True)
 
 
 # %%

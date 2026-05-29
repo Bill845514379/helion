@@ -172,7 +172,7 @@ def test(
     dt = fn(batch, nheads, nchunks, chunk_size)
     dA_cumsum = fn(batch, nheads, nchunks, chunk_size)
     args = (B, x, dt, dA_cumsum)
-    run_example(helion_mamba2_chunk_state_kernel, ref_chunk_state, args)
+    run_example(helion_mamba2_chunk_state_kernel, ref_chunk_state, args, use_wall_clock=True)
 
 
 # %%

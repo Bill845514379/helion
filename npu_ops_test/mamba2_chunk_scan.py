@@ -233,7 +233,7 @@ def test(
     prev_states = fn(batch, nchunks, nheads, headdim, dstate)
     D = fn(nheads)
     args = (cb, x, dt, dA_cumsum, C, prev_states, D)
-    run_example(helion_mamba2_chunk_scan_kernel, ref_chunk_scan, args)
+    run_example(helion_mamba2_chunk_scan_kernel, ref_chunk_scan, args, use_wall_clock=True)
 
 
 # %%

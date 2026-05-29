@@ -419,6 +419,7 @@ def check(m: int, k: int, n: int) -> None:
             bwd=bwd,
             rtol=_AUTOTUNE_BASELINE_RTOL,
             atol=_AUTOTUNE_BASELINE_ATOL,
+            use_wall_clock=True
         )
 
 
