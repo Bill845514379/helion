@@ -79,23 +79,8 @@ def _fma_f32x2(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor) -> torch.Tenso
 # pyrefly: ignore [no-matching-overload]
 @helion.kernel(
     autotune_ignore_errors=True,
-    autotune_effort="full",
-    configs=[
-        helion.Config(
-            block_sizes=[256, N],
-            range_warp_specializes=[OUTER_LOOP or None, None if OUTER_LOOP else True],
-            range_multi_buffers=[None, False],
-            pid_type="persistent_interleaved",
-            indexing="tensor_descriptor",
-            num_warps=4,
-            num_stages=3,
-        )
-        for N in [64, 128]
-        for OUTER_LOOP in [True]
-        for maxreg in [152, 192]
-    ],
+    autotune_effort="quick",
     static_shapes=True,
-    autotune_accuracy_check=False,
 )
 def blackwell_attention_kernel(
     q_in: torch.Tensor, k_in: torch.Tensor, v_in: torch.Tensor, qk_scale: float
@@ -137,7 +122,6 @@ def blackwell_attention_kernel(
     assert N % block_n == 0
     SUBTILING = False
     VECT_MUL = 1
-    qk_scale = qk_scale * 1.44269504  # 1/log(2)
     for tile_m in hl.tile(MM, block_size=block_m):
         m_i = hl.zeros([tile_m]) - float("inf")
         l_i = hl.zeros([tile_m]) + 1.0
@@ -149,16 +133,17 @@ def blackwell_attention_kernel(
             k_j = k[tile_n + start_N, :]
             v_j = v[tile_n + start_N, :]
             qk = hl.dot(q_i, k_j.T, out_dtype=torch.float32)
-            m_ij = torch.maximum(m_i, torch.amax(qk, -1) * qk_scale)
+            qk = qk * qk_scale
+            m_ij = torch.maximum(m_i, torch.amax(qk, -1))
             if VECT_MUL == 2 or VECT_MUL == 3:
                 # pyrefly: ignore [bad-argument-type]
-                qk = _fma_f32x2(qk, qk_scale, -m_ij[:, None])
+                qk = _fma_f32x2(qk, 1.0, -m_ij[:, None])
             else:
-                qk = qk * qk_scale - m_ij[:, None]
+                qk = qk - m_ij[:, None]
 
-            p = torch.exp2(qk)
+            p = torch.exp(qk)
             # -- compute correction factor
-            alpha = torch.exp2(m_i - m_ij)
+            alpha = torch.exp(m_i - m_ij)
             l_ij = torch.sum(p, -1)
 
             if SUBTILING:
@@ -192,7 +177,7 @@ def blackwell_attention_kernel(
             l_i = l_i * alpha + l_ij
             m_i = m_ij
 
-        m_i += torch.log2(l_i)
+        m_i += torch.log(l_i)
         acc = acc / l_i[:, None]
         lse[tile_m] = m_i
         o[tile_m, :] = acc
@@ -250,10 +235,12 @@ def test(
         p = torch.softmax(p.float(), dim=-1).to(dtype)
         return torch.matmul(p, v)
 
-    baselines = {
+    baselines: dict[str, Callable[..., torch.Tensor]] = {
         "torch": torch.nn.functional.scaled_dot_product_attention,
-        "ref": ref_attention,
     }
+    # Only add the O(n^2) reference for small sequences (avoids OOM)
+    if n_ctx <= 2048:
+        baselines["ref"] = ref_attention
 
     run_example(
         lambda *args: blackwell_attention(*args)[0],
@@ -280,8 +267,11 @@ def main() -> None:
     Main entry point that runs the attention kernel test with specific parameters.
     Tests with batch size 2, 32 heads, 1024 sequence length, and 64-dimensional heads using float16.
     """
-    test(4, 32, 8192, 64, torch.bfloat16)
-    test(4, 32, 8192, 128, torch.bfloat16)
+    # Use smaller shapes on NPU to avoid OOM (ref_attention is O(n^2) memory)
+    import torch_npu  # noqa: F401
+    torch_npu.npu.config.allow_internal_format = True
+    test(2, 32, 1024, 64, torch.bfloat16)
+    test(2, 32, 2048, 64, torch.bfloat16)
 
 
 if __name__ == "__main__":

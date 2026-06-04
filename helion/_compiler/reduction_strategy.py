@@ -197,10 +197,11 @@ class PersistentReductionStrategy(ReductionStrategy):
     ) -> None:
         env = CompileEnvironment.current()
         numel = env.block_sizes[block_index].numel
+        is_npu = env.backend.name == "ascend"
         if (
             isinstance(numel, (int, sympy.Integer))
             and integer_power_of_two(int(numel))
-            and not env.backend.force_tile_mask()
+            and (is_npu or not env.backend.force_tile_mask())
         ):
             mask_var: str | None = None
         else:
@@ -328,9 +329,10 @@ class LoopedReductionStrategy(ReductionStrategy):
         block_size: int,
     ) -> None:
         env = CompileEnvironment.current()
+        is_npu = env.backend.name == "ascend"
         if env.known_multiple(
             env.block_sizes[block_index].numel, block_size
-        ) and not env.backend.force_tile_mask():
+        ) and (is_npu or not env.backend.force_tile_mask()):
             mask_var: str | None = None
         else:
             mask_var = fn.new_var(f"mask_{block_index}", dce=True)

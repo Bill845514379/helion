@@ -505,10 +505,17 @@ class DeviceFunction:
     ) -> TensorArg:
         if fake_value not in self._tensor_args:
             origin = HostFunction.current().tensor_to_origin[fake_value]
+            host_str = origin.host_str()
+            # NPU (Ascend) Triton backend has catastrophic performance on
+            # non-contiguous tensor accesses.  Insert .contiguous() in the
+            # host wrapper so the kernel always receives contiguous data.
+            if hasattr(torch, "npu") and torch.npu.is_available():
+                if not fake_value.is_contiguous():
+                    host_str = f"{host_str}.contiguous()"
             arg = TensorArg(
                 self.new_var(prefer_name or origin.suggest_var_name()),
                 fake_value,
-                origin.host_str(),
+                host_str,
             )
             self.arguments.append(arg)
             self._tensor_args[fake_value] = arg

@@ -535,9 +535,14 @@ class BoundKernel(_AutotunableKernel, Generic[_R]):
             if output_origin_lines is None:
                 output_origin_lines = self.settings.output_origin_lines
             with measure("BoundKernel.unparse"):
-                return get_needed_imports(root) + unparse(
+                from helion._compiler.output_header import (
+                    postprocess_generated_code,
+                )
+
+                code = get_needed_imports(root) + unparse(
                     root, output_origin_lines=output_origin_lines
                 )
+                return postprocess_generated_code(code)
 
     def compile_config(
         self, config: ConfigLike | None = None, *, allow_print: bool = True

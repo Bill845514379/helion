@@ -21,6 +21,7 @@ torch_npu.npu.config.allow_internal_format = True
 
 import helion
 from helion._testing import DEVICE
+from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
 
@@ -30,7 +31,13 @@ import helion.language as hl
 
 
 # %%
-@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    config=helion.Config(
+        block_sizes=[32, 1024, 512],
+        pid_type="flat",
+    ),
+    static_shapes=True,
+)
 def concat2d_dim1(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Concatenates two 2D tensors along dimension 1 (columns).
@@ -49,16 +56,10 @@ def concat2d_dim1(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     out = torch.empty(
         [m, n1 + n2], dtype=x.dtype, device=x.device
     )
-
-    block_m = hl.register_block_size(128)
-    block_n1 = hl.register_block_size(128)
-    block_n2 = hl.register_block_size(128)
-
-    # Tile x and y columns separately to avoid MTE faults
-    for tile0 in hl.tile(m, block_size=block_m):
-        for tile1 in hl.tile(n1, block_size=block_n1):
+    for tile0 in hl.tile(m):
+        for tile1 in hl.tile(n1):
             out[tile0, tile1] = x[tile0, tile1]
-        for tile1 in hl.tile(n2, block_size=block_n2):
+        for tile1 in hl.tile(n2):
             out[tile0, tile1 + n1] = y[tile0, tile1]
     return out
 
@@ -74,8 +75,8 @@ def main() -> None:
     Main entry point that runs the concatenation kernel verification.
     Tests with two tensors of shapes [1500, 400] and [1500, 600].
     """
-    x = torch.randn([1500, 400], device=DEVICE)
-    y = torch.randn([1500, 600], device=DEVICE)
+    x = torch.randn([1500, 400], device=DEVICE, dtype=HALF_DTYPE)
+    y = torch.randn([1500, 600], device=DEVICE, dtype=HALF_DTYPE)
     run_example(concat2d_dim1, lambda x, y: torch.cat([x, y], dim=1), (x, y))
 
 

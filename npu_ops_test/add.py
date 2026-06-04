@@ -35,7 +35,7 @@ import helion.language as hl
     static_shapes=True,
     autotune_ignore_errors=True,
     autotune_effort="full",
-)
+  )
 def add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Add two tensors element-wise with broadcasting support.
@@ -91,7 +91,7 @@ def main() -> None:
     """
     Main entry point that runs the add kernel verification with 1024x1024 tensors.
     """
-    check(1024, 1024)
+    check(8192, 8192)
 
 
 if __name__ == "__main__":

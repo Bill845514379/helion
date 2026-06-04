@@ -29,9 +29,7 @@ def exp_fwd_reference(x: torch.Tensor) -> torch.Tensor:
 
 
 @helion.kernel(
-    autotune_ignore_errors=True,
-    autotune_effort="full",
-    autotune_baseline_fn=exp_fwd_reference,
+    config=helion.Config(block_sizes=[8192], pid_type='flat'),
     static_shapes=True,
 )
 def exp_fwd(x: torch.Tensor) -> torch.Tensor:
@@ -57,9 +55,7 @@ def exp_bwd_reference(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:
 
 # %%
 @helion.kernel(
-    autotune_ignore_errors=True,
-    autotune_effort="full",
-    autotune_baseline_fn=exp_bwd_reference,
+    config=helion.Config(block_sizes=[8192], pid_type='flat'),
     static_shapes=True,
 )
 def exp_bwd(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:

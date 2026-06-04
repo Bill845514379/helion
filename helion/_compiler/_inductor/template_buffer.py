@@ -178,9 +178,12 @@ class HelionTemplateBuffer(TritonTemplateBuffer):
                     node.id = module_level_vars[node.id]
 
         # Unparse AST to Triton source code
+        from helion._compiler.output_header import postprocess_generated_code
+
         triton_code = get_needed_imports(root) + unparse(
             root, output_origin_lines=self._bound_kernel.settings.output_origin_lines
         )
+        triton_code = postprocess_generated_code(triton_code)
         return PartialRender(triton_code, {})
 
     def call_kernel(

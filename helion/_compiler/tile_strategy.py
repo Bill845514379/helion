@@ -597,12 +597,13 @@ class FlattenedTileStrategy(BlockSizeTileStrategy):
         assert isinstance(block_size, (int, torch.SymInt))
         super().__init__(fn, block_ids, block_size, loop_order)
         env = CompileEnvironment.current()
-        if not env.backend.force_tile_mask() and env.known_multiple(
+        is_npu = env.backend.name == "ascend"
+        if env.known_multiple(
             functools.reduce(
                 operator.mul, [env.block_sizes[i].numel for i in block_ids]
             ),
             block_size,
-        ):
+        ) and (is_npu or not env.backend.force_tile_mask()):
             self._mask_var = None
         else:
             self._mask_var: str | None = self.new_var("mask", dce=True)
@@ -1177,9 +1178,10 @@ class NDTileStrategy(_BaseNDTileStrategy):
         end: object,
     ) -> ast.stmt | None:
         env = CompileEnvironment.current()
-        if not env.backend.force_tile_mask() and env.block_sizes[
+        is_npu = env.backend.name == "ascend"
+        if env.block_sizes[
             block_idx
-        ].known_multiple(block_size):
+        ].known_multiple(block_size) and (is_npu or not env.backend.force_tile_mask()):
             self.mask_vars[block_idx] = None
             return None
         self.mask_vars[block_idx] = mask_var = self.fn.new_var(

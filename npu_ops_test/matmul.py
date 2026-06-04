@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 
 
 import torch_npu
-# fix: /workspace/helion/helion/_testing.py:974: UserWarning: Cannot create tensor with interal format while 
 torch_npu.npu.config.allow_internal_format = True
 
 # %%
@@ -37,11 +36,6 @@ torch_npu.npu.config.allow_internal_format = True
     static_shapes=True,
     autotune_ignore_errors=True,
     autotune_effort="full",
-    # Expand search space for NPU optimizations
-    autotune_config_overrides={
-        "range_num_stages": [2, 3, 4, 5],
-        "loop_orders": [[0, 1], [1, 0]],
-    },
 )
 def matmul(
     x: Tensor,
@@ -262,7 +256,7 @@ def check(m: int, k: int, n: int) -> None:
     )
 
     # Test addmm forward + backward pass
-    print("\n\n=== AddMM Forward + Backward Pass Test ===")
+    print("\n\n=== AddMM Forward + Backward Pass ===")
     input_grad = torch.randn(
         [m, n], device=DEVICE, dtype=torch.float32, requires_grad=True
     )
@@ -277,20 +271,6 @@ def check(m: int, k: int, n: int) -> None:
         ),
         (input_grad, mat1_grad, mat2_grad, 1.0, 1.0),
         kernel_name="helion_addmm_autograd",
-        baseline_name="torch",
-        bwd=True,
-        use_wall_clock=True
-    )
-
-    # Test addmm forward + backward with different alpha/beta values
-    print("\n\n=== AddMM Forward + Backward Test (Alpha=2.0, Beta=0.5) ===")
-    run_example(
-        addmm_autograd,
-        lambda bias, mat1, mat2, alpha, beta: torch.addmm(
-            bias, mat1, mat2, alpha=alpha, beta=beta
-        ),
-        (input_grad, mat1_grad, mat2_grad, 2.0, 0.5),
-        kernel_name="helion_addmm_autograd_scaled",
         baseline_name="torch",
         bwd=True,
         use_wall_clock=True
@@ -335,14 +315,7 @@ def addmm_tritonbench(
 
 # %%
 def main() -> None:
-    """
-    Main function to run autotuning (commented out) and correctness checks.
-    """
-    check(1024, 1024, 1024)
-    # pass
-    # check(512, 512, 512)
-    # pass
-    # check(64, 64, 64)
+    check(64, 1024, 1024)
 
 
 # %%

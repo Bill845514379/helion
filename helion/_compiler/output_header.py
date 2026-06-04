@@ -70,6 +70,43 @@ def get_needed_imports(root: ast.AST) -> str:
     newline = "\n"
     return f"from __future__ import annotations\n\n{newline.join(result)}\n\n"
 
+def _replace_function_call(code: str, old_name: str, new_name: str) -> str:
+    """Replace `old_name(args)` with `new_name(args)` in code.
+
+    Handles nested parentheses in arguments (e.g., `f(g(a), b)`).
+    """
+    pattern = old_name + "("
+    result = code
+    offset = 0
+    while True:
+        idx = result.find(pattern, offset)
+        if idx == -1:
+            break
+        # Find matching closing paren
+        paren_count = 1
+        j = idx + len(pattern)
+        while j < len(result) and paren_count > 0:
+            if result[j] == "(":
+                paren_count += 1
+            elif result[j] == ")":
+                paren_count -= 1
+            j += 1
+        # Replace old_name with new_name (keep the parens and args)
+        result = result[:idx] + new_name + result[idx + len(old_name):]
+        offset = idx + len(new_name) + (j - idx - len(pattern))
+    return result
+
+
+def postprocess_generated_code(code: str) -> str:
+    """Post-process generated Triton code to use native instructions.
+
+    Replaces `triton_helpers.maximum/minimum(a, b)` with `tl.maximum/minimum(a, b)`
+    to eliminate Python function call overhead on NPU (Ascend). Also removes the
+    `triton_helpers` import if no other `triton_helpers.xxx` calls remain.
+    """
+    code = _replace_function_call(code, "triton_helpers.maximum", "tl.maximum")
+    code = _replace_function_call(code, "triton_helpers.minimum", "tl.minimum")
+    return code
 
 def assert_no_conflicts(fn: FunctionType) -> None:
     """
