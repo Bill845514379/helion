@@ -36,7 +36,7 @@ from torch.fx.interpreter import Interpreter
 from torch.fx.node import Node
 from torch.fx.node import map_arg
 
-from .. import exc, is_npu
+from .. import exc
 from ..exc import InductorLoweringError
 from ..language._decorators import APIFunc
 from ..language._decorators import is_api_func
