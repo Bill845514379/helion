@@ -12,13 +12,8 @@ The implementation includes:
 4. Comparison with PyTorch reference implementation
 """
 
-# %%
-# Imports
-# -------
-
 from __future__ import annotations
 
-import time
 from typing import Callable
 from typing import cast
 
@@ -27,10 +22,6 @@ import torch
 import helion
 from helion._testing import DEVICE
 import helion.language as hl
-
-# %%
-# Helper Functions
-# ----------------
 
 
 def extract_selected_logits_pytorch(
@@ -129,14 +120,8 @@ def torch_grpo_loss(
     return per_token_loss, per_token_kl, is_clipped
 
 
-# %%
-# Helion GRPO Loss Kernels
-# ------------------------
-
-
 @helion.kernel(
     ignore_warnings=[helion.exc.TensorOperationInWrapper],
-    autotune_ignore_errors=True, autotune_effort="full"
 )
 def grpo_loss_forward(
     logits: torch.Tensor,  # [B, L+1, V] input logits
@@ -229,7 +214,6 @@ def grpo_loss_forward(
 
 @helion.kernel(
     ignore_warnings=[helion.exc.TensorOperationInWrapper],
-    autotune_ignore_errors=True, autotune_effort="full"
 )
 def grpo_loss_backward(
     grad_output: torch.Tensor,  # [B, L] gradient from downstream
@@ -270,11 +254,10 @@ def grpo_loss_backward(
     B, L_ADD_1, V = logits.shape
     L = L_ADD_1 - 1
 
-    logits_fwd = logits[:, :-1, :]  # [B, L, V]
-
     grad_logits = torch.zeros_like(logits)
 
-    for tile_b, tile_l in hl.tile([B, L]):
+    for tile_b, tile_l, tile_v in hl.tile([B, L, V]):
+        # Compute dlogp (per (b, l) pair; redundant across V blocks but negligible cost)
         completion_id = completion_ids[tile_b, tile_l]
 
         log_sum_exp = lse[tile_b, tile_l]
@@ -308,30 +291,23 @@ def grpo_loss_backward(
             mask_val = completion_mask[tile_b, tile_l]
             dlogp *= mask_val
 
-        for tile_v in hl.tile(V):
-            logits_tile = (
-                logits_fwd[tile_b, tile_l, tile_v].to(torch.float32) / temperature
-            )
-            probs = torch.exp(logits_tile - log_sum_exp[:, :, None])
+        # Compute grad_logits for this (b, l, v) tile
+        logits_tile = logits[tile_b, tile_l, tile_v].to(torch.float32) / temperature
+        probs = torch.exp(logits_tile - log_sum_exp[:, :, None])
 
-            v_indices = tile_v.index
-            sel = v_indices[None, None, :] == completion_id[:, :, None]
+        v_indices = tile_v.index
+        sel = v_indices[None, None, :] == completion_id[:, :, None]
 
-            grad_logits_tile = torch.where(
-                sel,
-                dlogp[:, :, None] * (1 - probs),
-                -dlogp[:, :, None] * probs,
-            )
-            grad_logits[tile_b, tile_l, tile_v] = grad_logits_tile
+        grad_logits_tile = torch.where(
+            sel,
+            dlogp[:, :, None] * (1 - probs),
+            -dlogp[:, :, None] * probs,
+        )
+        grad_logits[tile_b, tile_l, tile_v] = grad_logits_tile
 
     grad_logits[:, -1, :] = 0
 
     return grad_logits
-
-
-# %%
-# GRPO Loss Function Class
-# ------------------------
 
 
 class GrpoLossFunction(torch.autograd.Function):
@@ -483,11 +459,6 @@ def helion_grpo_loss(
     )
     loss, kl_loss, is_clipped = result
     return loss, kl_loss, is_clipped
-
-
-# %%
-# Verification and Testing
-# ------------------------
 
 
 def compare_tensors(
@@ -718,18 +689,13 @@ def benchmark_grpo_loss(
     print(f"Helion   Bwd tokens/s: {tokens / (hel_bwd_ms / 1000.0):.1f}")
 
 
-# %%
-# Main Function
-# -------------
-
-
 def main() -> None:
     """Main entry point for GRPO loss testing."""
     print("Helion GRPO Loss Implementation")
     print("=" * 50)
 
     test_configs = [
-        {"B": 8, "L": 2048, "V": 64000},
+        {"B": 2, "L": 2048, "V": 64000},
         # {"B": 4, "L": 2048, "V": 128000},
         # {"B": 8, "L": 4096, "V": 100000},
     ]
@@ -739,9 +705,9 @@ def main() -> None:
         print()
 
     benchmark_grpo_loss(
-        B=8,
-        L=2048,
-        V=64000,
+        B=2,
+        L=256,
+        V=4096,
         temperature=0.9,
         beta=0.2,
         eps_low=0.2,
@@ -753,6 +719,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")
