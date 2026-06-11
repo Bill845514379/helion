@@ -9,7 +9,6 @@ import itertools
 import json
 import logging
 import os
-from collections.abc import Iterator
 from pathlib import Path
 import shutil
 import tempfile
@@ -28,6 +27,7 @@ from .base_cache import LooseAutotuneCacheKey
 from .base_cache import StrictAutotuneCacheKey
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from collections.abc import Sequence
 
     from .base_search import BaseSearch
@@ -86,9 +86,7 @@ def should_force_npu_volatile_triton_cache(device: torch.device) -> bool:
         return False
     if npu_persistent_triton_cache_requested():
         return False
-    if triton_env_is_helion_autotune_ephemeral():
-        return False
-    return True
+    return not triton_env_is_helion_autotune_ephemeral()
 
 
 _per_config_triton_cache_override: str | None = None
@@ -112,7 +110,11 @@ def get_per_config_triton_cache_override() -> str | None:
 
 def autotune_fresh_triton_subdir_per_benchmark() -> bool:
     """Env ``HELION_AUTOTUNE_FRESH_TRITON_SUBDIR_PER_BENCHMARK``: isolated disk cache per search candidate."""
-    v = os.environ.get("HELION_AUTOTUNE_FRESH_TRITON_SUBDIR_PER_BENCHMARK", "").strip().lower()
+    v = (
+        os.environ.get("HELION_AUTOTUNE_FRESH_TRITON_SUBDIR_PER_BENCHMARK", "")
+        .strip()
+        .lower()
+    )
     return v in ("1", "true", "yes", "on")
 
 

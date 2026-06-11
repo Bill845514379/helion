@@ -1110,6 +1110,7 @@ def codegen_gather(ctx: LoweringContext, node: Node) -> object:
 
     return expr_from_string(result_var)
 
+
 clamp_lowering = register_lowering(
     torch.ops.aten.clamp.default,
     masked_value_fn=passthrough_masked_value,
@@ -1127,7 +1128,7 @@ def codegen_clamp(ctx: LoweringContext, node: Node) -> object:
 
     result_var = fn.new_var("clamp_result")
 
-    def _format_arg(arg, name):
+    def _format_arg(arg: object, name: str) -> tuple[str, dict]:
         if isinstance(arg, torch.fx.Node):
             ast_node = _env_arg(ctx, arg)
             assert isinstance(ast_node, ast.AST)
@@ -1151,7 +1152,7 @@ def codegen_clamp(ctx: LoweringContext, node: Node) -> object:
         max_val = node.args[2]
         if min_val is None and max_val is None:
             return input_ast
-        elif min_val is None:
+        if min_val is None:
             # clamp(input, None, max)
             max_str, max_kwargs = _format_arg(max_val, "max_val")
             ctx.cg.add_statement(
@@ -1187,6 +1188,7 @@ def codegen_clamp(ctx: LoweringContext, node: Node) -> object:
         return input_ast
 
     return expr_from_string(result_var)
+
 
 topk_lowering = register_lowering(torch.ops.aten.topk.default)
 

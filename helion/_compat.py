@@ -283,29 +283,34 @@ if triton_is_available():
             # First check if we're using Triton-ascend backend
             try:
                 from triton.runtime.driver.active import get_current_target
+
                 target = get_current_target()
                 # Check if the target or backend is Ascend-specific
-                if hasattr(target, 'backend') and target.backend == 'ascend':
+                if hasattr(target, "backend") and target.backend == "ascend":
                     return False
-                if hasattr(target, '__class__') and 'ascend' in target.__class__.__name__.lower():
+                if (
+                    hasattr(target, "__class__")
+                    and "ascend" in target.__class__.__name__.lower()
+                ):
                     return False
             except Exception:
                 pass
-            
+
             # Check if current device is NPU
             import torch
+
             try:
                 # Check the current device type
                 if torch.cuda.is_available():
-                    device = torch.device('cuda')
-                    if device.type == 'npu':
+                    device = torch.device("cuda")
+                    if device.type == "npu":
                         return False
                 # Check if NPU device type exists and is available
-                if hasattr(torch, 'npu') and torch.npu.is_available():
+                if hasattr(torch, "npu") and torch.npu.is_available():
                     return False
             except Exception:
                 pass
-                
+
             # Check Triton version for other backends
             return version.parse(triton.__version__) >= version.parse("3.0")
         except Exception:
@@ -383,8 +388,11 @@ def safe_clear_cache() -> None:
     """
     try:
         from triton import runtime
+
         # Check if driver has clear_cache method
-        if hasattr(runtime.driver.active, 'clear_cache') and hasattr(runtime.driver.active, 'get_empty_cache_for_benchmark'):
+        if hasattr(runtime.driver.active, "clear_cache") and hasattr(
+            runtime.driver.active, "get_empty_cache_for_benchmark"
+        ):
             cache = runtime.driver.active.get_empty_cache_for_benchmark()
             runtime.driver.active.clear_cache(cache)
     except Exception:
@@ -567,10 +575,12 @@ def supports_maxnreg() -> bool:
 @functools.cache
 def _supports_maxnreg() -> bool:
     # Check if we're not on HIP (AMD), XPU (Intel), or NPU (Ascend) devices
-    return (torch.version.hip is None and 
-            torch.version.xpu is None and 
-            not hasattr(torch, 'npu') and 
-            not hasattr(torch, 'ascend'))
+    return (
+        torch.version.hip is None
+        and torch.version.xpu is None
+        and not hasattr(torch, "npu")
+        and not hasattr(torch, "ascend")
+    )
 
 
 @functools.cache
@@ -600,11 +610,12 @@ def extract_device(args: Sequence[object]) -> torch.device | None:
             return arg[0].device
     return None
 
-def register_npu_backend():
+
+def register_npu_backend() -> None:
     """Register Inductor backend for NPU device"""
-    from torch_npu._inductor.codegen.wrapper import NPUWrapperCodeGen
     from torch._inductor.codegen.common import register_backend_for_device
     from torch._inductor.codegen.triton import TritonScheduling
+    from torch_npu._inductor.codegen.wrapper import NPUWrapperCodeGen
 
     register_backend_for_device(
         device="npu",  # or "privateuseone" if NPU is a custom device
@@ -612,7 +623,8 @@ def register_npu_backend():
         device_wrapper_codegen=NPUWrapperCodeGen,
     )
 
-def _register_interface_for_device():
+
+def _register_interface_for_device() -> None:
     from torch._dynamo.device_interface import register_interface_for_device
     from torch_npu.utils._dynamo_device import NpuInterface
 

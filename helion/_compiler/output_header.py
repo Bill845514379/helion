@@ -70,6 +70,7 @@ def get_needed_imports(root: ast.AST) -> str:
     newline = "\n"
     return f"from __future__ import annotations\n\n{newline.join(result)}\n\n"
 
+
 def _replace_function_call(code: str, old_name: str, new_name: str) -> str:
     """Replace `old_name(args)` with `new_name(args)` in code.
 
@@ -92,7 +93,7 @@ def _replace_function_call(code: str, old_name: str, new_name: str) -> str:
                 paren_count -= 1
             j += 1
         # Replace old_name with new_name (keep the parens and args)
-        result = result[:idx] + new_name + result[idx + len(old_name):]
+        result = result[:idx] + new_name + result[idx + len(old_name) :]
         offset = idx + len(new_name) + (j - idx - len(pattern))
     return result
 
@@ -105,8 +106,8 @@ def postprocess_generated_code(code: str) -> str:
     `triton_helpers` import if no other `triton_helpers.xxx` calls remain.
     """
     code = _replace_function_call(code, "triton_helpers.maximum", "tl.maximum")
-    code = _replace_function_call(code, "triton_helpers.minimum", "tl.minimum")
-    return code
+    return _replace_function_call(code, "triton_helpers.minimum", "tl.minimum")
+
 
 def assert_no_conflicts(fn: FunctionType) -> None:
     """
