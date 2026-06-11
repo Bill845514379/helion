@@ -15,7 +15,6 @@ The example includes:
 - A check function to validate the Helion kernel against the reference.
 """
 
-# %%
 from __future__ import annotations
 
 import torch
@@ -27,7 +26,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
 @helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
 def moe_matmul_ogs(
     A: torch.Tensor,  # [T, K] - Input activations (T tokens, K features)
@@ -85,7 +83,6 @@ def moe_matmul_ogs(
     return C
 
 
-# %%
 def moe_matmul_ogs_helion_kernel_args_gen(
     A: torch.Tensor,  # [T, K] - Input activations
     W: torch.Tensor,  # [E, K, N] - Expert weights
@@ -124,7 +121,6 @@ def moe_matmul_ogs_helion_kernel_args_gen(
     )
 
 
-# %%
 def moe_matmul_ogs_reference(
     A: torch.Tensor, W: torch.Tensor, top1_expert_per_token: torch.Tensor
 ) -> torch.Tensor:
@@ -151,7 +147,6 @@ def moe_matmul_ogs_reference(
     return C
 
 
-# %%
 def check(T: int, K: int, N: int, n_experts: int) -> None:
     """
     Validates the Helion MoE matmul OGS kernel against the reference implementation.
@@ -181,7 +176,6 @@ def check(T: int, K: int, N: int, n_experts: int) -> None:
     run_example(helion_fn, reference_fn, ())
 
 
-# %%
 def main() -> None:
     """
     Main entry point to run the MoE matmul OGS kernel check with example parameters.
@@ -189,9 +183,9 @@ def main() -> None:
     check(1000, 500, 200, 30)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

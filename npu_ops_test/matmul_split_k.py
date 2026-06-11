@@ -13,7 +13,6 @@ The example includes:
 - A wrapper for integration with tritonbench.
 """
 
-# %%
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -31,7 +30,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def matmul_split_k(
     x: torch.Tensor,
@@ -71,7 +69,7 @@ def matmul_split_k(
         hl.atomic_add(out, [tile_m, tile_n], acc)
     return out
 
-# %%
+
 def check(m: int, k: int, n: int) -> None:
     """
     Validates the matmul_split_k kernel against PyTorch's matmul and linear functions.
@@ -98,7 +96,6 @@ def check(m: int, k: int, n: int) -> None:
     run_example(kernel_with_bias, expected_with_bias, (x, y), atol=1)
 
 
-# %%
 def matmul_split_k_tritonbench(
     tb_op: object, a: torch.Tensor, b: torch.Tensor, bias: torch.Tensor | None
 ) -> Callable:
@@ -119,7 +116,6 @@ def matmul_split_k_tritonbench(
     return lambda: matmul_split_k(a, b)
 
 
-# %%
 def main() -> None:
     """
     Main function to run the matmul_split_k kernel correctness check with example input size.
@@ -127,6 +123,5 @@ def main() -> None:
     check(2, 1024, 2)
 
 
-# %%
 if __name__ == "__main__":
     main()

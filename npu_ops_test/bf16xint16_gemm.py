@@ -5,7 +5,6 @@ The kernel performs matrix multiplication where one matrix is in bfloat16 format
 The int16 values are converted to bfloat16 before performing the matrix multiplication.
 """
 
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -19,7 +18,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def _bf16xint16_gemm(x: Tensor, w: Tensor) -> Tensor:
     """
@@ -42,7 +40,6 @@ def _bf16xint16_gemm(x: Tensor, w: Tensor) -> Tensor:
     return out
 
 
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def _int16xbf16_gemm(x: Tensor, w: Tensor) -> Tensor:
     """
@@ -65,7 +62,6 @@ def _int16xbf16_gemm(x: Tensor, w: Tensor) -> Tensor:
     return out
 
 
-# %%
 def bf16xint16_gemm(x: Tensor, w: Tensor, transpose: bool = False) -> Tensor:
     """
     This function dispatches to the appropriate kernel based on the transpose flag.
@@ -83,7 +79,6 @@ def bf16xint16_gemm(x: Tensor, w: Tensor, transpose: bool = False) -> Tensor:
     return _bf16xint16_gemm(x, w)
 
 
-# %%
 def bf16xint16_gemm_tritonbench(
     tb_op: object, x: torch.Tensor, w: torch.Tensor
 ) -> Callable[[], torch.Tensor]:
@@ -107,7 +102,6 @@ def bf16xint16_gemm_tritonbench(
     return run_kernel
 
 
-# %%
 def reference_bf16xint16_pytorch(
     x: torch.Tensor, w: torch.Tensor, transpose: bool = False
 ) -> torch.Tensor:
@@ -129,7 +123,6 @@ def reference_bf16xint16_pytorch(
     return torch.matmul(x, w_bf16)
 
 
-# %%
 def check(m: int, k: int, n: int) -> None:
     """
     Test the bf16 x int16 GEMM implementation against the PyTorch reference.
@@ -162,7 +155,6 @@ def check(m: int, k: int, n: int) -> None:
     )
 
 
-# %%
 def main() -> None:
     """
     Main entry point that runs the bf16xint16 kernel verification with different tensor sizes.
@@ -172,9 +164,9 @@ def main() -> None:
     check(65536, 1024, 1280)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

@@ -5,11 +5,6 @@ Exponential Function Example
 This example demonstrates how to implement an element-wise exponential function using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -22,14 +17,13 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
 def exp_fwd_reference(x: torch.Tensor) -> torch.Tensor:
     """PyTorch reference for :func:`exp_fwd` (autotune baseline, not Triton)."""
     return torch.exp(x)
 
 
 @helion.kernel(
-    config=helion.Config(block_sizes=[8192], pid_type='flat'),
+    config=helion.Config(block_sizes=[8192], pid_type="flat"),
     static_shapes=True,
 )
 def exp_fwd(x: torch.Tensor) -> torch.Tensor:
@@ -53,9 +47,8 @@ def exp_bwd_reference(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:
     return dy * exp_x
 
 
-# %%
 @helion.kernel(
-    config=helion.Config(block_sizes=[8192], pid_type='flat'),
+    config=helion.Config(block_sizes=[8192], pid_type="flat"),
     static_shapes=True,
 )
 def exp_bwd(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:
@@ -75,12 +68,6 @@ def exp_bwd(dy: torch.Tensor, exp_x: torch.Tensor) -> torch.Tensor:
     return dx
 
 
-# %%
-# Exponential Kernel
-# ------------------
-
-
-# %%
 class ExpFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # pyrefly: ignore [bad-override]
@@ -102,7 +89,6 @@ class ExpFunction(torch.autograd.Function):
         return exp_bwd(grad_output, x)
 
 
-# %%
 def exp(x: torch.Tensor) -> torch.Tensor:
     """
     Exponential with forward and backward support.
@@ -116,12 +102,6 @@ def exp(x: torch.Tensor) -> torch.Tensor:
     return ExpFunction.apply(x)  # type: ignore[no-any-return]
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def exp_tritonbench(
     tb_op: object, x: torch.Tensor
 ) -> Callable[[], dict[str, torch.Tensor]]:
@@ -138,12 +118,6 @@ def exp_tritonbench(
     return lambda: {"output": exp(x)}
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(n: int) -> None:
     """
     Verify the exp kernel implementation against PyTorch's native exp function.
@@ -155,12 +129,6 @@ def check(n: int) -> None:
     run_example(exp, torch.exp, (x,), bwd=True)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the exp kernel verification.

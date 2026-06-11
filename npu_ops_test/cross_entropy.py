@@ -5,11 +5,6 @@ Cross Entropy Loss Example
 This example demonstrates how to implement a cross entropy loss function using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -19,12 +14,7 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Cross Entropy Kernel
-# --------------------
 
-
-# %%
 @helion.kernel(ignore_warnings=[helion.exc.TensorOperationInWrapper])
 def cross_entropy(
     logits: torch.Tensor,  # [N, V] input logits
@@ -78,12 +68,6 @@ def cross_entropy(
     return losses.mean()
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the cross entropy kernel verification.

@@ -5,9 +5,6 @@ Gated Delta Net Fwd H Kernel
 This code implements a fwd_h kernel as used in gated delta net
 """
 
-# %%
-# Imports
-# -------
 from __future__ import annotations
 
 import math
@@ -22,9 +19,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
-# Helion Kernel Implementation
-# ----------------------------
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def helion_gdn_fwd_h(
     k: torch.Tensor, w: torch.Tensor, u: torch.Tensor, g: torch.Tensor, chunk_size: int
@@ -99,9 +93,6 @@ def helion_gdn_fwd_h_tb(
     return lambda: helion_gdn_fwd_h(k, w, u, g, chunk_size)
 
 
-# %%
-# Reference Function
-# -------------
 def ref_gdn_fwd_h(
     k: torch.Tensor, w: torch.Tensor, u: torch.Tensor, g: torch.Tensor, chunk_size: int
 ) -> torch.Tensor:
@@ -156,9 +147,6 @@ def ref_gdn_fwd_h(
     return h
 
 
-# %%
-# Testing Function
-# -------------
 def test(
     batch: int,
     nheads: int,
@@ -199,9 +187,6 @@ def test(
     run_example(helion_gdn_fwd_h, ref_gdn_fwd_h, args, use_wall_clock=True)
 
 
-# %%
-# Main Function
-# -----------
 def main() -> None:
     """
     Main entry point that runs the attention kernel test with specific parameters.
@@ -211,6 +196,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

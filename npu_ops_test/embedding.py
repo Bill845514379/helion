@@ -10,10 +10,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
-# Embedding Kernel
-# ----------------
-
 @helion.kernel(
     static_shapes=True,
 )
@@ -31,25 +27,19 @@ def embedding(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
 def embedding_tritonbench(
-        tb_op: object, V: int, D: int, inp: torch.Tensor, shared_weight: torch.Tensor
+    tb_op: object, V: int, D: int, inp: torch.Tensor, shared_weight: torch.Tensor
 ) -> Callable[[], torch.Tensor]:
     return lambda: embedding(inp, shared_weight)
 
-
-# %%
-# Main Function
-# -------------
 
 def main() -> None:
     num_embeddings, embedding_dim = 128, 128
     x = torch.randint(0, num_embeddings, [128, 8], device=DEVICE, dtype=torch.int32)
 
-    weight = torch.randn([num_embeddings, embedding_dim], device=DEVICE, dtype=torch.float16)
+    weight = torch.randn(
+        [num_embeddings, embedding_dim], device=DEVICE, dtype=torch.float16
+    )
 
     run_example(
         embedding, torch.nn.functional.embedding, (x, weight), atol=1e-3, rtol=1e-3

@@ -5,11 +5,7 @@ BLackwell Attention Example
 This code implements a custom attention kernel using Helion and PyTorch for efficient computation of scaled dot-product attention,
 specifically tuned for Blackwell.
 """
-# %%
-# Imports
-# -------
 
-# %%
 from __future__ import annotations
 
 import math
@@ -20,15 +16,9 @@ from triton.testing import do_bench
 
 import helion
 from helion._testing import run_example
-from helion.autotuner.config_fragment import EnumFragment
 import helion.language as hl
 
-# %%
-# Utility Functions
-# -------------------------------
 
-
-# %%
 def _mul_f32x2(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Vectorized F32 PTX MUL"""
     return hl.inline_asm_elementwise(
@@ -49,7 +39,6 @@ def _mul_f32x2(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     )
 
 
-# %%
 def _fma_f32x2(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
     """Vectorized F32 PTX FMA"""
     return hl.inline_asm_elementwise(
@@ -70,13 +59,6 @@ def _fma_f32x2(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor) -> torch.Tenso
     )
 
 
-# %%
-# Attention Kernel Implementation
-# -------------------------------
-
-
-# %%
-# pyrefly: ignore [no-matching-overload]
 @helion.kernel(
     autotune_ignore_errors=True,
     autotune_effort="quick",
@@ -165,11 +147,6 @@ def blackwell_attention_kernel(
             else:
                 acc = acc * alpha[:, None]
 
-            # update m_i and l_i
-
-            # We can potentially move these to be before updating l_ij, so the dot
-            # is not blocked.
-            # prepare p and v for the dot
             p = p.to(v.dtype)
             # note that this non transposed v for FP8 is only supported on Blackwell
             acc = hl.dot(p, v_j, acc=acc)
@@ -197,12 +174,6 @@ def blackwell_attention_tritonbench(
     return lambda: blackwell_attention(q, k, v)
 
 
-# %%
-# Testing Function
-# ----------------
-
-
-# %%
 def test(
     z: int,
     h: int,
@@ -256,19 +227,14 @@ def test(
     )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the attention kernel test with specific parameters.
     Tests with batch size 2, 32 heads, 1024 sequence length, and 64-dimensional heads using float16.
     """
     # Use smaller shapes on NPU to avoid OOM (ref_attention is O(n^2) memory)
-    import torch_npu  # noqa: F401
+    import torch_npu
+
     torch_npu.npu.config.allow_internal_format = True
     test(2, 32, 1024, 64, torch.bfloat16)
     test(2, 32, 2048, 64, torch.bfloat16)

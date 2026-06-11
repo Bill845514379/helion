@@ -15,11 +15,6 @@ GELU uses tanh approximation: 0.5 * a * (1 + tanh(sqrt(2/π) * (a + 0.044715 * a
 Based on liger_kernel's GEGLU implementation used in Gemma and other gated feedforward networks.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -40,12 +35,6 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-# %%
-# GEGLU Kernel
-# ------------
-
-
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def geglu(a: Tensor, b: Tensor) -> Tensor:
     """
@@ -171,12 +160,6 @@ def geglu_autograd(a: Tensor, b: Tensor) -> Tensor:
     return GEGLUFunction.apply(a, b)  # type: ignore[no-any-return]
 
 
-# %%
-# GEGLU MLP Module (matches liger_kernel structure)
-# -------------------------------------------------
-
-
-# %%
 @dataclass
 class Config:
     """
@@ -221,12 +204,6 @@ class HelionGEGLUMLP(nn.Module):
         return self.down_proj(geglu_output)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check_geglu_kernel(shape: tuple[int, ...]) -> None:
     """
     Verify the GEGLU kernel implementation against PyTorch's baseline.
@@ -321,12 +298,6 @@ def check_geglu_mlp(
     run_example(lambda x: helion_mlp(x), lambda x: baseline_mlp(x), (x,))
 
 
-# %%
-# Tritonbench Integration
-# -----------------------
-
-
-# %%
 def geglu_tritonbench(tb_op: object, x: Tensor) -> Callable:
     """
     Wrapper for tritonbench that matches its interface.
@@ -370,12 +341,6 @@ def geglu_tritonbench(tb_op: object, x: Tensor) -> Callable:
     return lambda: helion_mlp(x)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the GEGLU kernel and MLP verification.
@@ -407,9 +372,9 @@ def main() -> None:
         print("✓ GEGLU MLP config passed")
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

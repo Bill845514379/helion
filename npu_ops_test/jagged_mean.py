@@ -6,11 +6,6 @@ This example demonstrates how to compute the mean of each row in a jagged tensor
 with variable features per row using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -22,16 +17,8 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Jagged Mean Kernel
-# ------------------
 
-
-# %%
-@helion.kernel(
-    autotune_ignore_errors=True,
-    autotune_effort="full"
-)
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def jagged_mean_kernel(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -110,12 +97,6 @@ def jagged_mean_kernel(
     return out
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def reference_jagged_mean_kernel_pytorch(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -145,12 +126,6 @@ def reference_jagged_mean_kernel_pytorch(
     return out
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def jagged_mean_tritonbench(
     tb_op: object, x: torch.Tensor, B: int, M: int, seqlen: int, sparsity: float
 ) -> Callable[[], torch.Tensor]:
@@ -182,12 +157,6 @@ def jagged_mean_tritonbench(
     return lambda: jagged_mean_kernel(x_values, x_offsets, feature_counts, M)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the jagged mean kernel verification.
@@ -213,12 +182,13 @@ def main() -> None:
         lambda x, o, fc, m: jagged_mean_kernel(x, o, fc, m),
         lambda x, o, fc, m: reference_jagged_mean_kernel_pytorch(x, o, fc, m),
         (x_data, x_offsets, feature_counts, M),
-        use_wall_clock=True
+        use_wall_clock=True,
     )
 
 
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

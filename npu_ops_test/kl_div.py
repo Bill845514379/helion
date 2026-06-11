@@ -22,11 +22,6 @@ The loss supports different reduction modes:
 Based on liger_kernel's KL divergence implementation used in language models.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -44,13 +39,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-# %%
-# KL Divergence Kernel
-# --------------------
-
-
-# %%
-@helion.kernel(ignore_warnings=[helion.exc.TensorOperationInWrapper], autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    ignore_warnings=[helion.exc.TensorOperationInWrapper],
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+)
 def kl_div_forward(
     y_pred: Tensor,  # input predictions in log-space, shape (BT, V)
     y_true: Tensor,  # target values, shape (BT, V)
@@ -127,12 +120,6 @@ def kl_div_forward(
     return final_loss
 
 
-# %%
-# KL Divergence Loss Module
-# -------------------------
-
-
-# %%
 class HelionKLDivLoss(nn.Module):
     """
     Helion implementation of KL Divergence Loss matching PyTorch's KLDivLoss.
@@ -172,12 +159,6 @@ class HelionKLDivLoss(nn.Module):
         )
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check_kl_div_kernel(
     B: int,
     T: int,
@@ -219,12 +200,6 @@ def check_kl_div_kernel(
     run_example(helion_wrapper, baseline_wrapper, (input_tensor, target_tensor))
 
 
-# %%
-# Tritonbench Integration
-# -----------------------
-
-
-# %%
 def kl_div_tritonbench(
     tb_op: object, input_tensor: Tensor, target_tensor: Tensor
 ) -> Callable:
@@ -248,12 +223,6 @@ def kl_div_tritonbench(
     return lambda: helion_kl(input_tensor, target_tensor)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs KL divergence kernel verification.
@@ -275,9 +244,9 @@ def main() -> None:
         print("✓ KL Div passed")
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

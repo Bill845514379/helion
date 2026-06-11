@@ -7,11 +7,6 @@ The kernel unpacks the int4 values, converts to bfloat16, and performs matmul wi
 the bfloat16 matrix A.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -24,12 +19,7 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# INT4 GEMM Kernel
-# ----------------
 
-
-# %%
 @helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
 def matmul_bf16_int4(A: Tensor, B: Tensor) -> Tensor:
     """
@@ -93,12 +83,6 @@ def matmul_bf16_int4(A: Tensor, B: Tensor) -> Tensor:
     return C
 
 
-# %%
-# TritonBench Wrapper
-# -------------------
-
-
-# %%
 def int4_gemm_tritonbench(tb_op: object, x: torch.Tensor, w: torch.Tensor) -> Callable:
     """
     Wrapper for TritonBench compatibility.
@@ -125,12 +109,6 @@ def int4_gemm_tritonbench(tb_op: object, x: torch.Tensor, w: torch.Tensor) -> Ca
     return run_kernel
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def _pack_int4_matrix(unpacked: torch.Tensor) -> torch.Tensor:
     """
     Pack int4 matrix into int8 container with two values per byte.
@@ -200,12 +178,6 @@ def check(m: int, k: int, n: int) -> None:
     print(f"Test passed for shapes: M={m}, K={k}, N={n}")
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main function to run tests with different matrix sizes.
@@ -214,10 +186,5 @@ def main() -> None:
     check(8192, 8192, 8192)
 
 
-# %%
-# Run Example
-# -----------
-
-# %%
 if __name__ == "__main__":
     main()

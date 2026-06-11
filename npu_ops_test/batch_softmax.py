@@ -15,11 +15,6 @@ which uses the [:, :, None] pattern: m_ij[:, :, None] broadcasts
 [tile_b, tile_m] to [tile_b, tile_m, 1].
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -30,12 +25,7 @@ from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Batch Softmax Kernel
-# --------------------
 
-
-# %%
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def batch_softmax(x: torch.Tensor) -> torch.Tensor:
     """
@@ -67,12 +57,6 @@ def batch_softmax(x: torch.Tensor) -> torch.Tensor:
     return out_2d.view(b, m, n)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(b: int, m: int, n: int) -> None:
     x = torch.randn([b, m, n], device=DEVICE, dtype=HALF_DTYPE)
     run_example(
@@ -82,18 +66,13 @@ def check(b: int, m: int, n: int) -> None:
     )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     check(8, 256, 512)
 
 
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

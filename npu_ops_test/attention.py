@@ -6,11 +6,6 @@ This code implements a custom attention kernel using Helion and PyTorch for effi
 with support for both static and dynamic input shapes.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import math
@@ -26,14 +21,9 @@ from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Attention Kernel Implementation
-# -------------------------------
 
-
-# %%
 @helion.kernel(
-    config=helion.Config(block_sizes=[1, 64, 128], l2_groupings=[1], pid_type='flat'),
+    config=helion.Config(block_sizes=[1, 64, 128], l2_groupings=[1], pid_type="flat"),
     static_shapes=True,
 )
 def attention(
@@ -91,29 +81,13 @@ def attention(
     return out.view(q_in.size())
 
 
-# %%
-# Dynamic Shape Version
-# ---------------------
-
-# %%
-# pyrefly: ignore [no-matching-overload]
 attention_dynamic: object = helion.kernel(
     attention.fn,
     configs=attention.configs,
     static_shapes=False,
 )
-"""
-Dynamic shape version of the attention kernel.
-This version allows for variable input shapes at runtime.
-"""
 
 
-# %%
-# Testing Function
-# ----------------
-
-
-# %%
 def test(
     z: int,
     h: int,
@@ -149,7 +123,7 @@ def test(
     dev = device if isinstance(device, torch.device) else torch.device(device)
     baselines: dict[str, Callable[..., torch.Tensor]] = {
         "torch": torch.nn.functional.scaled_dot_product_attention,
-        #"ref": ref_attention,
+        # "ref": ref_attention,
     }
     # torch.compile(flex_attention) + Dynamo pulls torch_npu inductor has_triton(),
     # which can raise (e.g. NPUDeviceProperties.is_available) on Ascend; not Helion-related.
@@ -162,24 +136,19 @@ def test(
     run_example(attention, baselines, (q, k, v))
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
-      - Small shape full attention (S<=128, D=64): Triton beats CANN SDPA 2-4x
-      - Root cause: CANN's dispatch overhead (~13us) dominates for small shapes,
-        while Triton's compiled kernel has ~5us dispatch + same compute.
-      - Key tile sizes: BM=64, BN=64 (guided by hl.register_block_size).
+    - Small shape full attention (S<=128, D=64): Triton beats CANN SDPA 2-4x
+    - Root cause: CANN's dispatch overhead (~13us) dominates for small shapes,
+      while Triton's compiled kernel has ~5us dispatch + same compute.
+    - Key tile sizes: BM=64, BN=64 (guided by hl.register_block_size).
     """
     test(1, 4, 128, 64, HALF_DTYPE, device=DEVICE)
 
 
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

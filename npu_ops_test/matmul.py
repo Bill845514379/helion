@@ -6,7 +6,6 @@ with support for a customizable epilogue function. It includes autotuning,
 correctness checks against PyTorch baselines, and integration with tritonbench.
 """
 
-# %%
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -16,9 +15,7 @@ import torch
 from torch import Tensor
 
 import helion
-from helion._compat import use_tileir_tunables
 from helion._testing import DEVICE
-print(f"Using device: {DEVICE}")
 from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
@@ -28,9 +25,10 @@ if TYPE_CHECKING:
 
 
 import torch_npu
+
 torch_npu.npu.config.allow_internal_format = True
 
-# %%
+
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
     static_shapes=True,
@@ -73,7 +71,6 @@ def matmul(
     return out
 
 
-# %%
 class MatMulFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # pyrefly: ignore [bad-override]
@@ -168,7 +165,6 @@ def addmm_autograd(
     return AddMMFunction.apply(bias, mat1, mat2, alpha, beta)  # type: ignore[no-any-return]
 
 
-# %%
 def autotune(m: int, k: int, n: int) -> None:
     """
     Runs autotuning on the matmul kernel with a ReLU epilogue and saves the best config.
@@ -186,7 +182,6 @@ def autotune(m: int, k: int, n: int) -> None:
     best_config.save("best_config.json")
 
 
-# %%
 def check(m: int, k: int, n: int) -> None:
     """
     Checks the correctness of the matmul kernel against PyTorch baselines.
@@ -260,8 +255,12 @@ def check(m: int, k: int, n: int) -> None:
     input_grad = torch.randn(
         [m, n], device=DEVICE, dtype=torch.float32, requires_grad=True
     )
-    mat1_grad = torch.randn([m, k], device=DEVICE, dtype=torch.float32, requires_grad=True)
-    mat2_grad = torch.randn([k, n], device=DEVICE, dtype=torch.float32, requires_grad=True)
+    mat1_grad = torch.randn(
+        [m, k], device=DEVICE, dtype=torch.float32, requires_grad=True
+    )
+    mat2_grad = torch.randn(
+        [k, n], device=DEVICE, dtype=torch.float32, requires_grad=True
+    )
 
     # Use lambda to handle the keyword argument format for torch.addmm
     run_example(
@@ -273,11 +272,10 @@ def check(m: int, k: int, n: int) -> None:
         kernel_name="helion_addmm_autograd",
         baseline_name="torch",
         bwd=True,
-        use_wall_clock=True
+        use_wall_clock=True,
     )
 
 
-# %%
 def matmul_tritonbench(
     tb_op: object, a: torch.Tensor, b: torch.Tensor, bias: torch.Tensor | None
 ) -> Callable:
@@ -313,14 +311,13 @@ def addmm_tritonbench(
     return lambda: addmm_autograd(bias, mat1, mat2)
 
 
-# %%
 def main() -> None:
     check(64, 1024, 1024)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

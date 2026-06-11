@@ -5,11 +5,6 @@ Welford Example
 This example demonstrates how to implement a welford layernorm using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -19,12 +14,7 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Welford Kernel Implementations
-# ------------------------------
 
-
-# %%
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def welford(
     weight: torch.Tensor, bias: torch.Tensor, x: torch.Tensor, eps: float = 1e-05
@@ -78,12 +68,6 @@ def welford(
     return out
 
 
-# %%
-# Baseline Function
-# -----------------
-
-
-# %%
 def eager_layer_norm(
     weight: torch.Tensor, bias: torch.Tensor, x: torch.Tensor, eps: float = 1e-05
 ) -> torch.Tensor:
@@ -92,12 +76,6 @@ def eager_layer_norm(
     )
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(s: int, d: int) -> None:
     """
     Verify the welford kernel implementation against PyTorch's native layer_norm function.
@@ -115,12 +93,6 @@ def check(s: int, d: int) -> None:
     run_example(kernels, eager_layer_norm, (weight, bias, x))
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the welford kernel verification with different tensor sizes.
@@ -132,6 +104,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

@@ -34,13 +34,12 @@ from __future__ import annotations
 import torch
 import torch_npu
 
-# Before `import helion`: `helion` loads `_testing` and fixes `DEVICE`; NPU must be visible then.
-torch_npu.npu.config.allow_internal_format = True
-
 import helion
 from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
+
+torch_npu.npu.config.allow_internal_format = True
 
 
 def jagged_dense_bmm_reference(
@@ -171,12 +170,16 @@ def main() -> None:
         D=34, K=24, batch_size=23, max_seq_len=37, dtype=torch.float32
     )
     run_example(
-        jagged_dense_bmm, jagged_dense_bmm_reference, (seq_offsets, jagged, dense, bias), use_wall_clock=True
+        jagged_dense_bmm,
+        jagged_dense_bmm_reference,
+        (seq_offsets, jagged, dense, bias),
+        use_wall_clock=True,
     )
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

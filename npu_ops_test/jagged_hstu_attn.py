@@ -5,11 +5,6 @@ Simplified Jagged HSTU Attention Forward Example
 This example demonstrates a simplified version of jagged HSTU attention using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -30,12 +25,6 @@ except ImportError:
     HAS_HAMMER = False
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def reference_jagged_hstu_kernel_pytorch(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -84,16 +73,7 @@ def reference_jagged_hstu_kernel_pytorch(
     return output
 
 
-# %%
-# Jagged HSTU Attention Kernel
-# ----------------------------
-
-
-# %%
-@helion.kernel(
-    autotune_ignore_errors=True,
-    autotune_effort="full"
-)
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def _helion_jagged_attention_kernel(
     max_seq_len: int,
     alpha: float,
@@ -152,12 +132,6 @@ def _helion_jagged_attention_kernel(
     return out
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def ragged_attention_tritonbench(
     tb_op: object,
     q: torch.Tensor,
@@ -178,12 +152,6 @@ def ragged_attention_tritonbench(
     )
 
 
-# %%
-# Testing Function
-# ----------------
-
-
-# %%
 def test(
     batch_size: int,
     max_seq_len: int,
@@ -269,16 +237,10 @@ def test(
         lambda *args: ragged_attention_tritonbench(None, *args)(),
         baselines,
         (q, k, v, seq_offsets, None, max_seq_len),
-        use_wall_clock=True
+        use_wall_clock=True,
     )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point for testing the simplified jagged HSTU attention kernel.
@@ -295,6 +257,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

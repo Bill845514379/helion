@@ -5,9 +5,6 @@ Mamba2 Chunk Scan Kernel
 This code implements a chunked scan kernel as used for Mamba2
 """
 
-# %%
-# Imports
-# -------
 from __future__ import annotations
 
 import functools
@@ -21,27 +18,23 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
-# Helion Kernel Implementation
-# ----------------------------
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def helion_mamba2_chunk_scan_kernel(
-        cb: torch.Tensor,
-        x: torch.Tensor,
-        dt: torch.Tensor,
-        dA_cumsum: torch.Tensor,
-        C: torch.Tensor,
-        prev_states: torch.Tensor,
-        D: torch.Tensor,
+    cb: torch.Tensor,
+    x: torch.Tensor,
+    dt: torch.Tensor,
+    dA_cumsum: torch.Tensor,
+    C: torch.Tensor,
+    prev_states: torch.Tensor,
+    D: torch.Tensor,
 ) -> torch.Tensor:
     batch, nchunks, ngroups, chunk_size, _ = cb.shape
     _, seqlen, nheads, headdim = x.shape
     _, _, _, dstate = C.shape
     assert nchunks == (seqlen + chunk_size - 1) // chunk_size
 
-
     block_m = hl.register_block_size(128, 256)
-    block_n = hl.register_block_size(headdim)   # 64
+    block_n = hl.register_block_size(headdim)  # 64
 
     block_k = hl.register_block_size(64, 32)
     dstate = hl.specialize(dstate)
@@ -70,8 +63,8 @@ def helion_mamba2_chunk_scan_kernel(
     p = 1.44269504
 
     for tile_h, tile_m, tile_n, tile_b, tile_c in hl.tile(
-            [nheads, chunk_size, headdim, batch, nchunks],
-            block_size=[1, block_m, block_n, 1, 1],
+        [nheads, chunk_size, headdim, batch, nchunks],
+        block_size=[1, block_m, block_n, 1, 1],
     ):
         acc_o = hl.zeros([tile_m, tile_n], dtype=accum_dtype)
 
@@ -133,9 +126,6 @@ def helion_mamba2_chunk_scan_kernel(
     return out
 
 
-# %%
-# Reference Function
-# -------------
 def ref_chunk_scan(
     cb: torch.Tensor,
     x: torch.Tensor,
@@ -196,9 +186,6 @@ def ref_chunk_scan(
     return out
 
 
-# %%
-# Testing Function
-# -------------
 def test(
     init: str,
     batch: int,
@@ -233,12 +220,11 @@ def test(
     prev_states = fn(batch, nchunks, nheads, headdim, dstate)
     D = fn(nheads)
     args = (cb, x, dt, dA_cumsum, C, prev_states, D)
-    run_example(helion_mamba2_chunk_scan_kernel, ref_chunk_scan, args, use_wall_clock=True)
+    run_example(
+        helion_mamba2_chunk_scan_kernel, ref_chunk_scan, args, use_wall_clock=True
+    )
 
 
-# %%
-# Main Function
-# -----------
 def main() -> None:
     test("zzzzzzz", 4, 40, 1, 2048, 64, 32, 64)
     test("zrzzzzr", 4, 40, 1, 2048, 64, 32, 64)

@@ -12,11 +12,6 @@ NPU Performance Note:
   - Square (S>=512, B>=16):  CANN wins (Cube unit)
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from packaging import version
@@ -28,13 +23,7 @@ from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Batch Matrix Multiplication Kernel
-# -----------------------------------
-# static_shapes=True gives a performance boost for matmuls
 
-
-# %%
 @helion.kernel(
     static_shapes=True,
 )
@@ -66,18 +55,12 @@ def bmm(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
         # (acc += A @ B causes: dot(fp32) -> cast fp16 -> add -> cast back fp32)
         for tile_k in hl.tile(k):
             acc += A[tile_b, tile_m, tile_k] @ B[tile_b, tile_k, tile_n]
-            #acc = torch.baddbmm(acc, A[tile_b, tile_m, tile_k], B[tile_b, tile_k, tile_n])
+            # acc = torch.baddbmm(acc, A[tile_b, tile_m, tile_k], B[tile_b, tile_k, tile_n])
 
         out[tile_b, tile_m, tile_n] = acc
     return out
 
 
-# %%
-# BMM + Bias + ReLU Fused Kernel
-# -------------------------------
-
-
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def bmm_bias_relu(A: torch.Tensor, B: torch.Tensor, bias: torch.Tensor) -> torch.Tensor:
     """
@@ -104,7 +87,9 @@ def bmm_bias_relu(A: torch.Tensor, B: torch.Tensor, bias: torch.Tensor) -> torch
         acc = hl.zeros([tile_b, tile_m, tile_n], dtype=torch.float32)
 
         for tile_k in hl.tile(k):
-            acc = torch.baddbmm(acc, A[tile_b, tile_m, tile_k], B[tile_b, tile_k, tile_n])
+            acc = torch.baddbmm(
+                acc, A[tile_b, tile_m, tile_k], B[tile_b, tile_k, tile_n]
+            )
 
         # Fused epilogue: add bias + ReLU
         acc = acc + bias[tile_n]
@@ -113,12 +98,6 @@ def bmm_bias_relu(A: torch.Tensor, B: torch.Tensor, bias: torch.Tensor) -> torch
     return out
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(b: int, m: int, k: int, n: int) -> None:
     x = torch.randn([b, m, k], device=DEVICE, dtype=HALF_DTYPE)
     y = torch.randn([b, k, n], device=DEVICE, dtype=HALF_DTYPE)
@@ -130,33 +109,28 @@ def check_fused(b: int, m: int, k: int, n: int) -> None:
     y = torch.randn([b, k, n], device=DEVICE, dtype=HALF_DTYPE)
     bias = torch.randn([n], device=DEVICE, dtype=HALF_DTYPE)
 
-    def baseline(x, y, bias):
+    def baseline(x: torch.Tensor, y: torch.Tensor, bias: torch.Tensor) -> torch.Tensor:
         return torch.relu(torch.bmm(x, y) + bias)
 
     run_example(bmm_bias_relu, baseline, (x, y, bias))
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     # torch.baddbmm support for 16-bit tensors requires torch 2.8+
     assert version.parse(torch.__version__.split("+")[0]) >= version.parse("2.8"), (
         "Requires torch 2.8+"
     )
 
-    #check(1, 64, 1024, 1024)
+    # check(1, 64, 1024, 1024)
 
     check(4, 128, 128, 128)
 
-    #check_fused(1, 64, 1024, 1024)
+    # check_fused(1, 64, 1024, 1024)
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

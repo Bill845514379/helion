@@ -8,7 +8,6 @@ The example also includes a check function to compare these kernels against PyTo
 built-in softmax for correctness.
 """
 
-# %%
 from __future__ import annotations
 
 from typing import Any
@@ -23,7 +22,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax(x: torch.Tensor) -> torch.Tensor:
     """
@@ -40,7 +38,6 @@ def softmax(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax_decomposed(x: torch.Tensor) -> torch.Tensor:
     """
@@ -62,7 +59,6 @@ def softmax_decomposed(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def softmax_two_pass(x: torch.Tensor) -> torch.Tensor:
     """
@@ -167,7 +163,6 @@ def softmax_tritonbench(tb_op: object, x: torch.Tensor) -> Callable[[], torch.Te
     return lambda: softmax_fwd_bwd(x)
 
 
-# %%
 def check(m: int, n: int) -> None:
     """
     Runs correctness checks comparing Helion softmax kernels against PyTorch's softmax.
@@ -195,7 +190,6 @@ def check(m: int, n: int) -> None:
     )
 
 
-# %%
 def main() -> None:
     """
     Main function to run the softmax kernel correctness check with example input size.
@@ -203,9 +197,9 @@ def main() -> None:
     check(4096, 2560)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

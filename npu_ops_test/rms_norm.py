@@ -6,11 +6,6 @@ This example demonstrates how to implement a Root Mean Square (RMS) normalizatio
 operation using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Any
@@ -47,12 +42,6 @@ def rms_norm_bwd_reference(
     return grad_x, grad_weight
 
 
-# %%
-# RMS Normalization Kernel
-# ------------------------
-
-
-# %%
 @helion.kernel(
     autotune_ignore_errors=True,
     autotune_effort="full",
@@ -148,7 +137,6 @@ def rms_norm_bwd(
     return grad_x, grad_weight.sum(0).to(weight.dtype)
 
 
-# %%
 class RMSNormFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # pyrefly: ignore [bad-override]
@@ -175,18 +163,11 @@ class RMSNormFunction(torch.autograd.Function):
         return grad_x, grad_weight, None
 
 
-# %%
 def rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-5) -> torch.Tensor:
     """RMS normalization with forward + backward support."""
     return RMSNormFunction.apply(x, weight, eps)  # type: ignore[no-any-return]
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def rms_norm_tritonbench(
     tb_op: object, H: int, inp: torch.Tensor, weight: torch.Tensor
 ) -> Callable[[], torch.Tensor]:
@@ -205,18 +186,12 @@ def rms_norm_tritonbench(
     return lambda: rms_norm(inp, weight, eps=1e-6)
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 class _RMSNormPytorchRef(torch.autograd.Function):
     """Reference that matches Helion: FP32 ``y``, FP16 ``inv_rms`` saved for backward."""
 
     @staticmethod
     def forward(
-        ctx: Any,
+        ctx: torch.autograd.function.FunctionCtx,
         x: torch.Tensor,
         weight: torch.Tensor,
         eps: float,
@@ -232,7 +207,7 @@ class _RMSNormPytorchRef(torch.autograd.Function):
 
     @staticmethod
     def backward(
-        ctx: Any,
+        ctx: torch.autograd.function.FunctionCtx,
         grad_out: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, None]:
         x, weight = ctx.saved_tensors
@@ -253,12 +228,6 @@ def rms_norm_pytorch(
     return _RMSNormPytorchRef.apply(x, weight, eps)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(m: int, n: int) -> None:
     """
     Verify the RMS norm kernel implementation against the PyTorch reference implementation.
@@ -280,7 +249,7 @@ def check(m: int, n: int) -> None:
         baseline_name="torch",
         rtol=1e-3,
         atol=1e-3,
-        use_wall_clock=True
+        use_wall_clock=True,
     )
 
     # Test forward + backward pass
@@ -297,27 +266,22 @@ def check(m: int, n: int) -> None:
         rtol=1e-2,
         atol=1e-2,
         bwd=True,
-        use_wall_clock=True
+        use_wall_clock=True,
     )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the RMS norm kernel verification with different tensor sizes.
     """
-    #check(1024, 1024)
+    # check(1024, 1024)
     check(2048, 4096)
     check(2048, 8192)
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

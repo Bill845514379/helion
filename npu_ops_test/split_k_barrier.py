@@ -14,12 +14,12 @@ from __future__ import annotations
 import torch
 import torch_npu
 
-torch_npu.npu.config.allow_internal_format = True
-
 import helion
 from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
+
+torch_npu.npu.config.allow_internal_format = True
 
 
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
@@ -114,6 +114,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

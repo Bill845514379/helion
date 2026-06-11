@@ -6,11 +6,6 @@ This example demonstrates how to compute the mean of each row in a jagged tensor
 with variable features per row using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -22,22 +17,8 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Jagged Mean Kernel
-# ------------------
 
-
-# %%
-@helion.kernel(    
-    autotune_ignore_errors=True,
-    autotune_effort="full"
-)
-# @helion.kernel(
-#     config=helion.Config(block_sizes=[8, 2, 32], indexing=['pointer', 'pointer', 'pointer', 'pointer'], load_eviction_policies=['', '', ''], num_stages=None, num_warps=None, pid_type='flat', 
-# range_flattens=[None, False, False], range_multi_buffers=[True, True, True], range_num_stages=[4, 4, 4], range_unroll_factors=[0, 0, 0], range_warp_specializes=[]),
-#     autotune_ignore_errors=True,
-#     autotune_effort="none"
-# )
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def jagged_sum_kernel(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -99,12 +80,6 @@ def jagged_sum_kernel(
     return out
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def reference_jagged_sum_kernel_pytorch(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -130,12 +105,6 @@ def reference_jagged_sum_kernel_pytorch(
     return out
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def jagged_sum_tritonbench(
     tb_op: object, x: torch.Tensor, B: int, M: int, seqlen: int, sparsity: float
 ) -> Callable[[], torch.Tensor]:
@@ -160,12 +129,6 @@ def jagged_sum_tritonbench(
     return lambda: jagged_sum_kernel(x_values, x_offsets)
 
 
-# %%
-# Helper function to create test data
-# -----------------------------------
-
-
-# %%
 def create_test_jagged_tensor(
     B: int,
     M: int,
@@ -193,12 +156,6 @@ def create_test_jagged_tensor(
     return x_data, x_offsets
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the jagged mean kernel verification.
@@ -217,12 +174,13 @@ def main() -> None:
         lambda x, o: jagged_sum_kernel(x, o),
         lambda x, o: reference_jagged_sum_kernel_pytorch(x, o),
         (x_data, x_offsets),
-        use_wall_clock=True
+        use_wall_clock=True,
     )
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

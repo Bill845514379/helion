@@ -6,23 +6,17 @@ This code implements a custom attention kernel using Helion and PyTorch for effi
 with support for both static and dynamic input shapes.
 """
 
-# %%
-# Imports
-# -------
 from __future__ import annotations
 
 import math
 from typing import Any
 from typing import Callable
-from typing import cast
 
 import torch
 from torch.nn.attention.flex_attention import BlockMask
 from torch.nn.attention.flex_attention import _create_empty_block_mask
 from torch.nn.attention.flex_attention import _identity
 from torch.nn.attention.flex_attention import _score_mod_signature
-from torch.nn.attention.flex_attention import flex_attention
-import torch.nn.functional as F
 
 import helion
 from helion._testing import HALF_DTYPE
@@ -30,9 +24,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
-# Flex Attention Kernel Implementation
-# ----------------------------
 @helion.kernel(
     autotune_accuracy_check=False,
     static_shapes=True,
@@ -222,9 +213,6 @@ def flex_attention_tritonbench(
     return lambda: helion_flex_attention(q, k, v, score_mod, block_mask)
 
 
-# %%
-# Testing Function
-# -------------
 def test(
     z: int,
     h: int,
@@ -251,27 +239,28 @@ def test(
     ]
 
     # Pre-compute block_mask to avoid overhead in benchmark loop
-    #block_mask = _create_empty_block_mask(q, k)
+    # block_mask = _create_empty_block_mask(q, k)
     block_mask_cpu = _create_empty_block_mask(q.cpu(), k.cpu())
     block_mask = BlockMask(
         seq_lengths=block_mask_cpu.seq_lengths,
         kv_num_blocks=block_mask_cpu.kv_num_blocks.to(device),
         kv_indices=block_mask_cpu.kv_indices.to(device),
         full_kv_num_blocks=block_mask_cpu.full_kv_num_blocks.to(device)
-        if block_mask_cpu.full_kv_num_blocks is not None else None,
+        if block_mask_cpu.full_kv_num_blocks is not None
+        else None,
         full_kv_indices=block_mask_cpu.full_kv_indices.to(device)
-        if block_mask_cpu.full_kv_indices is not None else None,
+        if block_mask_cpu.full_kv_indices is not None
+        else None,
         q_num_blocks=block_mask_cpu.q_num_blocks.to(device),
         q_indices=block_mask_cpu.q_indices.to(device),
         full_q_num_blocks=block_mask_cpu.full_q_num_blocks.to(device)
-        if block_mask_cpu.full_q_num_blocks is not None else None,
+        if block_mask_cpu.full_q_num_blocks is not None
+        else None,
         full_q_indices=block_mask_cpu.full_q_indices.to(device)
-        if block_mask_cpu.full_q_indices is not None else None,
+        if block_mask_cpu.full_q_indices is not None
+        else None,
         BLOCK_SIZE=block_mask_cpu.BLOCK_SIZE,
         mask_mod=block_mask_cpu.mask_mod,
-    )
-    flex_compiled = cast(
-        "Callable[..., torch.Tensor]", torch.compile(flex_attention, fullgraph=True)
     )
 
     def helion_fn(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
@@ -279,16 +268,9 @@ def test(
         assert isinstance(ret, torch.Tensor)
         return ret
 
-    # def flex_fn(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-    #     return flex_compiled(q, k, v, score_mod, block_mask)
-    # def flex_fn(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-    #     # 移到 CPU 运行（因为 flex_attention 不支持 NPU）
-    #     q_cpu, k_cpu, v_cpu = q.cpu(), k.cpu(), v.cpu()
-    #     result = flex_attention(q_cpu, k_cpu, v_cpu, score_mod, block_mask)
-    #     # 移回 NPU 以便比较
-    #     return result.to(device)
-
-    def reference_flex_attention(q, k, v, scale=None):
+    def reference_flex_attention(
+        q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, scale: float | None = None
+    ) -> torch.Tensor:
         B, H, M, D = q.shape
         N = k.shape[2]
         scale_factor = scale if scale is not None else 1.0 / math.sqrt(D)
@@ -311,8 +293,7 @@ def test(
         sum_exp = torch.sum(exp_scores, dim=-1, keepdim=True)
         attn = exp_scores / sum_exp
 
-        out = torch.matmul(attn.to(v.dtype), v)
-        return out
+        return torch.matmul(attn.to(v.dtype), v)
 
     def baseline_fn(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         D = q.shape[-1]
@@ -326,9 +307,6 @@ def test(
     run_example(helion_fn, baselines, (q, k, v), use_wall_clock=True)  # pyright: ignore[reportArgumentType]
 
 
-# %%
-# Main Function
-# -----------
 def main() -> None:
     """
     Main entry point that runs the attention kernel test with specific parameters.

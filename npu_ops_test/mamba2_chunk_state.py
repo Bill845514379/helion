@@ -5,9 +5,6 @@ Mamba2 Chunk State Kernel
 This code implements a chunked state kernel as used for Mamba2
 """
 
-# %%
-# Imports
-# -------
 from __future__ import annotations
 
 import functools
@@ -22,9 +19,6 @@ from helion._testing import run_example
 import helion.language as hl
 
 
-# %%
-# Helion Kernel Implementation
-# ----------------------------
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def helion_mamba2_chunk_state_kernel(
     B: torch.Tensor, x: torch.Tensor, dt: torch.Tensor, dA_cumsum: torch.Tensor
@@ -96,9 +90,6 @@ def helion_mamba2_chunk_state_kernel(
     return out
 
 
-# %%
-# Reference Function
-# -------------
 def ref_chunk_state(
     B: torch.Tensor, x: torch.Tensor, dt: torch.Tensor, dA_cumsum: torch.Tensor
 ) -> torch.Tensor:
@@ -138,9 +129,6 @@ def ref_chunk_state(
     )
 
 
-# %%
-# Testing Function
-# -------------
 def test(
     init: str,
     batch: int,
@@ -172,12 +160,11 @@ def test(
     dt = fn(batch, nheads, nchunks, chunk_size)
     dA_cumsum = fn(batch, nheads, nchunks, chunk_size)
     args = (B, x, dt, dA_cumsum)
-    run_example(helion_mamba2_chunk_state_kernel, ref_chunk_state, args, use_wall_clock=True)
+    run_example(
+        helion_mamba2_chunk_state_kernel, ref_chunk_state, args, use_wall_clock=True
+    )
 
 
-# %%
-# Main Function
-# -----------
 def main() -> None:
     test("uuuu", 8, 80, 1, 4096, 256, 64, 128)
 

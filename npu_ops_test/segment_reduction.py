@@ -19,11 +19,6 @@ vs a batched PyTorch reference, so benchmark numbers are not dominated by merge 
 ``scatter_add_``.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import sys
@@ -41,12 +36,6 @@ import helion.language as hl
 _HELION_NPU_SEG_BLOCK_E = 32
 
 
-# %%
-# Helion Implementation
-# ---------------------
-
-
-# %%
 def combine_fn_helion(
     left_values: torch.Tensor,
     left_indices: torch.Tensor,
@@ -73,7 +62,9 @@ def combine_fn_helion(
     return combined_values, right_indices
 
 
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="quick")
+@helion.kernel(
+    static_shapes=False, autotune_ignore_errors=True, autotune_effort="quick"
+)
 def _helion_segmented_reduction_npu_partials(
     indices: torch.Tensor,
     input_data: torch.Tensor,
@@ -116,12 +107,12 @@ def _helion_segmented_reduction_npu_partials(
             )
             vals2 = vals.unsqueeze(1)
             idxs_scan = idxs.float().unsqueeze(1).expand_as(vals2)
-            out_vals2, _ = hl.associative_scan(combine_fn_helion, (vals2, idxs_scan), dim=0)
+            out_vals2, _ = hl.associative_scan(
+                combine_fn_helion, (vals2, idxs_scan), dim=0
+            )
             out_vals = out_vals2.squeeze(1)
             mask_seg = (idxs != idxs_next) | (offs % block_e == block_e - 1)
-            seg_v = torch.where(
-                mask_seg & mask, out_vals, torch.zeros_like(out_vals)
-            )
+            seg_v = torch.where(mask_seg & mask, out_vals, torch.zeros_like(out_vals))
             seg_idx = torch.where(
                 mask_seg & mask,
                 idxs,
@@ -178,15 +169,15 @@ def _pytorch_npu_stage1_pack_reference(
     out = torch.empty_like(vals)
     out[:, 0] = vals[:, 0]
     for i in range(1, block_e):
-        out[:, i] = torch.where(
-            same[:, i - 1], out[:, i - 1] + vals[:, i], vals[:, i]
-        )
+        out[:, i] = torch.where(same[:, i - 1], out[:, i - 1] + vals[:, i], vals[:, i])
     mask_seg = (idxs != idxs_next) | ((offs % block_e) == (block_e - 1))
     seg_v = torch.where(mask_seg & mask, out, torch.zeros_like(out))
     seg_idx = torch.where(mask_seg & mask, idxs, zn)
     flat = pid[:, None] * block_e + ar[None, :]
     val_out = torch.zeros(num_progs * block_e, dtype=dtype, device=device)
-    idx_out = torch.full((num_progs * block_e,), num_nodes, dtype=torch.int64, device=device)
+    idx_out = torch.full(
+        (num_progs * block_e,), num_nodes, dtype=torch.int64, device=device
+    )
     val_out[flat.reshape(-1)] = seg_v.reshape(-1)
     idx_out[flat.reshape(-1)] = seg_idx.reshape(-1)
     return torch.stack((val_out, idx_out.to(torch.float64)))
@@ -204,7 +195,6 @@ def _segmented_reduction_helion_npu_two_phase(
     idx_flat = pack[1].to(torch.int64)
     block_e = _HELION_NPU_SEG_BLOCK_E
     num_slots = val_flat.numel()
-    num_progs = num_slots // block_e
     device = input_data.device
     dtype = input_data.dtype
     feats = (torch.arange(num_slots, device=device) // block_e) % num_features
@@ -218,7 +208,9 @@ def _segmented_reduction_helion_npu_two_phase(
     return out_flat.view(num_nodes + 1, num_features)[:num_nodes]
 
 
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="quick")
+@helion.kernel(
+    static_shapes=False, autotune_ignore_errors=True, autotune_effort="quick"
+)
 def _segmented_reduction_helion_atomic(
     indices: torch.Tensor, input_data: torch.Tensor, num_nodes: int
 ) -> torch.Tensor:
@@ -265,18 +257,10 @@ def segmented_reduction_helion(
         Output tensor of shape [num_nodes, num_features] with reduced values
     """
     if indices.device.type == "npu":
-        return _segmented_reduction_helion_npu_two_phase(
-            indices, input_data, num_nodes
-        )
+        return _segmented_reduction_helion_npu_two_phase(indices, input_data, num_nodes)
     return _segmented_reduction_helion_atomic(indices, input_data, num_nodes)
 
 
-# %%
-# Triton Implementation
-# ---------------------
-
-
-# %%
 @triton.jit
 def combine_fn_triton(
     left_values: tl.tensor,
@@ -395,12 +379,6 @@ def segmented_reduction_triton(
     return output
 
 
-# %%
-# PyTorch Reference Implementation
-# --------------------------------
-
-
-# %%
 def segmented_reduction_pytorch(
     indices: torch.Tensor, input_data: torch.Tensor, num_nodes: int
 ) -> torch.Tensor:
@@ -428,12 +406,6 @@ def segmented_reduction_pytorch(
     return pytorch_output
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the segmented reduction implementations.

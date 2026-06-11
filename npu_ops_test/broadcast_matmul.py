@@ -12,6 +12,7 @@ when W has no batch dimension.
 
 Tuned config: BM=128, BN=256, BK=64, GROUP_M=8
 """
+
 from __future__ import annotations
 
 import torch
@@ -49,7 +50,12 @@ def broadcast_matmul(x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
         acc = hl.zeros([tile_bm, tile_n], dtype=torch.float32)
         for tile_k in hl.tile(k):
             # Use hl.dot directly for better code generation
-            acc = hl.dot(x_2d[tile_bm, tile_k], w[tile_k, tile_n], acc=acc, out_dtype=torch.float32)
+            acc = hl.dot(
+                x_2d[tile_bm, tile_k],
+                w[tile_k, tile_n],
+                acc=acc,
+                out_dtype=torch.float32,
+            )
         out_2d[tile_bm, tile_n] = acc
     return out_2d.view(b, m, n)
 
@@ -67,6 +73,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")
