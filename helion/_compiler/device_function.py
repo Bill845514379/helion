@@ -952,12 +952,12 @@ class HelionCutePrinter(HelionTritonPrinter):
 def cute_texpr(expr: sympy.Expr) -> str:
     return HelionCutePrinter().doprint(expr)
 
-class HelionAscendPrinter(HelionTritonPrinter):
 
+class HelionAscendPrinter(HelionTritonPrinter):
     def _print_FloorDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self.doprint(lhs)
+        rhs_str = self.doprint(rhs)
 
         # Add parentheses to ensure correct operator precedence
         if not (lhs.is_Integer or lhs.is_Symbol):
@@ -970,8 +970,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_CleanDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self.doprint(lhs)
+        rhs_str = self.doprint(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -982,8 +982,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_CeilDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self.doprint(lhs)
+        rhs_str = self.doprint(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -995,8 +995,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_PythonMod(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self.doprint(lhs)
+        rhs_str = self.doprint(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -1005,6 +1005,7 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
         # Use simple % without sign checks
         return f"({lhs_str} % {rhs_str})"
+
 
 def ascend_texpr(expr: sympy.Expr) -> str:
     """Convert SymPy expression to Ascend NPU-compatible Triton code."""

@@ -138,7 +138,7 @@ def test(
 
 def main() -> None:
     """
-    - Small shape full attention (S<=128, D=64): Triton beats CANN SDPA 2-4x
+    - Small shape full attention (S<=128, D=64): Triton beats CAN-N SDPA 2-4x
     - Root cause: CANN's dispatch overhead (~13us) dominates for small shapes,
       while Triton's compiled kernel has ~5us dispatch + same compute.
     - Key tile sizes: BM=64, BN=64 (guided by hl.register_block_size).

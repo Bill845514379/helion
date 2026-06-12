@@ -5,11 +5,11 @@ Batch Matrix Multiplication Example
 This example demonstrates how to implement a batch matrix multiplication kernel using Helion.
 
 NPU Performance Note:
-  - B=1 + M<=64 (GEMV):     Triton/Helion 1.4-1.7x faster than CANN
-  - B<=8 + S<=256 (small):   Triton/Helion 1.2-2.1x faster than CANN
-  - B=128 + M=1:             Triton/Helion 1.1x faster than CANN
+  - B=1 + M<=64 (GEMV):     Triton/Helion 1.4-1.7x faster
+  - B<=8 + S<=256 (small):   Triton/Helion 1.2-2.1x faster
+  - B=128 + M=1:             Triton/Helion 1.1x faster
   - Fused bmm+bias+relu:     Triton/Helion 1.1-1.3x faster (1 kernel vs 3 ops)
-  - Square (S>=512, B>=16):  CANN wins (Cube unit)
+  - Square (S>=512, B>=16):  can-n wins (Cube unit)
 """
 
 from __future__ import annotations

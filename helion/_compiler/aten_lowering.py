@@ -1123,13 +1123,15 @@ def codegen_clamp(ctx: LoweringContext, node: Node) -> object:
     fn = ctx.cg.device_function
 
     # Get input
-    input_ast = _env_arg(ctx, node.args[0])
+    input_arg = node.args[0]
+    assert isinstance(input_arg, Node), "clamp input must be a Node"
+    input_ast = _env_arg(ctx, input_arg)
     assert isinstance(input_ast, ast.AST)
 
     result_var = fn.new_var("clamp_result")
 
     def _format_arg(arg: object, name: str) -> tuple[str, dict]:
-        if isinstance(arg, torch.fx.Node):
+        if isinstance(arg, Node):
             ast_node = _env_arg(ctx, arg)
             assert isinstance(ast_node, ast.AST)
             return f"{{{name}}}", {name: ast_node}
