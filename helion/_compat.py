@@ -282,8 +282,8 @@ if triton_is_available():
         try:
             # First check if we're using Triton-ascend backend
             try:
-                from triton.runtime.driver.active import (
-                    get_current_target,  # type: ignore[import-not-found]
+                from triton.runtime.driver.active import (  # pyrefly: ignore[import-error]
+                    get_current_target,
                 )
 
                 target = get_current_target()
@@ -617,8 +617,8 @@ def register_npu_backend() -> None:
     """Register Inductor backend for NPU device"""
     from torch._inductor.codegen.common import register_backend_for_device
     from torch._inductor.codegen.triton import TritonScheduling
-    from torch_npu._inductor.codegen.wrapper import (
-        NPUWrapperCodeGen,  # type: ignore[import-not-found]
+    from torch_npu._inductor.codegen.wrapper import (  # pyrefly: ignore[import-error]
+        NPUWrapperCodeGen,
     )
 
     register_backend_for_device(
@@ -630,8 +630,8 @@ def register_npu_backend() -> None:
 
 def _register_interface_for_device() -> None:
     from torch._dynamo.device_interface import register_interface_for_device
-    from torch_npu.utils._dynamo_device import (
-        NpuInterface,  # type: ignore[import-not-found]
+    from torch_npu.utils._dynamo_device import (  # pyrefly: ignore[import-error]
+        NpuInterface,
     )
 
     register_interface_for_device("npu", NpuInterface)

@@ -954,10 +954,13 @@ def cute_texpr(expr: sympy.Expr) -> str:
 
 
 class HelionAscendPrinter(HelionTritonPrinter):
+    def _print_basic_expr(self, expr: sympy.Basic) -> str:
+        return self.doprint(cast("sympy.Expr", expr))
+
     def _print_FloorDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self.doprint(lhs)
-        rhs_str = self.doprint(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         # Add parentheses to ensure correct operator precedence
         if not (lhs.is_Integer or lhs.is_Symbol):
@@ -970,8 +973,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_CleanDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self.doprint(lhs)
-        rhs_str = self.doprint(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -982,8 +985,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_CeilDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self.doprint(lhs)
-        rhs_str = self.doprint(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -995,8 +998,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_PythonMod(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self.doprint(lhs)
-        rhs_str = self.doprint(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
