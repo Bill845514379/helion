@@ -105,9 +105,7 @@ def check(m: int, k: int, n: int) -> None:
 
 
 def main() -> None:
-    """Run tests."""
     torch.manual_seed(0)
-
     print("Testing split_k_matmul...")
     check(16, 4096, 16)
 
