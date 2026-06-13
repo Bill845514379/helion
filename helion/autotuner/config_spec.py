@@ -159,7 +159,7 @@ class ConfigSpec:
 
         # NPU backends can be sensitive to program-id strategies; keep conservative.
         if hasattr(torch, "npu") and torch.npu.is_available():
-            self.allowed_pid_types = ("flat",)
+            self.allowed_pid_types = ("flat", "xyz")
         else:
             self.allowed_pid_types = tuple(VALID_PID_TYPES)
         self.grid_block_ids: list[int] = []
@@ -817,7 +817,47 @@ class BlockSizeSpec(_PowerOfTwoBlockIdItem):
         reduction_numel = _product(
             [next_power_of_2(spec.size_hint) for spec in base.reduction_loops]
         )
-        if total_ndim <= 2 and reduction_numel <= 128:
+        # NPU UB memory is limited (~192KB = 1572864 bits = 196608 bytes).
+        # Multi-tile kernels with reductions (matmul, bmm, attention) need smaller defaults to avoid UB overflow.
+        # 1D element-wise tiles can safely use larger blocks.
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            if total_ndim == 1 and reduction_numel <= 1:
+                # Pure 1D element-wise: launch overhead dominates, use large blocks.
+                # But still cap at 256 to avoid UB overflow on very large tensors
+                default = min(self.size_hint, 256)
+                default = 1 << max(default.bit_length() - 1, 0)
+                default = max(self.min_size, min(default, self.max_size, 256))
+            else:
+                # Multi-dim tile (2D matmul, 3D bmm, etc.): per-block UB usage
+                # grows with the product of block sizes. Target a safe starting
+                # point for NPU UB constraints (~192KB).
+                # The dominant factor is block_size product × 4 bytes (fp32 acc)
+                #
+                # Key insight: distinguish between outer tile dimensions and reduction dimensions.
+                # Outer dimensions affect grid size (smaller blocks = more blocks = higher overhead).
+                # Reduction dimensions affect register pressure (larger blocks = more registers).
+                # For outer dimensions, use larger defaults to reduce grid overhead.
+                # For reduction dimensions, use smaller defaults to avoid UB overflow.
+                is_reduction_dim = self.block_id in [spec.block_id for spec in base.reduction_loops]
+
+                if is_reduction_dim:
+                    # Reduction dimension: smaller blocks to limit register pressure
+                    # 16-32 is safe for most reductions
+                    per_dim = 16
+                elif total_ndim >= 3:
+                    # Outer dimension in 3D+ tile (e.g. bmm batch dim):
+                    # Use moderate blocks to balance grid overhead vs UB budget
+                    # 32x32 outer with 16 reduction = 16384 elements × 4 bytes = 65KB - safe
+                    per_dim = 32
+                else:
+                    # Outer dimension in 2D tile (e.g. matmul M/N dim):
+                    # Use larger blocks to reduce grid overhead
+                    # 64x64 outer with 32 reduction = 131072 elements × 4 bytes = 524KB - might be tight
+                    # But 64x64 is 4096 elements × 4 bytes × 3 = 49KB - safe
+                    per_dim = 64
+                floor_pow2 = 1 << max(per_dim.bit_length() - 1, 0)
+                default = max(self.min_size, min(floor_pow2, self.max_size))
+        elif total_ndim <= 2 and reduction_numel <= 128:
             default = 32
         elif total_ndim >= 3 and reduction_numel > 1:
             # With 3+ tiled dimensions and a non-trivial reduction/full-slice

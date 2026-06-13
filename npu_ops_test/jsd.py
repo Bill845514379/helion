@@ -18,11 +18,6 @@ The generalized JSD reduces to:
 Based on liger_kernel's JSD implementation used for knowledge distillation in language models.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -40,13 +35,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-# %%
-# JSD Kernel
-# ----------
-
-
-# %%
-@helion.kernel(ignore_warnings=[helion.exc.TensorOperationInWrapper], autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    ignore_warnings=[helion.exc.TensorOperationInWrapper],
+    autotune_ignore_errors=True,
+    autotune_effort="full",
+)
 def jsd_forward(
     _input: Tensor,  # student predictions (input) in log-space
     target: Tensor,  # teacher targets in log-space
@@ -148,12 +141,6 @@ def jsd_forward(
     return final_loss, dX
 
 
-# %%
-# JSD Loss Module (matches liger_kernel structure)
-# ------------------------------------------------
-
-
-# %%
 class HelionJSD(nn.Module):
     """
     Helion implementation of Jensen-Shannon Divergence matching liger_kernel.LigerJSD structure.
@@ -248,12 +235,6 @@ class TorchJSDBaseline(nn.Module):
         return loss.to(self.dtype)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check_jsd_kernel(
     B: int,
     T: int,
@@ -300,12 +281,6 @@ def check_jsd_kernel(
     run_example(helion_wrapper, baseline_wrapper, (log_q, log_p, shift_labels))
 
 
-# %%
-# Tritonbench Integration
-# -----------------------
-
-
-# %%
 def jsd_tritonbench(tb_op: object, log_q: Tensor, log_p: Tensor) -> Callable:
     """
     Wrapper for tritonbench that matches its interface.
@@ -330,12 +305,6 @@ def jsd_tritonbench(tb_op: object, log_q: Tensor, log_p: Tensor) -> Callable:
     return lambda: helion_jsd(log_q, log_p)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs JSD kernel verification.
@@ -356,9 +325,9 @@ def main() -> None:
         print("✓ JSD passed")
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

@@ -27,11 +27,6 @@ Two kernels are provided:
    assignment for better load balancing across streaming multiprocessors (SMs).
 """
 
-# %%
-# Imports and Dependencies
-# ------------------------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -43,13 +38,8 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Grouped GEMM Kernel - Basic Implementation
-# ------------------------------------------
 
-
-# %%
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def grouped_gemm_jagged(
     A_packed: torch.Tensor,  # [total_M, K], where total_M == sum(M_i)
     B: torch.Tensor,  # [K, N] shared across all groups
@@ -104,13 +94,7 @@ def grouped_gemm_jagged(
     return out
 
 
-# %%
-# Grouped GEMM Kernel - Persistent Implementation
-# -----------------------------------------------
-
-
-# %%
-@helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
 def grouped_gemm_jagged_persistent(
     A_packed: torch.Tensor,  # [total_M, K]
     B: torch.Tensor,  # [K, N]
@@ -231,12 +215,6 @@ def grouped_gemm_jagged_persistent(
     return out
 
 
-# %%
-# Data Preparation Utilities
-# --------------------------
-
-
-# %%
 def _pack_group_inputs(
     group_A: list[torch.Tensor], group_B: list[torch.Tensor]
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -268,12 +246,6 @@ def _pack_group_inputs(
     return A_packed, B_shared, group_offsets
 
 
-# %%
-# TritonBench Integration Wrappers
-# --------------------------------
-
-
-# %%
 def grouped_gemm_jagged_tritonbench(
     tb_op: object,
     group_A: list[torch.Tensor],
@@ -310,12 +282,6 @@ def grouped_gemm_jagged_persistent_tritonbench(
     return inner
 
 
-# %%
-# Reference Implementation for Validation
-# ---------------------------------------
-
-
-# %%
 def _reference_grouped_gemm(
     group_A: list[torch.Tensor], group_B: list[torch.Tensor]
 ) -> torch.Tensor:
@@ -344,12 +310,6 @@ def grouped_gemm_jagged_persistent_example(
     return grouped_gemm_jagged_persistent(A_packed, B_shared, group_offsets)
 
 
-# %%
-# Test Harness and Validation
-# ---------------------------
-
-
-# %%
 def main() -> None:
     torch.manual_seed(0)  # Ensure reproducible test results
     device = DEVICE
@@ -371,6 +331,7 @@ def main() -> None:
         (group_A, group_B),
         rtol=1e-2,
         atol=1e-2,
+        use_wall_clock=True,
     )
     print("✓ Non-persistent kernel passed")
 
@@ -380,6 +341,7 @@ def main() -> None:
         (group_A, group_B),
         rtol=1e-2,
         atol=1e-2,
+        use_wall_clock=True,
     )
     print("✓ Persistent kernel passed")
 

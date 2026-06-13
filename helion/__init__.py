@@ -7,13 +7,14 @@ from . import language
 from . import runtime
 from ._utils import cdiv
 from ._utils import next_power_of_2
+from ._utils import npu_is_available
 from .runtime import Config
 from .runtime import Kernel
 from .runtime import kernel
 from .runtime import kernel as jit  # alias
 from .runtime.settings import RefMode
 from .runtime.settings import Settings
-from ._testing import is_npu
+
 __all__ = [
     "Config",
     "Kernel",
@@ -34,6 +35,6 @@ _logging.init_logs()
 from ._compiler._dynamo.variables import register_dynamo_variable  # noqa: E402
 
 register_dynamo_variable()
-if is_npu():
+if npu_is_available():
     _compat_module.register_npu_backend()
     _compat_module._register_interface_for_device()

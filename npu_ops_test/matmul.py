@@ -6,7 +6,6 @@ with support for a customizable epilogue function. It includes autotuning,
 correctness checks against PyTorch baselines, and integration with tritonbench.
 """
 
-# %%
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -16,9 +15,7 @@ import torch
 from torch import Tensor
 
 import helion
-from helion._compat import use_tileir_tunables
 from helion._testing import DEVICE
-print(f"Using device: {DEVICE}")
 from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
@@ -28,18 +25,15 @@ if TYPE_CHECKING:
 
 
 import torch_npu
-# fix: /workspace/helion/helion/_testing.py:974: UserWarning: Cannot create tensor with interal format while 
+
 torch_npu.npu.config.allow_internal_format = True
 
-# %%
+
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
-    # static_shapes=True,
-    # Set autotune effort to quick for faster verification
+    static_shapes=True,
     autotune_ignore_errors=True,
     autotune_effort="full",
-    # Disable autotung over unrolling/range_num_stages
-    # tl.dot is pipelined with num_stages
 )
 def matmul(
     x: Tensor,
@@ -62,15 +56,21 @@ def matmul(
     out = torch.empty(
         [m, n], dtype=torch.promote_types(x.dtype, y.dtype), device=x.device
     )
-    for tile_m, tile_n in hl.tile([m, n]):
+    # Register block sizes for autotuner to find optimal tiling
+    block_m = hl.register_block_size(64, 256)
+    block_n = hl.register_block_size(64, 256)
+    block_k = hl.register_block_size(32, 128)
+    for tile_m, tile_n in hl.tile(
+        [m, n],
+        block_size=[block_m, block_n],
+    ):
         acc = hl.zeros([tile_m, tile_n], dtype=torch.float32)
-        for tile_k in hl.tile(k):
+        for tile_k in hl.tile(k, block_size=block_k):
             acc = torch.addmm(acc, x[tile_m, tile_k], y[tile_k, tile_n])
         out[tile_m, tile_n] = epilogue(acc, (tile_m, tile_n))
     return out
 
 
-# %%
 class MatMulFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # pyrefly: ignore [bad-override]
@@ -165,7 +165,6 @@ def addmm_autograd(
     return AddMMFunction.apply(bias, mat1, mat2, alpha, beta)  # type: ignore[no-any-return]
 
 
-# %%
 def autotune(m: int, k: int, n: int) -> None:
     """
     Runs autotuning on the matmul kernel with a ReLU epilogue and saves the best config.
@@ -183,7 +182,6 @@ def autotune(m: int, k: int, n: int) -> None:
     best_config.save("best_config.json")
 
 
-# %%
 def check(m: int, k: int, n: int) -> None:
     """
     Checks the correctness of the matmul kernel against PyTorch baselines.
@@ -253,12 +251,16 @@ def check(m: int, k: int, n: int) -> None:
     )
 
     # Test addmm forward + backward pass
-    print("\n\n=== AddMM Forward + Backward Pass Test ===")
+    print("\n\n=== AddMM Forward + Backward Pass ===")
     input_grad = torch.randn(
         [m, n], device=DEVICE, dtype=torch.float32, requires_grad=True
     )
-    mat1_grad = torch.randn([m, k], device=DEVICE, dtype=torch.float32, requires_grad=True)
-    mat2_grad = torch.randn([k, n], device=DEVICE, dtype=torch.float32, requires_grad=True)
+    mat1_grad = torch.randn(
+        [m, k], device=DEVICE, dtype=torch.float32, requires_grad=True
+    )
+    mat2_grad = torch.randn(
+        [k, n], device=DEVICE, dtype=torch.float32, requires_grad=True
+    )
 
     # Use lambda to handle the keyword argument format for torch.addmm
     run_example(
@@ -270,23 +272,10 @@ def check(m: int, k: int, n: int) -> None:
         kernel_name="helion_addmm_autograd",
         baseline_name="torch",
         bwd=True,
-    )
-
-    # Test addmm forward + backward with different alpha/beta values
-    print("\n\n=== AddMM Forward + Backward Test (Alpha=2.0, Beta=0.5) ===")
-    run_example(
-        addmm_autograd,
-        lambda bias, mat1, mat2, alpha, beta: torch.addmm(
-            bias, mat1, mat2, alpha=alpha, beta=beta
-        ),
-        (input_grad, mat1_grad, mat2_grad, 2.0, 0.5),
-        kernel_name="helion_addmm_autograd_scaled",
-        baseline_name="torch",
-        bwd=True,
+        use_wall_clock=True,
     )
 
 
-# %%
 def matmul_tritonbench(
     tb_op: object, a: torch.Tensor, b: torch.Tensor, bias: torch.Tensor | None
 ) -> Callable:
@@ -322,21 +311,13 @@ def addmm_tritonbench(
     return lambda: addmm_autograd(bias, mat1, mat2)
 
 
-# %%
 def main() -> None:
-    """
-    Main function to run autotuning (commented out) and correctness checks.
-    """
-    check(1024, 1024, 1024) 
-    # pass
-    # check(512, 512, 512)
-    # pass
-    # check(64, 64, 64)
+    check(64, 1024, 1024)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

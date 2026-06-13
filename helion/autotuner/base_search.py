@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import abc
 import collections
-import contextlib
-import dataclasses
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import as_completed
+import contextlib
+import dataclasses
 import datetime
 import functools
 import inspect
@@ -331,16 +331,16 @@ def _autotune_parallel_benchmark_workers_allowed() -> bool:
     or hangs with CUDA/NPU runtimes. Parallel benchmarking is disabled there unless
     ``HELION_AUTOTUNE_BENCHMARK_SUBPROCESS_IN_TEST=1`` is set.
     """
-    v = os.environ.get(
-        "HELION_AUTOTUNE_BENCHMARK_SUBPROCESS_IN_TEST", ""
-    ).strip().lower()
+    v = (
+        os.environ.get("HELION_AUTOTUNE_BENCHMARK_SUBPROCESS_IN_TEST", "")
+        .strip()
+        .lower()
+    )
     if v in ("1", "true", "yes", "on"):
         return True
     if torch._utils_internal.is_fb_unit_test():
         return False
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        return False
-    return True
+    return not os.environ.get("PYTEST_CURRENT_TEST")
 
 
 def _clone_args(
@@ -654,9 +654,7 @@ class BaseSearch(BaseAutotuner):
         Returns:
             The function and performance of the configuration in ms.
         """
-        _npu_trace_autotune_candidate(
-            self.kernel, config, "pre_compile(slow_path)"
-        )
+        _npu_trace_autotune_candidate(self.kernel, config, "pre_compile(slow_path)")
         try:
             fn = self.kernel.compile_config(config, allow_print=False)
         except BaseException as compile_err:
@@ -706,11 +704,7 @@ class BaseSearch(BaseAutotuner):
             ) from e
         _backend = getattr(getattr(self, "config_spec", None), "backend", None)
         action = classification_override or (
-            (
-                _backend.classify_autotune_exception(e)
-                if _backend is not None
-                else None
-            )
+            (_backend.classify_autotune_exception(e) if _backend is not None else None)
             or classify_triton_exception(e)
         )
         if self.settings.autotune_ignore_errors:
@@ -996,10 +990,10 @@ class BaseSearch(BaseAutotuner):
             exc_module=(
                 str(m) if (m := message_data.get("exc_module")) is not None else None
             ),
-            exc_args=cast(tuple[object, ...], exc_args_raw),
-            traceback=cast(str | None, message_data.get("traceback")),
-            classification=cast(str | None, message_data.get("classification")),
-            captured_output=cast(str | None, message_data.get("captured_output")),
+            exc_args=cast("tuple[object, ...]", exc_args_raw),
+            traceback=cast("str | None", message_data.get("traceback")),
+            classification=cast("str | None", message_data.get("classification")),
+            captured_output=cast("str | None", message_data.get("captured_output")),
         )
         e = err.to_exception()
         self._handle_autotune_benchmark_runtime_error(
@@ -1176,8 +1170,10 @@ class BaseSearch(BaseAutotuner):
             effective_benchmark_jobs = 1
         spawnable: list[tuple[int, SerializedCompiledFunction]] = []
         if effective_benchmark_jobs > 1:
+            from contextlib import suppress
+
             for index in working_indices:
-                try:
+                with suppress(RuntimeError):
                     spawnable.append(
                         (
                             index,
@@ -1186,8 +1182,6 @@ class BaseSearch(BaseAutotuner):
                             ),
                         )
                     )
-                except RuntimeError:
-                    pass
 
         use_pool = effective_benchmark_jobs > 1 and len(spawnable) > 0
         if not use_pool:
@@ -1221,7 +1215,7 @@ class BaseSearch(BaseAutotuner):
                     baseline_bundle_path,
                 )
 
-            spawn_by_index = {i: spec for i, spec in spawnable}
+            spawn_by_index = dict(spawnable)
             not_spawnable = [i for i in working_indices if i not in spawn_by_index]
             total_tasks = len(working_indices)
             progress_console = Console(stderr=True)
@@ -1286,9 +1280,7 @@ class BaseSearch(BaseAutotuner):
                             decorator=decorator,
                         )
                         with open(payload_path, "wb") as pf:
-                            pickle.dump(
-                                payload, pf, protocol=pickle.HIGHEST_PROTOCOL
-                            )
+                            pickle.dump(payload, pf, protocol=pickle.HIGHEST_PROTOCOL)
                         fut = executor.submit(
                             _autotune_bench_subprocess_worker,
                             payload_path,
@@ -1297,9 +1289,7 @@ class BaseSearch(BaseAutotuner):
                         future_meta[fut] = (index, payload_path, result_path, args_path)
 
                     for fut in as_completed(future_meta):
-                        index, payload_path, result_path, args_path = future_meta[
-                            fut
-                        ]
+                        index, payload_path, result_path, args_path = future_meta[fut]
                         fut.result()
                         with open(result_path, "rb") as rf:
                             msg = pickle.load(rf)
@@ -1362,7 +1352,7 @@ class BaseSearch(BaseAutotuner):
                 run_parallel_spawn_phase(None)
 
         assert all(x is not None for x in slot_results)
-        return cast(list[BenchmarkResult], slot_results)
+        return cast("list[BenchmarkResult]", slot_results)
 
     def autotune(self, *, skip_cache: bool = False) -> Config:
         """
@@ -2658,9 +2648,7 @@ def _autotune_bench_subprocess_worker(payload_path: str, result_path: str) -> No
         working_args = torch.load(payload.working_args_path)
         assert isinstance(working_args, (list, tuple))
         _bench_fn = (
-            do_bench_generic
-            if payload.bench_kind == "generic"
-            else default_do_bench()
+            do_bench_generic if payload.bench_kind == "generic" else default_do_bench()
         )
         _capture_ctx = (
             capture_output()
@@ -2673,7 +2661,9 @@ def _autotune_bench_subprocess_worker(payload_path: str, result_path: str) -> No
         _bench_device_synchronize()
         if payload.accuracy_check:
             if payload.baseline_bundle_path is None:
-                raise RuntimeError("accuracy_check set but baseline_bundle_path is None")
+                raise RuntimeError(
+                    "accuracy_check set but baseline_bundle_path is None"
+                )
             baseline_output, baseline_post_args = torch.load(
                 payload.baseline_bundle_path
             )

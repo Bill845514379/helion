@@ -15,11 +15,6 @@ SiLU (Swish) activation: SiLU(x) = x * sigmoid(x) = x / (1 + exp(-x))
 Based on liger_kernel's SwiGLU implementation used in LLaMA and other gated feedforward networks.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,10 +24,6 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 import torch_npu
-
-# Match other NPU ops tests: internal-format tensors can disagree with Helion/Triton
-# pointer loads and fault the Ascend vector core (MTE DDR out of range).
-torch_npu.npu.config.allow_internal_format = True
 
 import helion
 from helion._testing import DEVICE
@@ -44,13 +35,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-
-# %%
-# SwiGLU Kernel
-# -------------
+torch_npu.npu.config.allow_internal_format = True
 
 
-# %%
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def swiglu_fwd(a: Tensor, b: Tensor) -> Tensor:
     """
@@ -160,12 +147,6 @@ def swiglu(a: Tensor, b: Tensor) -> Tensor:
     return SwigluFunction.apply(a, b)  # type: ignore[no-any-return]
 
 
-# %%
-# SwiGLU MLP Module (matches liger_kernel structure)
-# --------------------------------------------------
-
-
-# %%
 @dataclass
 class Config:
     """
@@ -214,12 +195,6 @@ class HelionSwiGLUMLP(nn.Module):
         return self.down_proj(swiglu_output)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check_swiglu_kernel(shape: tuple[int, ...]) -> None:
     """
     Verify the SwiGLU kernel implementation against PyTorch's baseline.
@@ -296,12 +271,6 @@ def check_swiglu_mlp(
     run_example(lambda x: helion_mlp(x), lambda x: baseline_mlp(x), (x,))
 
 
-# %%
-# Tritonbench Integration
-# -----------------------
-
-
-# %%
 def swiglu_tritonbench(tb_op: object, x: Tensor) -> Callable:
     """
     Wrapper for tritonbench that matches its interface.
@@ -344,12 +313,6 @@ def swiglu_tritonbench(tb_op: object, x: Tensor) -> Callable:
     return lambda: helion_mlp(x)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the SwiGLU kernel and MLP verification.
@@ -381,6 +344,5 @@ def main() -> None:
         print("✓ SwiGLU MLP config passed")
 
 
-# %%
 if __name__ == "__main__":
     main()

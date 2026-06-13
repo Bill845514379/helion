@@ -6,11 +6,6 @@ This example demonstrates how to implement an addition operation between a jagge
 and a dense tensor using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -20,11 +15,6 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Jagged Tensor Format
-# --------------------
-
-# %%
 """
 A tensor x is stored in a jagged-row, prefix-sparse layout that packs only the non-zero
 elements of each row. All non-zeros are concatenated into a one-dimensional buffer
@@ -36,16 +26,7 @@ omitted from storage.
 """
 
 
-# %%
-# Jagged Dense Addition Kernel
-# ----------------------------
-
-
-# %%
-@helion.kernel(    
-    autotune_ignore_errors=True,
-    autotune_effort="full"
-)
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def jagged_dense_add_2d(
     x_data: torch.Tensor, x_offsets: torch.Tensor, y: torch.Tensor
 ) -> torch.Tensor:
@@ -86,12 +67,6 @@ def jagged_dense_add_2d(
     return out
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def jagged_dense_add_2d_reference(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -118,12 +93,6 @@ def jagged_dense_add_2d_reference(
     return out
 
 
-# %%
-# Utility Function
-# ----------------
-
-
-# %%
 def random_jagged_2d(
     num_rows: int,
     max_cols: int,
@@ -158,12 +127,6 @@ def random_jagged_2d(
     return x_data, x_offsets
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the jagged dense add kernel verification.
@@ -176,12 +139,16 @@ def main() -> None:
     y = torch.randn([rows, cols], device=DEVICE)
 
     run_example(
-        jagged_dense_add_2d, jagged_dense_add_2d_reference, (x_data, x_offsets, y)
+        jagged_dense_add_2d,
+        jagged_dense_add_2d_reference,
+        (x_data, x_offsets, y),
+        use_wall_clock=True,
     )
 
 
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

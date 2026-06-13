@@ -11,11 +11,6 @@ tensor by:
 4. Converting grad_logits back to grad_input (batch x hidden) via matmul
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Any
@@ -30,14 +25,7 @@ from helion._testing import run_example
 import helion.exc
 import helion.language as hl
 
-# %%
-# Helion JSD Kernel
-# -----------------
-# This kernel computes JSD loss and gradient w.r.t. logits for a single chunk.
-# The gradient is computed during the forward pass to avoid storing full logits.
 
-
-# %%
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def jsd_kernel(
     beta: float,
@@ -98,14 +86,6 @@ def jsd_kernel(
     return loss, grad_student_logits
 
 
-# %%
-# Backwards-compatible kernel for unit tests
-# ------------------------------------------
-# This kernel computes JSD loss from logits (without gradients).
-# For memory-efficient fused linear + JSD, use fused_linear_jsd_fwd instead.
-
-
-# %%
 @helion.kernel(ignore_warnings=[helion.exc.TensorOperationInWrapper])
 def fused_linear_jsd_kernel(
     beta: float,
@@ -150,13 +130,6 @@ def fused_linear_jsd_kernel(
     return (loss / batch_size).sum()
 
 
-# %%
-# Autograd Function
-# -----------------
-# This implements the memory-efficient forward/backward using chunking.
-
-
-# %%
 class FusedLinearJSDFunction(torch.autograd.Function):
     """
     Memory-efficient fused linear + JSD using chunking.
@@ -266,12 +239,6 @@ class FusedLinearJSDFunction(torch.autograd.Function):
         return grad_student_input, grad_student_weight, None, None, None, None, None
 
 
-# %%
-# Forward Function
-# ----------------
-
-
-# %%
 def fused_linear_jsd_fwd(
     beta: float,
     ignore_index: int,
@@ -297,12 +264,6 @@ def fused_linear_jsd_fwd(
     )
 
 
-# %%
-# Benchmark Entry Point Function
-# ------------------------------
-
-
-# %%
 def fused_linear_jsd_fwd_tritonbench(
     tb_op: object,
     student_input: torch.Tensor,
@@ -328,12 +289,6 @@ def fused_linear_jsd_fwd_tritonbench(
     )
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def fused_linear_jsd_pytorch(
     beta: float,
     ignore_index: int,
@@ -371,12 +326,6 @@ def fused_linear_jsd_pytorch(
     return loss.mean()
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(m: int, n: int, k: int) -> None:
     student_input = torch.rand([m, n], device=DEVICE, dtype=torch.float)
     teacher_input = torch.rand([m, n], device=DEVICE, dtype=torch.float)
@@ -389,12 +338,6 @@ def check(m: int, n: int, k: int) -> None:
     )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     check(32, 128, 408)
 

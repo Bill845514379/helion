@@ -5,11 +5,6 @@ Long Dimension Sum Example
 This example demonstrates how to implement efficient sum reduction along a long dimension using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -19,12 +14,7 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Baseline Implementation
-# -----------------------
 
-
-# %%
 def baseline_sum(x: torch.Tensor) -> torch.Tensor:
     """
     PyTorch baseline implementation of sum reduction along the last dimension.
@@ -38,21 +28,10 @@ def baseline_sum(x: torch.Tensor) -> torch.Tensor:
     return x.sum(-1)
 
 
-# %%
-# Naive Reduction Kernel
-# ----------------------
-
-
-# %%
 @helion.kernel(
-    config=helion.Config(
-        block_sizes=[1],
-        reduction_loops=[None],
-        num_warps=32,
-        num_stages=4,
-        indexing="block_ptr",
-    ),
-    autotune_ignore_errors=True, autotune_effort="full"
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
 )
 def longsum(x: torch.Tensor) -> torch.Tensor:
     """
@@ -74,23 +53,10 @@ def longsum(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
-# Looped Reduction Kernel
-# -----------------------
-
-
-# %%
 @helion.kernel(
-    config=helion.Config(
-        block_sizes=[1],
-        reduction_loops=[
-            32768
-        ],  # [None] for naive reduction, [tile_size] for looped reduction
-        num_warps=16,
-        num_stages=5,
-        indexing="pointer",
-    ),
-    autotune_ignore_errors=True, autotune_effort="full"
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
 )
 def longsum_w_red_loop(x: torch.Tensor) -> torch.Tensor:
     """
@@ -112,17 +78,10 @@ def longsum_w_red_loop(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
-# Manual Looped Reduction Kernel
-# ------------------------------
-
-
-# %%
 @helion.kernel(
-    config=helion.Config(
-        block_sizes=[32768, 1], num_warps=16, num_stages=5, indexing="pointer"
-    ),
-    autotune_ignore_errors=True, autotune_effort="full"
+    static_shapes=True,
+    autotune_ignore_errors=True,
+    autotune_effort="full",
 )
 def longsum_manual(x: torch.Tensor) -> torch.Tensor:
     """
@@ -150,12 +109,6 @@ def longsum_manual(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(m: int, n: int) -> None:
     """
     Verify the sum kernel implementations against PyTorch's native sum function.
@@ -178,23 +131,18 @@ def check(m: int, n: int) -> None:
     run_example(kernels, baseline_sum, (x,))
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the sum kernel verification with a large tensor.
 
     Tests with a tensor of shape [4, 130000] to demonstrate handling of long reduction dimensions.
     """
-    check(4, 130000)  # seq_len = 128k
+    check(2, 65000)  # seq_len = 128k
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

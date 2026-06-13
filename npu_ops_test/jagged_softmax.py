@@ -5,11 +5,6 @@ Jagged Softmax Example
 This example demonstrates how to compute the softmax across each batch in a jagged tensor using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import itertools
@@ -22,12 +17,7 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Reference Implementation
-# ------------------------
 
-
-# %%
 def reference_jagged_softmax_pytorch(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -49,16 +39,7 @@ def reference_jagged_softmax_pytorch(
     return torch.cat(vals, dim=0)
 
 
-# %%
-# Jagged Softmax Kernel
-# ---------------------
-
-
-# %%
-@helion.kernel(
-    autotune_ignore_errors=True,
-    autotune_effort="full"
-)
+@helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def jagged_softmax_kernel(
     x_data: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -143,12 +124,6 @@ def jagged_softmax_kernel(
     return out.reshape(N, M)
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def jagged_softmax_tritonbench(
     tb_op: object, x: torch.Tensor, B: int, M: int, seqlen: int, sparsity: float
 ) -> Callable[[], torch.Tensor]:
@@ -170,12 +145,6 @@ def jagged_softmax_tritonbench(
     return lambda: jagged_softmax_kernel(x._values, x._offsets)
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point for jagged softmax kernel verification.
@@ -199,11 +168,13 @@ def main() -> None:
         lambda x, o: jagged_softmax_kernel(x, o),
         lambda x, o: reference_jagged_softmax_pytorch(x, o),
         (x_data, x_offsets),
+        use_wall_clock=True,
     )
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

@@ -8,7 +8,7 @@ import math
 import os
 import statistics
 import time
-from collections.abc import Iterator
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import TypeVar
@@ -17,9 +17,11 @@ from typing import cast
 import torch
 import torch.distributed as dist
 
+from .progress_bar import iter_with_progress
 from helion import _compat
 
-from .progress_bar import iter_with_progress
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 T = TypeVar("T")
 
@@ -100,7 +102,6 @@ def compute_repeat(
     from triton import runtime
 
     di = runtime.driver.active.get_device_interface()  # type: ignore[attr-defined]
-    cache = runtime.driver.active.get_empty_cache_for_benchmark()  # type: ignore[attr-defined]
 
     # Warm the pipeline once before collecting timing samples.
     fn()
@@ -276,11 +277,12 @@ def _summarize_statistics_fallback(
     """
     # Convert tensor to list if needed
     import torch
+
     if isinstance(times, torch.Tensor):
         times_list = times.cpu().tolist()
     else:
         times_list = list(times) if not isinstance(times, list) else times
-    
+
     if return_mode == "min":
         return min(times_list)
     if return_mode == "max":
@@ -339,8 +341,6 @@ def do_bench(
     fn()
     di.synchronize()
 
-    cache = runtime.driver.active.get_empty_cache_for_benchmark()  # pyrefly: ignore
-
     # estimate number of repeats
     start_event = di.Event(enable_timing=True)
     end_event = di.Event(enable_timing=True)
@@ -384,7 +384,9 @@ def do_bench(
                 torch.tensor(times), quantiles, return_mode
             )  # pyrefly: ignore
         except Exception:
-            raw = _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
+            raw = _summarize_statistics(
+                times, quantiles, return_mode
+            )  # pyrefly: ignore
         return _coerce_triton_timing(raw)
     return _summarize_statistics(times, quantiles, return_mode)  # pyrefly: ignore
 
@@ -548,14 +550,14 @@ def _do_bench_npu_fallback(
 
     # Warmup
     fn()
-    torch.npu.synchronize()
+    _bench_device_synchronize()
 
     # Estimate number of repeats
     start = time.perf_counter()
     for _ in range(5):
         _compat.safe_clear_cache()
         fn()
-    torch.npu.synchronize()
+    _bench_device_synchronize()
     end = time.perf_counter()
     estimate_ms = sync_object((end - start) * 1000 / 5)
 
@@ -574,10 +576,10 @@ def _do_bench_npu_fallback(
             for x in grad_to_none:
                 x.grad = None
         _compat.safe_clear_cache()
-        torch.npu.synchronize()
+        _bench_device_synchronize()
         t0 = time.perf_counter()
         fn()
-        torch.npu.synchronize()
+        _bench_device_synchronize()
         t1 = time.perf_counter()
         times.append((t1 - t0) * 1000)  # convert to ms
 

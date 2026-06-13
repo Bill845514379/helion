@@ -1111,6 +1111,87 @@ def codegen_gather(ctx: LoweringContext, node: Node) -> object:
     return expr_from_string(result_var)
 
 
+clamp_lowering = register_lowering(
+    torch.ops.aten.clamp.default,
+    masked_value_fn=passthrough_masked_value,
+)
+
+
+@clamp_lowering.register_codegen("triton")
+def codegen_clamp(ctx: LoweringContext, node: Node) -> object:
+    """Generate tl.clamp/tl.maximum/tl.minimum for aten.clamp"""
+    fn = ctx.cg.device_function
+
+    # Get input
+    input_arg = node.args[0]
+    assert isinstance(input_arg, Node), "clamp input must be a Node"
+    input_ast = _env_arg(ctx, input_arg)
+    assert isinstance(input_ast, ast.AST)
+
+    result_var = fn.new_var("clamp_result")
+
+    def _format_arg(arg: object, name: str) -> tuple[str, dict]:
+        if isinstance(arg, Node):
+            ast_node = _env_arg(ctx, arg)
+            assert isinstance(ast_node, ast.AST)
+            return f"{{{name}}}", {name: ast_node}
+        return str(arg), {}
+
+    # Handle different argument patterns
+    if len(node.args) == 2:
+        # clamp(input, min)
+        min_val = node.args[1]
+        min_str, min_kwargs = _format_arg(min_val, "min_val")
+        ctx.cg.add_statement(
+            statement_from_string(
+                f"{result_var} = tl.maximum({{input}}, {min_str})",
+                input=input_ast,
+                **min_kwargs,
+            )
+        )
+    elif len(node.args) == 3:
+        min_val = node.args[1]
+        max_val = node.args[2]
+        if min_val is None and max_val is None:
+            return input_ast
+        if min_val is None:
+            # clamp(input, None, max)
+            max_str, max_kwargs = _format_arg(max_val, "max_val")
+            ctx.cg.add_statement(
+                statement_from_string(
+                    f"{result_var} = tl.minimum({{input}}, {max_str})",
+                    input=input_ast,
+                    **max_kwargs,
+                )
+            )
+        elif max_val is None:
+            # clamp(input, min, None)
+            min_str, min_kwargs = _format_arg(min_val, "min_val")
+            ctx.cg.add_statement(
+                statement_from_string(
+                    f"{result_var} = tl.maximum({{input}}, {min_str})",
+                    input=input_ast,
+                    **min_kwargs,
+                )
+            )
+        else:
+            # clamp(input, min, max)
+            min_str, min_kwargs = _format_arg(min_val, "min_val")
+            max_str, max_kwargs = _format_arg(max_val, "max_val")
+            ctx.cg.add_statement(
+                statement_from_string(
+                    f"{result_var} = tl.clamp({{input}}, {min_str}, {max_str})",
+                    input=input_ast,
+                    **min_kwargs,
+                    **max_kwargs,
+                )
+            )
+    else:
+        return input_ast
+
+    return expr_from_string(result_var)
+
+
 topk_lowering = register_lowering(torch.ops.aten.topk.default)
 
 

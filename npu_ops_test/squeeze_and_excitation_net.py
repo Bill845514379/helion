@@ -7,10 +7,8 @@ net as those used in https://arxiv.org/abs/1709.01507.
 All example tensors use ``torch.float32`` on ``DEVICE`` (see ``_TENSOR_DTYPE``).
 """
 
-# %%
 from __future__ import annotations
 
-import os
 import sys
 
 import torch
@@ -38,7 +36,7 @@ def _max_diff(a: torch.Tensor, b: torch.Tensor) -> tuple[float, float, tuple[int
     flat_idx = int(flat.argmax().item())
     max_abs = float(flat[flat_idx].item())
     denom = b32.abs().clamp_min(1e-12).reshape(-1)[flat_idx]
-    max_rel = float((max_abs / float(denom.item())))
+    max_rel = float(max_abs / float(denom.item()))
 
     idx = flat_idx
     shape = diff.shape
@@ -98,9 +96,10 @@ def squeeze_and_excitation_net_bwd_dx_reference(
     grad_to_d = g * xf * d.to(torch.float32) * (1.0 - d.to(torch.float32))
     grad_to_c = torch.matmul(grad_to_d, b.transpose(0, 1).to(torch.float32))
     grad_c = grad_to_c * (c.to(torch.float32) > 0)
-    return (g * d.to(torch.float32) + torch.matmul(grad_c, a.transpose(0, 1).to(torch.float32))).to(
-        x.dtype
-    )
+    return (
+        g * d.to(torch.float32)
+        + torch.matmul(grad_c, a.transpose(0, 1).to(torch.float32))
+    ).to(x.dtype)
 
 
 def squeeze_and_excitation_net_bwd_da_reference(
@@ -139,7 +138,6 @@ def squeeze_and_excitation_net_bwd_db_reference(
     return torch.matmul(c.transpose(0, 1).to(torch.float32), grad_d).to(grad_out.dtype)
 
 
-# %%
 @helion.kernel(
     # static_shapes=True gives a performance boost for matmuls
     static_shapes=True,
@@ -193,7 +191,6 @@ def squeeze_and_excitation_net_fwd(
     return out, c, d
 
 
-# %%
 @helion.kernel(
     static_shapes=True,
     autotune_ignore_errors=True,
@@ -243,7 +240,6 @@ def squeeze_and_excitation_net_bwd_dx(
     return grad_x
 
 
-# %%
 @helion.kernel(
     static_shapes=True,
     autotune_ignore_errors=True,
@@ -289,7 +285,6 @@ def squeeze_and_excitation_net_bwd_da(
     return grad_a
 
 
-# %%
 @helion.kernel(
     static_shapes=True,
     autotune_ignore_errors=True,
@@ -334,9 +329,6 @@ def squeeze_and_excitation_net_bwd_db(
     return grad_b
 
 
-# %%
-# Reference Implementation
-# --------------------
 def squeeze_and_excitation_net_pytorch(
     x: torch.Tensor, a: torch.Tensor, b: torch.Tensor
 ) -> torch.Tensor:
@@ -352,9 +344,6 @@ def squeeze_and_excitation_net_pytorch(
     return torch.mul(x, torch.sigmoid(torch.relu(x @ a) @ b))
 
 
-# %%
-# Autograd Function
-# ------------------
 class SqueezeAndExcitationNetFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # type: ignore[override]
@@ -419,10 +408,10 @@ def check(m: int, k: int, n: int) -> None:
             bwd=bwd,
             rtol=_AUTOTUNE_BASELINE_RTOL,
             atol=_AUTOTUNE_BASELINE_ATOL,
+            use_wall_clock=True,
         )
 
 
-# %%
 def main() -> None:
     """
     Main function to run correctness checks.
@@ -430,9 +419,9 @@ def main() -> None:
     check(1024, 1024, 1024)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

@@ -6,11 +6,6 @@ This example demonstrates how to implement a Root Mean Square (RMS) normalizatio
 operation using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Any
@@ -47,12 +42,6 @@ def rms_norm_bwd_reference(
     return grad_x, grad_weight
 
 
-# %%
-# RMS Normalization Kernel
-# ------------------------
-
-
-# %%
 @helion.kernel(
     autotune_ignore_errors=True,
     autotune_effort="full",
@@ -96,66 +85,58 @@ def rms_norm_fwd(
 
     return out, inv_rms.reshape(-1, 1)
 
+
 @helion.kernel(
     autotune_ignore_errors=True,
     autotune_effort="full",
     autotune_baseline_fn=rms_norm_bwd_reference,
+    ignore_warnings=[helion.exc.TensorOperationInWrapper],
 )
 def rms_norm_bwd(
     grad_out: torch.Tensor,
     x: torch.Tensor,
     weight: torch.Tensor,
     rsqrt: torch.Tensor,
-    n_chunk_max: hl.constexpr = 1024,  # type: ignore[valid-type]
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Compute gradient for input tensor (dX) and weights (dW).
 
-    Splits the feature dimension into tiles of at most ``n_chunk_max`` elements so
-    on-chip buffers (no full-[N] fp32 ``grad_w_m``) fit Ascend UB; ``mean`` for the
-    RMS backward term is accumulated in a separate pass over N-chunks per row.
+    This kernel computes per-sample gradients by performing reductions across
+    the feature dimension (N) for each sample in the batch and across the batches
+    in a split fashion.
 
     Args:
         grad_out: Gradient w.r.t rms norm output [M, N]
         x: Original input tensor [M, N]
         weight: Weight parameter [N]
-        rsqrt: Inverse RMS tensor [M, 1]
-        n_chunk_max: Max feature elements per tile (constexpr; lower if UB overflow).
+        inv_rms: Inverse RMS tensor [M, 1]
 
     Returns:
         grad_x: Gradient w.r.t input tensor, shape [M, N]
-        grad_weight: Gradient w.r.t weight tensor, shape [N]
+        grad_weight: Gradient w.r.t eight tensor, shape [N]
     """
     m_block = hl.register_block_size(x.size(0))
-    n = hl.specialize(weight.size(0))
     grad_x = torch.empty_like(x)
-    grad_weight = x.new_zeros(
+    grad_weight = x.new_empty(
         [(x.size(0) + m_block - 1) // m_block, *weight.shape], dtype=torch.float32
     )
+    weight_shape = hl.specialize(weight.size(0))
     for mb_cta in hl.tile(x.size(0), block_size=m_block):
+        grad_w_m = weight.new_zeros(weight_shape, dtype=torch.float32)
         for mb in hl.tile(mb_cta.begin, mb_cta.end):
-            s = torch.zeros_like(x[mb, 0], dtype=torch.float32)
-            for tn in hl.tile(n, block_size=n_chunk_max):
-                x_a = x[mb, tn].to(torch.float32)
-                do_a = grad_out[mb, tn].to(torch.float32)
-                w_a = weight[None, tn].to(torch.float32)
-                s += (w_a * do_a * x_a).sum(-1)
-            c = s / n
-
-            for tile_n in hl.tile(n, block_size=n_chunk_max):
-                x_m = x[mb, tile_n].to(torch.float32)
-                do_m = grad_out[mb, tile_n].to(torch.float32)
-                rsqrt_m = rsqrt[mb, :].to(torch.float32)
-                w_m = weight[None, tile_n].to(torch.float32)
-                grad_weight[mb_cta.id, tile_n] += (x_m * do_m * rsqrt_m).sum(0)
-                grad_x[mb, tile_n] = (
-                    w_m * do_m * rsqrt_m
-                    - x_m * rsqrt_m**3 * c[:, None]
-                ).to(x.dtype)
+            x_m = x[mb, :].to(torch.float32)
+            do_m = grad_out[mb, :].to(torch.float32)
+            rsqrt_m = rsqrt[mb, :].to(torch.float32)
+            grad_w_m += (x_m * do_m * rsqrt_m).sum(0)
+            w_m = weight[None, :].to(torch.float32)
+            grad_x[mb, :] = (
+                w_m * do_m * rsqrt_m
+                - x_m * rsqrt_m**3 * (w_m * do_m * x_m).mean(-1)[:, None]
+            ).to(x.dtype)
+        grad_weight[mb_cta.id, :] = grad_w_m
     return grad_x, grad_weight.sum(0).to(weight.dtype)
 
 
-# %%
 class RMSNormFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # pyrefly: ignore [bad-override]
@@ -182,18 +163,11 @@ class RMSNormFunction(torch.autograd.Function):
         return grad_x, grad_weight, None
 
 
-# %%
 def rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-5) -> torch.Tensor:
     """RMS normalization with forward + backward support."""
     return RMSNormFunction.apply(x, weight, eps)  # type: ignore[no-any-return]
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def rms_norm_tritonbench(
     tb_op: object, H: int, inp: torch.Tensor, weight: torch.Tensor
 ) -> Callable[[], torch.Tensor]:
@@ -212,18 +186,12 @@ def rms_norm_tritonbench(
     return lambda: rms_norm(inp, weight, eps=1e-6)
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 class _RMSNormPytorchRef(torch.autograd.Function):
     """Reference that matches Helion: FP32 ``y``, FP16 ``inv_rms`` saved for backward."""
 
     @staticmethod
     def forward(
-        ctx: Any,
+        ctx: torch.autograd.function.FunctionCtx,
         x: torch.Tensor,
         weight: torch.Tensor,
         eps: float,
@@ -239,7 +207,7 @@ class _RMSNormPytorchRef(torch.autograd.Function):
 
     @staticmethod
     def backward(
-        ctx: Any,
+        ctx: torch.autograd.function.FunctionCtx,
         grad_out: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, None]:
         x, weight = ctx.saved_tensors
@@ -260,12 +228,6 @@ def rms_norm_pytorch(
     return _RMSNormPytorchRef.apply(x, weight, eps)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(m: int, n: int) -> None:
     """
     Verify the RMS norm kernel implementation against the PyTorch reference implementation.
@@ -287,6 +249,7 @@ def check(m: int, n: int) -> None:
         baseline_name="torch",
         rtol=1e-3,
         atol=1e-3,
+        use_wall_clock=True,
     )
 
     # Test forward + backward pass
@@ -303,15 +266,10 @@ def check(m: int, n: int) -> None:
         rtol=1e-2,
         atol=1e-2,
         bwd=True,
+        use_wall_clock=True,
     )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the RMS norm kernel verification with different tensor sizes.
@@ -323,6 +281,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

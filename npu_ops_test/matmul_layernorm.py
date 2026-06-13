@@ -6,11 +6,6 @@ This example demonstrates how to implement a fused matrix multiplication and lay
 operation using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -22,13 +17,7 @@ from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# MatMul-LayerNorm Kernel
-# -----------------------
-# static_shapes=True gives a performance boost for matmuls
 
-
-# %%
 @helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="quick")
 def matmul_layernorm(
     x: torch.Tensor,
@@ -96,12 +85,6 @@ def matmul_layernorm(
     return out
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def matmul_layernorm_pytorch(
     x: torch.Tensor, y: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor
 ) -> torch.Tensor:
@@ -129,12 +112,6 @@ def matmul_layernorm_pytorch(
     return ln_out.to(torch.promote_types(x.dtype, y.dtype))
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(m: int, k: int, n: int) -> None:
     """
     Verify the matmul_layernorm kernel implementation against the PyTorch reference implementation.
@@ -148,15 +125,14 @@ def check(m: int, k: int, n: int) -> None:
     y = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE)
     weight = torch.randn([n], device=DEVICE, dtype=HALF_DTYPE)
     bias = torch.randn([n], device=DEVICE, dtype=HALF_DTYPE)
-    run_example(matmul_layernorm, matmul_layernorm_pytorch, (x, y, weight, bias))
+    run_example(
+        matmul_layernorm,
+        matmul_layernorm_pytorch,
+        (x, y, weight, bias),
+        use_wall_clock=True,
+    )
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point that runs the matmul_layernorm kernel verification with different matrix sizes.
@@ -174,6 +150,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import time
+
     time0 = time.time()
     main()
-    print(f"time cost: {time.time()-time0}")
+    print(f"time cost: {time.time() - time0}")

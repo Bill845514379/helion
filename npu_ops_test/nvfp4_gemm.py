@@ -10,7 +10,6 @@ FP4 E2M1 format represents values: {0, ±0.5, ±1.0, ±1.5, ±2.0, ±3.0, ±4.0,
 using 1 sign bit, 2 exponent bits, and 1 mantissa bit.
 """
 
-# %%
 from __future__ import annotations
 
 from typing import Callable
@@ -47,7 +46,6 @@ FP4_E2M1_LUT = torch.tensor(
 )
 
 
-# %%
 @helion.kernel(static_shapes=False, autotune_ignore_errors=True, autotune_effort="full")
 def nvfp4_matmul(A: Tensor, B_packed: Tensor) -> Tensor:
     """
@@ -135,7 +133,6 @@ def nvfp4_matmul(A: Tensor, B_packed: Tensor) -> Tensor:
     return C
 
 
-# %%
 def quantize_fp4_e2m1(x: Tensor) -> Tensor:
     """
     Quantize a float tensor to FP4 E2M1 nibble indices (0-15).
@@ -196,7 +193,6 @@ def unpack_and_dequantize_fp4(packed: Tensor) -> Tensor:
     return stacked.reshape(packed.shape[0] * 2, packed.shape[1]).to(torch.bfloat16)
 
 
-# %%
 def reference_nvfp4_matmul(A: Tensor, B_packed: Tensor) -> Tensor:
     """
     Reference implementation that dequantizes FP4 weights and performs matmul.
@@ -212,7 +208,6 @@ def reference_nvfp4_matmul(A: Tensor, B_packed: Tensor) -> Tensor:
     return torch.matmul(A, B_dequant)
 
 
-# %%
 def nvfp4_gemm_tritonbench(
     tb_op: object, x: torch.Tensor, w: torch.Tensor
 ) -> Callable[[], torch.Tensor]:
@@ -237,7 +232,6 @@ def nvfp4_gemm_tritonbench(
     return run_kernel
 
 
-# %%
 def check(m: int, k: int, n: int) -> None:
     """
     Test the NVFP4 GEMM implementation against the reference.
@@ -263,7 +257,6 @@ def check(m: int, k: int, n: int) -> None:
     print(f"Test passed for shapes: M={m}, K={k}, N={n}")
 
 
-# %%
 def main() -> None:
     """
     Main function to run tests with different matrix sizes.
@@ -272,9 +265,9 @@ def main() -> None:
     check(512, 512, 512)
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

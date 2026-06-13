@@ -1195,6 +1195,9 @@ def codegen_call_with_graph(
     with compile_lock:
         new_args = []
         placeholders = graph.find_nodes(op="placeholder")
+        env = CompileEnvironment.current()
+        is_npu = env.backend_name == "ascend"
+
         for arg, placeholder in zip(args, placeholders, strict=True):
             if all(
                 user.target == torch.ops.aten.sym_size.int for user in placeholder.users
@@ -1202,14 +1205,21 @@ def codegen_call_with_graph(
                 # TODO(jansel): we should remove these sym_size-only args from the graph
                 new_args.append(arg)
             elif isinstance(arg, ast.Name):
-                # We need to copy the inputs to a loop so that phi nodes are handled properly.
-                # Phi nodes will merge variable names from outside the loop, but the old value
-                # of those variables could have usages.
-                copy_name = cg.device_function.new_var(arg.id + "_copy")
-                cg.add_statement(
-                    statement_from_string(f"{copy_name} = {{arg}}", arg=arg)
-                )
-                new_args.append(expr_from_string(copy_name))
+                # NPU optimization: skip copy if this variable is only used once in the loop body
+                # (e.g., accumulator in matmul). Triton compiler can handle this correctly.
+                # GPU still needs the copy for phi node semantics.
+                user_count = len(list(placeholder.users))
+                if is_npu and user_count <= 1:
+                    new_args.append(arg)
+                else:
+                    # We need to copy the inputs to a loop so that phi nodes are handled properly.
+                    # Phi nodes will merge variable names from outside the loop, but the old value
+                    # of those variables could have usages.
+                    copy_name = cg.device_function.new_var(arg.id + "_copy")
+                    cg.add_statement(
+                        statement_from_string(f"{copy_name} = {{arg}}", arg=arg)
+                    )
+                    new_args.append(expr_from_string(copy_name))
             else:
                 new_args.append(cg.lift(arg))
         return GraphInterpreter(graph, cg).run(*new_args)

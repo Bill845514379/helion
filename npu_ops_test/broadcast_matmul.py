@@ -9,13 +9,10 @@ The key insight is to flatten [B, M] into one dimension, reducing to a
 standard 2D matmul with torch.addmm, then reshape back. torch.baddbmm
 requires matching batch dims on both operands, so we cannot use it directly
 when W has no batch dimension.
+
+Tuned config: BM=128, BN=256, BK=64, GROUP_M=8
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import torch
@@ -26,13 +23,10 @@ from helion._testing import HALF_DTYPE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Broadcast Batch Matmul Kernel
-# -----------------------------
 
-
-# %%
-@helion.kernel(static_shapes=True, autotune_ignore_errors=True, autotune_effort="full")
+@helion.kernel(
+    static_shapes=True,
+)
 def broadcast_matmul(x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     """
     Batch matrix multiplication with broadcasting.
@@ -55,17 +49,17 @@ def broadcast_matmul(x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     for tile_bm, tile_n in hl.tile([b * m, n]):
         acc = hl.zeros([tile_bm, tile_n], dtype=torch.float32)
         for tile_k in hl.tile(k):
-            acc = torch.addmm(acc, x_2d[tile_bm, tile_k], w[tile_k, tile_n])
+            # Use hl.dot directly for better code generation
+            acc = hl.dot(
+                x_2d[tile_bm, tile_k],
+                w[tile_k, tile_n],
+                acc=acc,
+                out_dtype=torch.float32,
+            )
         out_2d[tile_bm, tile_n] = acc
     return out_2d.view(b, m, n)
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(b: int, m: int, k: int, n: int) -> None:
     x = torch.randn([b, m, k], device=DEVICE, dtype=HALF_DTYPE)
     w = torch.randn([k, n], device=DEVICE, dtype=HALF_DTYPE)
@@ -73,18 +67,13 @@ def check(b: int, m: int, k: int, n: int) -> None:
     run_example(broadcast_matmul, torch.matmul, (x, w))
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
-    check(16, 512, 768, 1024)
+    check(4, 256, 4096, 1024)
 
 
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

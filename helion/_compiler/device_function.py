@@ -505,10 +505,17 @@ class DeviceFunction:
     ) -> TensorArg:
         if fake_value not in self._tensor_args:
             origin = HostFunction.current().tensor_to_origin[fake_value]
+            host_str = origin.host_str()
+            # NPU (Ascend) Triton backend has catastrophic performance on
+            # non-contiguous tensor accesses.  Insert .contiguous() in the
+            # host wrapper so the kernel always receives contiguous data.
+            if hasattr(torch, "npu") and torch.npu.is_available():
+                if not fake_value.is_contiguous():
+                    host_str = f"{host_str}.contiguous()"
             arg = TensorArg(
                 self.new_var(prefer_name or origin.suggest_var_name()),
                 fake_value,
-                origin.host_str(),
+                host_str,
             )
             self.arguments.append(arg)
             self._tensor_args[fake_value] = arg
@@ -945,12 +952,15 @@ class HelionCutePrinter(HelionTritonPrinter):
 def cute_texpr(expr: sympy.Expr) -> str:
     return HelionCutePrinter().doprint(expr)
 
+
 class HelionAscendPrinter(HelionTritonPrinter):
+    def _print_basic_expr(self, expr: sympy.Basic) -> str:
+        return self.doprint(cast("sympy.Expr", expr))
 
     def _print_FloorDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         # Add parentheses to ensure correct operator precedence
         if not (lhs.is_Integer or lhs.is_Symbol):
@@ -963,8 +973,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_CleanDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -975,8 +985,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_CeilDiv(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -988,8 +998,8 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
     def _print_PythonMod(self, expr: sympy.Expr) -> str:
         lhs, rhs = expr.args
-        lhs_str = self._print(lhs)
-        rhs_str = self._print(rhs)
+        lhs_str = self._print_basic_expr(lhs)
+        rhs_str = self._print_basic_expr(rhs)
 
         if not (lhs.is_Integer or lhs.is_Symbol):
             lhs_str = f"({lhs_str})"
@@ -998,6 +1008,7 @@ class HelionAscendPrinter(HelionTritonPrinter):
 
         # Use simple % without sign checks
         return f"({lhs_str} % {rhs_str})"
+
 
 def ascend_texpr(expr: sympy.Expr) -> str:
     """Convert SymPy expression to Ascend NPU-compatible Triton code."""

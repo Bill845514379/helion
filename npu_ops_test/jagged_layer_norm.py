@@ -11,11 +11,6 @@ Layer normalization is applied across the feature dimension (last dimension) for
 each individual sequence, computing mean and variance only over valid elements.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 import itertools
@@ -28,15 +23,8 @@ from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-# %%
-# Jagged Layer Norm Kernel
-# ------------------------
 
-
-# %%
-@helion.kernel(autotune_effort="full",     
-    autotune_ignore_errors=True
-)
+@helion.kernel(autotune_effort="full", autotune_ignore_errors=True)
 def jagged_layer_norm_kernel(
     x_values: torch.Tensor,  # [total_L, M] - compressed values
     x_offsets: torch.Tensor,  # [B+1] - sequence start offsets
@@ -175,12 +163,6 @@ def jagged_layer_norm_kernel(
     return out.reshape(total_L, M)
 
 
-# %%
-# Reference Implementation
-# ------------------------
-
-
-# %%
 def reference_jagged_layer_norm_pytorch(
     x_values: torch.Tensor,
     x_offsets: torch.Tensor,
@@ -203,12 +185,6 @@ def reference_jagged_layer_norm_pytorch(
     )
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def jagged_layer_norm_tritonbench(
     tb_op: object, x: torch.Tensor, B: int, M: int, seqlen: int, sparsity: float
 ) -> Callable[[], torch.Tensor]:
@@ -233,12 +209,6 @@ def jagged_layer_norm_tritonbench(
     return lambda: jagged_layer_norm_kernel(x_values, x_offsets, eps=1e-6)
 
 
-# %%
-# Helper function to create test data
-# -----------------------------------
-
-
-# %%
 def create_test_jagged_tensor(
     B: int,
     M: int,
@@ -266,12 +236,6 @@ def create_test_jagged_tensor(
     return x_data, x_offsets
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     """
     Main entry point for jagged layer norm example.
@@ -294,12 +258,13 @@ def main() -> None:
             lambda x, o, eps: jagged_layer_norm_kernel(x, o, eps),
             lambda x, o, eps: reference_jagged_layer_norm_pytorch(x, o, eps),
             (x_data, x_offsets, eps),
+            use_wall_clock=True,
         )
 
 
-# %%
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

@@ -98,6 +98,9 @@ def _get_custom_decomp_table() -> dict[torch._ops.OpOverload, Callable[..., obje
     # figure out the right Triton implementation for aten.cat. As a workaround, we disable
     # the decomp for aten.stack and implement aten.stack in Triton (codegen_stack) instead.
     decomp_table.pop(torch.ops.aten.stack.default, None)
+    # Disable clamp decomposition so we can generate tl.clamp directly
+    # instead of triton_helpers.maximum/minimum
+    decomp_table.pop(torch.ops.aten.clamp.default, None)
     # Override lerp.Scalar to avoid data-dependent guard on the weight parameter.
     decomp_table[torch.ops.aten.lerp.Scalar] = _lerp_scalar_decomp
     return decomp_table
@@ -1683,6 +1686,7 @@ def lower_to_device_ir(func: HostFunction) -> DeviceIR:
         if len(device_ir.root_ids) > 1:
             # xyz not supported with shared program IDs, but persistent kernels are allowed
             CompileEnvironment.current().config_spec.disallow_pid_type("xyz")
+            CompileEnvironment.current().config_spec.disallow_pid_type("flat")
 
         # Count all device loads and stores and register tunables
         total_load_count, loads_without_eviction_policy, store_count = (

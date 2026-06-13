@@ -8,7 +8,6 @@ analytic FP32-upcast baseline because PyTorch's native FP16 ``layer_norm``
 backward can diverge from that closed form (same situation as ``rms_norm.py``).
 """
 
-# %%
 from __future__ import annotations
 
 from typing import Any
@@ -59,7 +58,6 @@ def layer_norm_bwd_reference(
     return grad_x, grad_weight, None
 
 
-# %%
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def layer_norm_fwd(
     x: torch.Tensor,
@@ -120,7 +118,6 @@ def layer_norm_fwd(
     return out, mean, rstd
 
 
-# %%
 @helion.kernel(
     autotune_ignore_errors=True,
     autotune_effort="full",
@@ -205,7 +202,6 @@ def layer_norm_bwd(
     return grad_x, grad_weight, None
 
 
-# %%
 class LayerNormFunction(torch.autograd.Function):
     @staticmethod
     def forward(  # pyrefly: ignore [bad-override]
@@ -243,7 +239,6 @@ class LayerNormFunction(torch.autograd.Function):
         return grad_x, None, grad_weight, grad_bias, None
 
 
-# %%
 def layer_norm(
     x: torch.Tensor,
     normalized_shape: list[int],
@@ -255,7 +250,6 @@ def layer_norm(
     return LayerNormFunction.apply(x, normalized_shape, weight, bias, eps)  # type: ignore[no-any-return]
 
 
-# %%
 class _LayerNormAnalyticRef(torch.autograd.Function):
     """Forward matches ``F.layer_norm``; backward uses :func:`layer_norm_bwd_reference`."""
 
@@ -303,12 +297,6 @@ def layer_norm_pytorch_analytic(
     return _LayerNormAnalyticRef.apply(x, normalized_shape, weight, bias, eps)  # type: ignore[no-any-return]
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def layer_norm_tritonbench(
     tb_op: object,
     x: torch.Tensor,
@@ -334,7 +322,6 @@ def layer_norm_tritonbench(
     return lambda: layer_norm(x, normalized_shape, weight, bias, eps)
 
 
-# %%
 def main() -> None:
     """
     Main execution function for the layer normalization example.
@@ -384,6 +371,5 @@ def main() -> None:
         )
 
 
-# %%
 if __name__ == "__main__":
     main()

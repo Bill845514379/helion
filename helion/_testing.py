@@ -31,6 +31,9 @@ from ._compat import supports_amd_cdna_tunables
 from ._compat import supports_tensor_descriptor
 from ._utils import counters
 from .autotuner.benchmarking import sync_object as sync_object
+from .runtime.config import Config
+from .runtime.ref_mode import is_ref_mode_enabled
+from .runtime.settings import RefMode
 from .runtime.settings import _get_backend
 
 
@@ -52,9 +55,8 @@ def is_mtia() -> bool:
 def is_npu() -> bool:
     """Return True if running on NPU (Ascend)."""
     # Check both Helion backend setting and actual NPU availability
-    return (
-        _get_backend() == "npu"
-        or (hasattr(torch, "npu") and torch.npu.is_available())
+    return _get_backend() == "npu" or (
+        hasattr(torch, "npu") and torch.npu.is_available()
     )
 
 
@@ -69,16 +71,16 @@ if _get_backend() == "pallas":
     from .autotuner.benchmarking import interleaved_bench_generic as interleaved_bench
 elif is_npu():
     from .autotuner.benchmarking import compute_repeat as compute_repeat
+
+    # Keep both versions available
+    # Default to profiler-based timing for simple kernels (faster)
+    # Use wall-clock timing optionally for jagged/dynamic kernels
     from .autotuner.benchmarking import do_bench_npu as do_bench
     from .autotuner.benchmarking import interleaved_bench_npu as interleaved_bench
 else:
     from .autotuner.benchmarking import compute_repeat
     from .autotuner.benchmarking import do_bench as do_bench
     from .autotuner.benchmarking import interleaved_bench
-
-from .runtime.config import Config
-from .runtime.ref_mode import is_ref_mode_enabled
-from .runtime.settings import RefMode
 
 if TYPE_CHECKING:
     import types
@@ -176,11 +178,6 @@ def xfailIfFn(
 def skipIfMTIA(reason: str) -> Callable[[Callable], Callable]:
     # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
     return skipIfFn(is_mtia, reason)
-
-
-def skipUnlessNPU(reason: str) -> Callable[[Callable], Callable]:
-    # Defers check to test execution time to avoid CUDA init during pytest-xdist collection.
-    return skipIfFn(lambda: not is_npu(), reason)
 
 
 class _LogCapture(logging.Handler):
@@ -931,6 +928,7 @@ def run_example(
     rtol: float = 1e-2,
     atol: float = 1e-1,
     bwd: bool = False,
+    use_wall_clock: bool = False,
 ) -> None:
     """Run complete example: correctness check + benchmark.
 
@@ -943,6 +941,8 @@ def run_example(
         rtol: Relative tolerance for correctness check (default: 1e-2)
         atol: Absolute tolerance for correctness check (default: 1e-1)
         bwd: Whether to also test backward pass (default: False)
+        use_wall_clock: If True, use wall-clock timing (slower but accurate for jagged/dynamic kernels)
+            If False, use profiler-based timing (faster, best for simple kernels) (default: False)
     """
     try:
         torch.backends.cuda.matmul.fp32_precision = "tf32"
@@ -1073,22 +1073,31 @@ def run_example(
     if dist.is_initialized():
         repeat = sync_object(repeat)
 
+    # Select appropriate benchmark function
+    bench_func = interleaved_bench
+    time_header = "Time (ms)"
+    timing_note = None
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        if use_wall_clock:
+            from .autotuner.benchmarking import interleaved_bench_generic
+
+            bench_func = interleaved_bench_generic
+            time_header = "Time (ms, wall-clock)"
+            timing_note = "wall-clock with torch.npu.synchronize()"
+        else:
+            time_header = "Time (ms, profiler)"
+            timing_note = "profiler-based (use_wall_clock=False)"
+
     # pyrefly: ignore [bad-argument-type]
-    timings = interleaved_bench(bench_fns, repeat=repeat, desc="Benchmarking")
+    timings = bench_func(bench_fns, repeat=repeat, desc="Benchmarking")
     all_times = dict(zip(all_benchmarks.keys(), timings, strict=True))
     best_baseline_time = min(all_times[name] for name in baselines)
 
     if not dist.is_initialized() or dist.get_rank() == 0:
         # Print results (on rank 0)
         print(f"\n{'=' * 65}\nBenchmark Results\n{'=' * 65}", file=sys.stderr)
-        time_header = "Time (ms)"
-        if hasattr(torch, "npu") and torch.npu.is_available():
-            from .autotuner.benchmarking import npu_benchmark_results_timing_caption
-
-            cap = npu_benchmark_results_timing_caption()
-            if cap:
-                print(cap, file=sys.stderr)
-            time_header = "Time (ms, NPU prof.)"
+        if timing_note:
+            print(f"Timing: {timing_note}", file=sys.stderr)
         time_w = max(len(time_header), 12)
         sep = "-" * (20 + time_w + 15 + 2)
         print(

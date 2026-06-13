@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from ..autotuner.logger import classify_triton_exception
 from ..autotuner.logger import format_triton_compile_failure
 
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -145,7 +144,7 @@ def make_precompiler(
         constant_params = configs[0].get_constants()
         constexprs = {
             p.name: v
-            for (v, p) in zip(bound_vals, fn.params)
+            for (v, p) in zip(bound_vals, fn.params, strict=True)
             if p.is_constexpr or (p.num in constant_params) or v is None
         }
 

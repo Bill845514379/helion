@@ -5,35 +5,23 @@ Sum Reduction Example
 This example demonstrates how to implement a sum reduction operation along the last dimension using Helion.
 """
 
-# %%
-# Imports
-# -------
-
-# %%
 from __future__ import annotations
 
 from typing import Callable
 
 import torch
+import torch_npu
 
 import helion
 from helion._testing import DEVICE
 from helion._testing import run_example
 import helion.language as hl
 
-
-import torch_npu
-
 # Match matmul NPU setup: avoid internal-format tensors that can disagree with
 # Helion/Triton pointer loads and fault the Ascend vector core.
 torch_npu.npu.config.allow_internal_format = True
 
 
-# %%
-# Sum Kernel
-# ----------
-
-# %%
 @helion.kernel(autotune_ignore_errors=True, autotune_effort="full")
 def sum_kernel(x: torch.Tensor) -> torch.Tensor:
     """
@@ -54,12 +42,6 @@ def sum_kernel(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-# %%
-# Benchmark Wrapper
-# -----------------
-
-
-# %%
 def sum_tritonbench(tb_op: object, x: torch.Tensor) -> Callable[[], torch.Tensor]:
     """
     Wrapper for tritonbench that handles 1D input.
@@ -83,12 +65,6 @@ def sum_tritonbench(tb_op: object, x: torch.Tensor) -> Callable[[], torch.Tensor
     return compute_sum
 
 
-# %%
-# Verification Function
-# ---------------------
-
-
-# %%
 def check(m: int, n: int) -> None:
     """
     Verify the sum kernel implementation against PyTorch's native sum function.
@@ -102,12 +78,6 @@ def check(m: int, n: int) -> None:
     run_example(kernels, lambda x: x.sum(-1), (x,))
 
 
-# %%
-# Main Function
-# -------------
-
-
-# %%
 def main() -> None:
     print(DEVICE)
     """
@@ -117,8 +87,10 @@ def main() -> None:
     # check(10240, 10240)
     check(1024, 1024)
 
+
 if __name__ == "__main__":
     import time
+
     time_st = time.time()
     main()
     print(f"time cost: {time.time() - time_st}")

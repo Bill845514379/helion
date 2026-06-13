@@ -281,10 +281,12 @@ def emit_tl_dot_with_padding(
     lhs_cast, rhs_cast = cast_ast(lhs, common_dtype), cast_ast(rhs, common_dtype)
 
     # On NPU, hf32 precision only works with f32 * f32 = f32
-    # For f16/bf16 inputs, we need to use ieee precision
+    # For f16/bf16 inputs, let Triton auto-select the optimal precision
+    # (NPU cube unit has hardware support for fp16/bf16 accumulation)
     if hasattr(torch, "npu") and torch.npu.is_available():
-        if input_precision == "hf32" and common_dtype in (torch.float16, torch.bfloat16):
-            input_precision = "ieee"
+        if common_dtype in (torch.float16, torch.bfloat16):
+            # Don't force ieee precision for fp16/bf16, let hardware optimize
+            input_precision = None
     m, n, k = (_resolve_dim_size(d) for d in (m, n, k))
 
     fuse_acc = (

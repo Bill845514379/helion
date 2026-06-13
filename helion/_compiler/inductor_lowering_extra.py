@@ -7,14 +7,15 @@ from typing import Any
 from typing import Callable
 from typing import Generator
 
-from helion._compiler.compile_environment import CompileEnvironment
-
 import torch
 from torch._inductor.ir import TensorBox
 from torch._inductor.lowering import lowerings as original_lowerings
 from torch._inductor.lowering import make_pointwise
 from torch._inductor.lowering import to_dtype
 from torch._inductor.virtualized import ops as vops
+
+from helion._compiler.compile_environment import CompileEnvironment
+
 inductor_lowering_dispatch: dict[Callable[..., Any] | str, Callable[..., Any]] = {}
 
 
@@ -31,13 +32,14 @@ try:
 except (AttributeError, RuntimeError):
     _npu_dtype_cast_op = None
 
-def is_npu_backend():
-    from helion._compiler.compile_environment import CompileEnvironment
+
+def is_npu_backend() -> bool:
     try:
         env = CompileEnvironment.current()
         return env.device.type == "npu"
-    except:
+    except Exception:
         return False
+
 
 def create_fp16_to_fp32_unary_fallback_lowering(
     original_op: Callable[..., object],
@@ -81,6 +83,7 @@ for op in FP32_FALLBACK_OPS_UNARY:
 
 # Handle NPU dtype cast operation by delegating to standard to_dtype
 if _npu_dtype_cast_op is not None:
+
     @register_inductor_lowering(
         [_npu_dtype_cast_op],
         lowering_dict=inductor_lowering_dispatch,
@@ -190,10 +193,12 @@ def var_mean(
         return_mean=True,
     )
 
+
 aten = torch.ops.aten
 
+
 @register_inductor_lowering(aten.exp2.default, lowering_dict=npu_only_lowering_dispatch)
-def exp2_lowering(x):
+def exp2_lowering(x: TensorBox) -> TensorBox:
     """
     Custom lowering implementation for aten.exp2 operation.
     Computes 2^x for each element in the input tensor.
@@ -209,71 +214,61 @@ def exp2_lowering(x):
     log2_val = math.log(2)  # Natural logarithm of 2
     dtype = x.get_dtype()  # Get data type outside the inner function
 
-    def exp2_fn(x):
+    def exp2_fn(x: object) -> object:
         # Compute exp2(x) as exp(x * ln(2))
         return vops.exp(vops.mul(x, vops.constant(log2_val, dtype)))
 
     return make_pointwise(exp2_fn)(x)
 
 
-@register_inductor_lowering(aten._log_softmax.default, lowering_dict=npu_only_lowering_dispatch)
-def log_softmax_lowering(x, dim, half_to_float=False):
+@register_inductor_lowering(
+    aten._log_softmax.default, lowering_dict=npu_only_lowering_dispatch
+)
+def log_softmax_lowering(
+    x: TensorBox, dim: int, half_to_float: bool = False
+) -> TensorBox:
     """
-    Numerically stable implementation of log-softmax.
+    Numerically stable implementation of log-softmax with fp32 upcast.
 
-    Computes: log_softmax(x) = x - log(∑exp(x - max(x)))
+    Computes: log_softmax(x) = x - log(sum(exp(x - max(x))))
 
-    The standard formula for numerical stability:
-    1. x_max = max(x, dim=dim, keepdim=True)
-    2. shifted = x - x_max
-    3. exp_shifted = exp(shifted)
-    4. sum_exp = sum(exp_shifted, dim=dim, keepdim=True)
-    5. log_sum_exp = log(sum_exp)
-    6. result = shifted - log_sum_exp
-
-    Args:
-        x: Input tensor
-        dim: Dimension along which to compute log-softmax
-        half_to_float: If True, converts half-precision (float16/bfloat16) to float32
-
-    Returns:
-        ComputedBuffer representing log_softmax(x)
+    For fp16/bf16 inputs, upcasts to fp32 once at the start and computes
+    all 6 decomposition steps in fp32, then casts back once. This avoids
+    the 12 nested fp16↔fp32 round-trips that occur when each step
+    independently triggers FP32_FALLBACK_OPS_UNARY for exp/log.
     """
 
-    dtype = x.get_dtype()  # Get input tensor data type
-    ndim = len(x.get_size())  # Get number of dimensions
-
-    # Handle negative dimension indices
+    dtype = x.get_dtype()
+    ndim = len(x.get_size())
     if dim < 0:
         dim = ndim + dim
 
-    # 1. Compute max value along the specified dimension for numerical stability
+    # Upcast once at the start if input is sub-fp32
+    needs_upcast = dtype in (torch.float16, torch.bfloat16)
+    if needs_upcast:
+        x = to_dtype(x, torch.float32)
+
+    # All 6 steps in fp32
     x_max = original_lowerings[aten.amax.default](x, axis=[dim], keepdims=True)
-
-    # 2. Shift values by subtracting the maximum (prevents overflow in exp)
     shifted = original_lowerings[aten.sub.Tensor](x, x_max)
-
-    # 3. Compute exp(shifted)
     exp_shifted = original_lowerings[aten.exp.default](shifted)
-
-    # 4. Sum of exponentials along the specified dimension
-    # Keep dimensions to maintain shape for broadcasting
-    sum_exp = original_lowerings[aten.sum.dim_IntList](exp_shifted, axis=[dim], keepdims=True, dtype=dtype)
-
-    # 5. Compute log of the sum of exponentials
+    sum_exp = original_lowerings[aten.sum.dim_IntList](
+        exp_shifted, axis=[dim], keepdims=True
+    )
     log_sum_exp = original_lowerings[aten.log.default](sum_exp)
-
-    # 6. Final result: shifted values minus log of sum of exponentials
     result = original_lowerings[aten.sub.Tensor](shifted, log_sum_exp)
 
-    # Handle half-precision to float32 conversion if requested
-    if half_to_float and dtype in (torch.float16, torch.bfloat16):
+    # Cast back once at the end
+    if needs_upcast and not half_to_float:
+        result = to_dtype(result, dtype)
+    elif half_to_float and dtype in (torch.float16, torch.bfloat16):
         result = to_dtype(result, torch.float32)
 
     return result
 
+
 @register_inductor_lowering(aten.log2.default, lowering_dict=npu_only_lowering_dispatch)
-def log2_scalar_lowering(x):
+def log2_scalar_lowering(x: TensorBox) -> TensorBox:
     """
     Custom lowering implementation for aten.log2 operation with scalar input.
 
@@ -284,38 +279,45 @@ def log2_scalar_lowering(x):
         ComputedBuffer representing log2(x)
     """
 
-    def log2_fn(x):
+    def log2_fn(x: object) -> object:
         return vops.log2(x)
 
     return make_pointwise(log2_fn)(x)
 
 
-@register_inductor_lowering(aten.remainder.Scalar_Tensor, lowering_dict=npu_only_lowering_dispatch)
-@register_inductor_lowering(aten.remainder.Scalar, lowering_dict=npu_only_lowering_dispatch)
-def remainder_scalar_lowering(x, divisor):
+@register_inductor_lowering(
+    aten.remainder.Scalar_Tensor, lowering_dict=npu_only_lowering_dispatch
+)
+@register_inductor_lowering(
+    aten.remainder.Scalar, lowering_dict=npu_only_lowering_dispatch
+)
+def remainder_scalar_lowering(x: TensorBox, divisor: object) -> TensorBox:
     """
     Custom lowering for aten.remainder.Scalar and aten.remainder.Scalar_Tensor.
     """
-    if hasattr(divisor, 'get_dtype'):
+    if hasattr(divisor, "get_dtype"):
         x_size = x.get_size()
 
-        if hasattr(divisor, 'get_size'):
+        if hasattr(divisor, "get_size"):
             d_size = divisor.get_size()
             if len(d_size) == 0:
                 divisor = original_lowerings[aten.expand.default](divisor, x_size)
 
-        def remainder_fn(x, d):
+        def remainder_fn(x: object, d: object) -> object:
             return vops.mod(x, d)
 
         return make_pointwise(remainder_fn)(x, divisor)
-    else:
-        def remainder_fn(x):
-            return vops.mod(x, divisor)
 
-        return make_pointwise(remainder_fn)(x)
+    def remainder_fn(x: object) -> object:
+        return vops.mod(x, divisor)
 
-@register_inductor_lowering(aten.bitwise_or.Tensor, lowering_dict=npu_only_lowering_dispatch)
-def bitwise_or_tensor_lowering(x, y):
+    return make_pointwise(remainder_fn)(x)
+
+
+@register_inductor_lowering(
+    aten.bitwise_or.Tensor, lowering_dict=npu_only_lowering_dispatch
+)
+def bitwise_or_tensor_lowering(x: TensorBox, y: TensorBox) -> TensorBox:
     """
     Custom lowering implementation for aten.bitwise_or.Tensor operation.
     Computes element-wise bitwise OR of two tensors.
@@ -327,14 +329,17 @@ def bitwise_or_tensor_lowering(x, y):
     Returns:
         ComputedBuffer representing x | y (element-wise bitwise OR)
     """
-    def bitwise_or_fn(x, y):
+
+    def bitwise_or_fn(x: object, y: object) -> object:
         return vops.bitwise_or(x, y)
 
     return make_pointwise(bitwise_or_fn)(x, y)
 
 
-@register_inductor_lowering(aten.__lshift__.Scalar, lowering_dict=npu_only_lowering_dispatch)
-def lshift_scalar_lowering(x, shift_amount):
+@register_inductor_lowering(
+    aten.__lshift__.Scalar, lowering_dict=npu_only_lowering_dispatch
+)
+def lshift_scalar_lowering(x: TensorBox, shift_amount: int) -> TensorBox:
     """
     Custom lowering implementation for aten.__lshift__.Scalar (left bit shift).
 
@@ -348,14 +353,16 @@ def lshift_scalar_lowering(x, shift_amount):
         ComputedBuffer representing x << shift_amount
     """
 
-    def lshift_fn(x):
+    def lshift_fn(x: object) -> object:
         return vops.lshift(x, shift_amount)
 
     return make_pointwise(lshift_fn)(x)
 
 
-@register_inductor_lowering(aten.__rshift__.Scalar, lowering_dict=npu_only_lowering_dispatch)
-def rshift_scalar_lowering(x, shift_amount):
+@register_inductor_lowering(
+    aten.__rshift__.Scalar, lowering_dict=npu_only_lowering_dispatch
+)
+def rshift_scalar_lowering(x: TensorBox, shift_amount: int) -> TensorBox:
     """
     Custom lowering implementation for aten.__rshift__.Scalar (right bit shift).
 
@@ -369,7 +376,7 @@ def rshift_scalar_lowering(x, shift_amount):
         ComputedBuffer representing x >> shift_amount
     """
 
-    def rshift_fn(x):
+    def rshift_fn(x: object) -> object:
         return vops.rshift(x, shift_amount)
 
     return make_pointwise(rshift_fn)(x)
