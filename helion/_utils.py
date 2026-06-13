@@ -42,6 +42,17 @@ def triton_is_available() -> bool:
         return False
 
 
+@functools.cache
+def npu_is_available() -> bool:
+    """Return True if torch_npu is installed and importable."""
+    try:
+        import torch_npu  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def create_shape_matching_slices(
     shape1: Sequence[int], shape2: Sequence[int]
 ) -> tuple[slice, ...]:

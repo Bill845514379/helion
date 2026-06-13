@@ -12,6 +12,7 @@ from packaging import version
 import torch
 from torch._inductor.runtime.hints import DeviceProperties
 
+from ._utils import npu_is_available
 from ._utils import triton_is_available
 
 if TYPE_CHECKING:
@@ -614,12 +615,13 @@ def extract_device(args: Sequence[object]) -> torch.device | None:
 
 
 def register_npu_backend() -> None:
-    """Register Inductor backend for NPU device"""
-    from torch._inductor.codegen.common import register_backend_for_device
-    from torch._inductor.codegen.triton import TritonScheduling
-    from torch_npu._inductor.codegen.wrapper import (  # pyrefly: ignore[import-error]
-        NPUWrapperCodeGen,
-    )
+    if npu_is_available():
+        """Register Inductor backend for NPU device"""
+        from torch._inductor.codegen.common import register_backend_for_device
+        from torch._inductor.codegen.triton import TritonScheduling
+        from torch_npu._inductor.codegen.wrapper import (  # pyrefly: ignore[import-error]
+            NPUWrapperCodeGen,
+        )
 
     register_backend_for_device(
         device="npu",  # or "privateuseone" if NPU is a custom device
@@ -629,9 +631,9 @@ def register_npu_backend() -> None:
 
 
 def _register_interface_for_device() -> None:
-    from torch._dynamo.device_interface import register_interface_for_device
-    from torch_npu.utils._dynamo_device import (  # pyrefly: ignore[import-error]
-        NpuInterface,
-    )
-
+    if npu_is_available():
+        from torch._dynamo.device_interface import register_interface_for_device
+        from torch_npu.utils._dynamo_device import (  # pyrefly: ignore[import-error]
+            NpuInterface,
+        )
     register_interface_for_device("npu", NpuInterface)
