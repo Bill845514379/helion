@@ -283,7 +283,7 @@ if triton_is_available():
         try:
             # First check if we're using Triton-ascend backend
             try:
-                from triton.runtime.driver.active import (  # pyrefly: ignore[import-error]
+                from triton.runtime.driver.active import (  # pyrefly: ignore [missing-import]
                     get_current_target,
                 )
 
@@ -615,13 +615,14 @@ def extract_device(args: Sequence[object]) -> torch.device | None:
 
 
 def register_npu_backend() -> None:
-    if npu_is_available():
-        """Register Inductor backend for NPU device"""
-        from torch._inductor.codegen.common import register_backend_for_device
-        from torch._inductor.codegen.triton import TritonScheduling
-        from torch_npu._inductor.codegen.wrapper import (  # pyrefly: ignore[import-error]
-            NPUWrapperCodeGen,
-        )
+    """Register Inductor backend for NPU device."""
+    if not npu_is_available():
+        return
+    from torch._inductor.codegen.common import register_backend_for_device
+    from torch._inductor.codegen.triton import TritonScheduling
+    from torch_npu._inductor.codegen.wrapper import (  # pyrefly: ignore [missing-import]
+        NPUWrapperCodeGen,
+    )
 
     register_backend_for_device(
         device="npu",  # or "privateuseone" if NPU is a custom device
@@ -631,9 +632,12 @@ def register_npu_backend() -> None:
 
 
 def _register_interface_for_device() -> None:
-    if npu_is_available():
-        from torch._dynamo.device_interface import register_interface_for_device
-        from torch_npu.utils._dynamo_device import (  # pyrefly: ignore[import-error]
-            NpuInterface,
-        )
+    """Register Dynamo device interface for NPU."""
+    if not npu_is_available():
+        return
+    from torch._dynamo.device_interface import register_interface_for_device
+    from torch_npu.utils._dynamo_device import (  # pyrefly: ignore [missing-import]
+        NpuInterface,
+    )
+
     register_interface_for_device("npu", NpuInterface)
