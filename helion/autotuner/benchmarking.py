@@ -550,14 +550,14 @@ def _do_bench_npu_fallback(
 
     # Warmup
     fn()
-    torch.npu.synchronize()
+    _bench_device_synchronize()
 
     # Estimate number of repeats
     start = time.perf_counter()
     for _ in range(5):
         _compat.safe_clear_cache()
         fn()
-    torch.npu.synchronize()
+    _bench_device_synchronize()
     end = time.perf_counter()
     estimate_ms = sync_object((end - start) * 1000 / 5)
 
@@ -576,10 +576,10 @@ def _do_bench_npu_fallback(
             for x in grad_to_none:
                 x.grad = None
         _compat.safe_clear_cache()
-        torch.npu.synchronize()
+        _bench_device_synchronize()
         t0 = time.perf_counter()
         fn()
-        torch.npu.synchronize()
+        _bench_device_synchronize()
         t1 = time.perf_counter()
         times.append((t1 - t0) * 1000)  # convert to ms
 
